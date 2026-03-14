@@ -64,23 +64,49 @@ def scrape_techcrunch_telegram() -> list[dict]:
 # ── LLM Summary ─────────────────────────────────────────────────────────────
 SUMMARY_PROMPT = """\
 You are a startup industry analyst. Based on the following news items from \
-TechCrunch's Telegram channel, create a **Daily Startup News Summary**.
+TechCrunch's Telegram channel, create a Daily Startup News Summary.
 
 For each major story (funding rounds, product launches, strategic \
 partnerships, acquisitions), produce:
 
-1. **What happened** – factual summary (2-3 sentences)
-2. **Industry status** – current state of the industry being disrupted \
+• What happened – factual summary (2-3 sentences)
+• Industry status – current state of the industry being disrupted \
 (market size, incumbents, pain points)
-3. **Why this is disruptive** – specifically how the startup/company is \
+• Why this is disruptive – specifically how the startup/company is \
 challenging the status quo, what aspect of the industry it is disrupting, \
 and why it matters
 
-Group minor stories under **"Other Notable Headlines"** with a one-line \
-description each.
+Group minor stories under an "Other Notable Headlines" section with a \
+one-line description each.
 
-Format the output in clean Markdown with headers. Be analytical and specific \
-about disruption angles.
+⚠️ CRITICAL FORMATTING RULES — this text will be displayed inside a Google \
+Calendar event description, which is PLAIN TEXT only:
+- Do NOT use Markdown (no #, ##, ###, **, *, ```, etc.)
+- Use these Unicode characters for visual structure:
+  • Use ━━━━━━━━━━━━━━━━━━━━ as section dividers
+  • Use ALL CAPS for section headers (e.g. MAJOR STORIES, OTHER HEADLINES)
+  • Use ▸ for bullet points
+  • Use └─ for sub-bullets
+  • Use 🏷️ emojis to tag categories: 💰 Funding, 🤝 Partnership, 🛒 Acquisition, 🚀 Launch
+  • Use blank lines between sections for readability
+- Keep each story's analysis concise (3-5 lines per section)
+- Be analytical and specific about disruption angles.
+
+Example format:
+
+━━━━━━━━━━━━━━━━━━━━
+💰 COMPANY NAME — $XXM Series X at $XB Valuation
+━━━━━━━━━━━━━━━━━━━━
+
+▸ What happened
+  Brief 2-3 sentence summary here.
+
+▸ Industry status
+  Brief industry context here.
+
+▸ Why this is disruptive
+  Brief disruption analysis here.
+
 
 Today's date: {today}
 
