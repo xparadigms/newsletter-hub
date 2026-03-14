@@ -25,7 +25,7 @@ jobs:
 
       - name: Run daily summary
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
           CALENDAR_ID: heechang1997@gmail.com
           TIMEZONE: Asia/Seoul

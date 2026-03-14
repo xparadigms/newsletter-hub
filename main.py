@@ -15,11 +15,11 @@ from datetime import datetime, timedelta, timezone
 
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from openai import OpenAI
+import anthropic
 
 # ── Config ──────────────────────────────────────────────────────────────────
 CALENDAR_ID = os.environ.get("CALENDAR_ID", "heechang1997@gmail.com")
-OPENAI_API_KEY = os.environ["OPENAI_API_KEY"]
+ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 GCP_SA_KEY = os.environ["GCP_SA_KEY"]  # JSON string of service account key
 TIMEZONE = os.environ.get("TIMEZONE", "Asia/Seoul")
 TELEGRAM_URL = "https://t.me/s/techcrunchcom"
@@ -90,8 +90,8 @@ Today's date: {today}
 
 
 def generate_summary(news_items: list[dict]) -> str:
-    """Call OpenAI to produce the disruption-focused summary."""
-    client = OpenAI(api_key=OPENAI_API_KEY)
+    """Call Anthropic Claude to produce the disruption-focused summary."""
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
     formatted = "\n\n".join(
         f"- {item['text']}\n  URL: {item['url']}\n  Date: {item['date']}"
@@ -99,13 +99,11 @@ def generate_summary(news_items: list[dict]) -> str:
     )
     today_str = datetime.now(KST).strftime("%B %d, %Y")
 
-    response = client.chat.completions.create(
-        model="gpt-4o",
+    response = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=4000,
+        system="You are a senior startup and venture capital analyst.",
         messages=[
-            {
-                "role": "system",
-                "content": "You are a senior startup and venture capital analyst.",
-            },
             {
                 "role": "user",
                 "content": SUMMARY_PROMPT.format(
@@ -113,10 +111,8 @@ def generate_summary(news_items: list[dict]) -> str:
                 ),
             },
         ],
-        max_tokens=4000,
-        temperature=0.7,
     )
-    return response.choices[0].message.content
+    return response.content[0].text
 
 
 # ── Google Calendar ──────────────────────────────────────────────────────────

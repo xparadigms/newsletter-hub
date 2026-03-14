@@ -1,5 +1,5 @@
 google-api-python-client==2.*
 google-auth==2.*
-openai==1.*
+anthropic==0.*
 requests==2.*
 beautifulsoup4==4.*
