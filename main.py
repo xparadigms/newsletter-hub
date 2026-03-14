@@ -18,7 +18,7 @@ from googleapiclient.discovery import build
 import anthropic
 
 # ── Config ──────────────────────────────────────────────────────────────────
-CALENDAR_ID = os.environ.get("CALENDAR_ID", "heechang1997@gmail.com")
+CALENDAR_ID = os.environ.get("CALENDAR_ID", "ad3a712618285ba2a011179683b92bdc10718051482df8d950ccfb95a1f0aa19@group.calendar.google.com")
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 GCP_SA_KEY = os.environ["GCP_SA_KEY"]  # JSON string of service account key
 TIMEZONE = os.environ.get("TIMEZONE", "Asia/Seoul")
