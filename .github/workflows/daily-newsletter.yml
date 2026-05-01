@@ -1,0 +1,33 @@
+name: Rails — Daily Newsletter
+
+on:
+  schedule:
+    # Runs at 23:00 UTC = 08:00 KST every day
+    - cron: "0 23 * * *"
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  generate-issue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run daily issue
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          CALENDAR_ID: 7a9910c8d7342edd1895e22d2764f1ae2e59ef917761096cffa4a6d94581cbf2@group.calendar.google.com
+          TIMEZONE: Asia/Seoul
+          ISSUE_NUMBER: ${{ github.run_number }}
+        run: python main.py
