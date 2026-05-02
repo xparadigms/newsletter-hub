@@ -268,9 +268,13 @@ accelerate or delay trajectory. Tie to ongoing work. 2-4 sentences.
 Open question. One sentence.
 
 SECTION 2 — THE SWEEP:
-8-12 headlines, one line each, grouped by region:
+8-12 headlines grouped by region:
 Americas / Asia / Europe / Infra & markets
 Skip a group if nothing meaningful. Don't pad.
+
+For EACH headline, add two short bullet points right below it:
+▸ Explanation: What happened in 1 sentence.
+▸ Implication: Why it matters for financial infra in 1 sentence.
 
 SECTION 3 — FOOD FOR THOUGHT:
 Today is {weekday}. Today's rotation: {rotation_slot}.
