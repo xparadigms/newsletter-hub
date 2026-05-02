@@ -25,6 +25,11 @@ CALENDAR_ID = os.environ.get(
 )
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 GCP_SA_KEY = os.environ["GCP_SA_KEY"]  # JSON string of service account key
+NOTION_TOKEN = os.environ.get("NOTION_TOKEN", "")
+NOTION_DATABASE_ID = os.environ.get(
+    "NOTION_DATABASE_ID",
+    "3535bc953df3807b83c9dc5be40b72e6",
+)
 TIMEZONE = os.environ.get("TIMEZONE", "Asia/Seoul")
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 KST = timezone(timedelta(hours=9))
@@ -379,6 +384,69 @@ def create_calendar_event(issue_text: str) -> str:
     return event.get("htmlLink", "")
 
 
+# ── Notion ───────────────────────────────────────────────────────────────────
+NOTION_API_URL = "https://api.notion.com/v1/pages"
+NOTION_VERSION = "2022-06-28"
+
+
+def _text_to_notion_blocks(text: str) -> list[dict]:
+    """Convert plain text into Notion paragraph blocks (max 2000 chars each)."""
+    blocks = []
+    for line in text.split("\n"):
+        # Notion rich-text content limit is 2000 chars per block
+        chunks = [line[i:i+2000] for i in range(0, max(len(line), 1), 2000)] if line else [""]
+        for chunk in chunks:
+            blocks.append({
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {
+                    "rich_text": [{"type": "text", "text": {"content": chunk}}]
+                },
+            })
+    return blocks
+
+
+def create_notion_page(issue_text: str) -> str:
+    """Create a Notion page in the newsletter database with the issue content."""
+    if not NOTION_TOKEN:
+        print("  ⚠ NOTION_TOKEN not set, skipping Notion.")
+        return ""
+
+    now_kst = datetime.now(KST)
+    title = f"Rails — Issue #{ISSUE_NUMBER} · {now_kst.strftime('%b %d, %Y')}"
+
+    # Notion API limits children to 100 blocks per request
+    all_blocks = _text_to_notion_blocks(issue_text)
+
+    payload = {
+        "parent": {"database_id": NOTION_DATABASE_ID},
+        "properties": {
+            "Name": {"title": [{"text": {"content": title}}]},
+        },
+        "children": all_blocks[:100],
+    }
+
+    headers = {
+        "Authorization": f"Bearer {NOTION_TOKEN}",
+        "Notion-Version": NOTION_VERSION,
+        "Content-Type": "application/json",
+    }
+
+    resp = requests.post(NOTION_API_URL, headers=headers, json=payload, timeout=30)
+    resp.raise_for_status()
+    page = resp.json()
+    page_id = page["id"]
+
+    # Append remaining blocks in batches of 100 if needed
+    for i in range(100, len(all_blocks), 100):
+        batch = all_blocks[i:i+100]
+        append_url = f"https://api.notion.com/v1/blocks/{page_id}/children"
+        r = requests.patch(append_url, headers=headers, json={"children": batch}, timeout=30)
+        r.raise_for_status()
+
+    return page.get("url", "")
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 def run():
     now_kst = datetime.now(KST)
@@ -413,6 +481,11 @@ def run():
     print("▸ Creating Google Calendar event...")
     event_link = create_calendar_event(issue_text)
     print(f"✓ Event created: {event_link}")
+
+    print("▸ Saving to Notion...")
+    notion_url = create_notion_page(issue_text)
+    if notion_url:
+        print(f"✓ Notion page created: {notion_url}")
 
 
 if __name__ == "__main__":
