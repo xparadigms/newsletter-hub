@@ -491,10 +491,13 @@ def create_notion_page(issue_text: str) -> str:
     # Notion API limits children to 100 blocks per request
     all_blocks = _text_to_notion_blocks(issue_text)
 
+    date_str = now_kst.strftime("%Y-%m-%d")
+
     payload = {
         "parent": {"database_id": NOTION_DATABASE_ID},
         "properties": {
             "Name": {"title": [{"text": {"content": title}}]},
+            "Date": {"date": {"start": date_str}},
         },
         "children": all_blocks[:100],
     }
