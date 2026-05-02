@@ -399,22 +399,9 @@ _SECTION_HEADERS = [
 ]
 
 
-def _rich_text(content: str, bold: bool = False, italic: bool = False,
-               color: str = "default") -> dict:
+def _rich_text(content: str) -> dict:
     """Build a single Notion rich-text object."""
-    rt = {
-        "type": "text",
-        "text": {"content": content[:2000]},
-        "annotations": {
-            "bold": bold,
-            "italic": italic,
-            "strikethrough": False,
-            "underline": False,
-            "code": False,
-            "color": color,
-        },
-    }
-    return rt
+    return {"type": "text", "text": {"content": content[:2000]}}
 
 
 def _is_section_header(line: str) -> bool:
@@ -431,145 +418,59 @@ def _is_divider(line: str) -> bool:
 
 
 def _text_to_notion_blocks(text: str) -> list[dict]:
-    """Convert the Rails newsletter plain text into formatted Notion blocks."""
-    blocks = []
-    lines = text.split("\n")
-    i = 0
+    """Convert the Rails newsletter plain text into Notion blocks.
 
-    while i < len(lines):
-        line = lines[i]
+    Preserves original structure and content as-is. Only applies:
+    - H2 with purple_background for section headers
+    - H3 with purple_background for numbered deep-read headlines
+    - Divider blocks for ━━━ lines
+    - Everything else stays as plain paragraph text.
+    """
+    blocks = []
+    for line in text.split("\n"):
         stripped = line.strip()
 
-        # Skip empty lines
+        # Empty lines → skip
         if not stripped:
-            i += 1
             continue
 
-        # ── Divider lines (━━━) ──
+        # Divider lines (━━━)
         if _is_divider(stripped):
             blocks.append({"object": "block", "type": "divider", "divider": {}})
-            i += 1
             continue
 
-        # ── Title line (Rails — Issue #...) ──
-        if stripped.startswith("Rails") and "Issue" in stripped:
-            blocks.append({
-                "object": "block",
-                "type": "heading_1",
-                "heading_1": {
-                    "rich_text": [_rich_text(stripped, bold=True)],
-                    "color": "purple_background",
-                    "is_toggleable": False,
-                },
-            })
-            i += 1
-            continue
-
-        # ── Section headers (ALL CAPS) ──
+        # Section headers (ALL CAPS) → H2 purple
         if _is_section_header(stripped):
             blocks.append({
                 "object": "block",
                 "type": "heading_2",
                 "heading_2": {
-                    "rich_text": [_rich_text(stripped, bold=True)],
+                    "rich_text": [_rich_text(stripped)],
                     "color": "purple_background",
                     "is_toggleable": False,
                 },
             })
-            i += 1
             continue
 
-        # ── Numbered deep-read headlines (1. 2. 3.) ──
+        # Numbered headlines (1. 2. 3.) → H3 purple
         if len(stripped) > 2 and stripped[0].isdigit() and stripped[1] == ".":
             blocks.append({
                 "object": "block",
                 "type": "heading_3",
                 "heading_3": {
-                    "rich_text": [_rich_text(stripped, bold=True)],
-                    "color": "default",
+                    "rich_text": [_rich_text(stripped)],
+                    "color": "purple_background",
                     "is_toggleable": False,
                 },
             })
-            i += 1
             continue
 
-        # ── Bullet points (▸) ──
-        if stripped.startswith("▸"):
-            bullet_text = stripped[1:].strip()
-            blocks.append({
-                "object": "block",
-                "type": "bulleted_list_item",
-                "bulleted_list_item": {
-                    "rich_text": [_rich_text(bullet_text)],
-                },
-            })
-            i += 1
-            continue
-
-        # ── Sub-labels (What happened, What it means, etc.) ──
-        lower = stripped.lower()
-        if any(lower.startswith(label) for label in [
-            "what happened", "what it means", "infra implication", "open question",
-        ]):
-            # Split at the first period-space to bold the label
-            if ". " in stripped:
-                label_part, rest = stripped.split(". ", 1)
-                blocks.append({
-                    "object": "block",
-                    "type": "paragraph",
-                    "paragraph": {
-                        "rich_text": [
-                            _rich_text(label_part + ". ", bold=True, color="purple"),
-                            _rich_text(rest),
-                        ],
-                    },
-                })
-            else:
-                blocks.append({
-                    "object": "block",
-                    "type": "paragraph",
-                    "paragraph": {
-                        "rich_text": [_rich_text(stripped, bold=True, color="purple")],
-                    },
-                })
-            i += 1
-            continue
-
-        # ── Closing / italic line ──
-        if i >= len(lines) - 3 and ("issue" in lower or "minute" in lower):
-            blocks.append({
-                "object": "block",
-                "type": "callout",
-                "callout": {
-                    "rich_text": [_rich_text(stripped, italic=True)],
-                    "icon": {"type": "emoji", "emoji": "🚂"},
-                    "color": "purple_background",
-                },
-            })
-            i += 1
-            continue
-
-        # ── Date / subtitle line (right after title) ──
-        if i <= 3 and ("journal" in lower or "daily" in lower):
-            blocks.append({
-                "object": "block",
-                "type": "paragraph",
-                "paragraph": {
-                    "rich_text": [_rich_text(stripped, italic=True, color="gray")],
-                },
-            })
-            i += 1
-            continue
-
-        # ── Default: regular paragraph ──
+        # Everything else → plain paragraph
         blocks.append({
             "object": "block",
             "type": "paragraph",
-            "paragraph": {
-                "rich_text": [_rich_text(stripped)],
-            },
+            "paragraph": {"rich_text": [_rich_text(stripped)]},
         })
-        i += 1
 
     return blocks
 
