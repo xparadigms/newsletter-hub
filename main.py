@@ -21,7 +21,7 @@ from googleapiclient.discovery import build
 # ── Config ──────────────────────────────────────────────────────────────────
 CALENDAR_ID = os.environ.get(
     "CALENDAR_ID",
-    "7a9910c8d7342edd1895e22d2764f1ae2e59ef917761096cffa4a6d94581cbf2@group.calendar.google.com",
+    "ad3a712618285ba2a011179683b92bdc10718051482df8d950ccfb95a1f0aa19@group.calendar.google.com",
 )
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 GCP_SA_KEY = os.environ["GCP_SA_KEY"]  # JSON string of service account key

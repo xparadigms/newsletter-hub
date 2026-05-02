@@ -27,7 +27,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
-          CALENDAR_ID: 7a9910c8d7342edd1895e22d2764f1ae2e59ef917761096cffa4a6d94581cbf2@group.calendar.google.com
+          CALENDAR_ID: ad3a712618285ba2a011179683b92bdc10718051482df8d950ccfb95a1f0aa19@group.calendar.google.com
           TIMEZONE: Asia/Seoul
           ISSUE_NUMBER: ${{ github.run_number }}
         run: python main.py
