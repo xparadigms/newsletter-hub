@@ -426,11 +426,13 @@ def _text_to_notion_blocks(text: str) -> list[dict]:
 
     Preserves original structure and content as-is. Only applies:
     - H2 with purple_background for section headers
-    - H3 with purple_background for numbered deep-read headlines
+    - H3 with brown_background for numbered headlines and sweep news items
     - Divider blocks for ━━━ lines
     - Everything else stays as plain paragraph text.
     """
     blocks = []
+    in_sweep = False
+
     for line in text.split("\n"):
         stripped = line.strip()
 
@@ -445,6 +447,13 @@ def _text_to_notion_blocks(text: str) -> list[dict]:
 
         # Section headers (ALL CAPS) → H2 purple
         if _is_section_header(stripped):
+            upper = stripped.upper()
+            in_sweep = "THE SWEEP" in upper or any(
+                h in upper for h in ["AMERICAS", "ASIA", "EUROPE", "INFRA & MARKETS"]
+            )
+            # Turn off sweep when we hit a non-sweep section
+            if any(h in upper for h in ["FOOD FOR THOUGHT", "THREE DEEP READS", "CLOSING"]):
+                in_sweep = False
             blocks.append({
                 "object": "block",
                 "type": "heading_2",
@@ -456,14 +465,27 @@ def _text_to_notion_blocks(text: str) -> list[dict]:
             })
             continue
 
-        # Numbered headlines (1. 2. 3.) → H3 purple
+        # Numbered headlines (1. 2. 3.) → H3 brown
         if len(stripped) > 2 and stripped[0].isdigit() and stripped[1] == ".":
             blocks.append({
                 "object": "block",
                 "type": "heading_3",
                 "heading_3": {
                     "rich_text": [_rich_text(stripped)],
-                    "color": "purple_background",
+                    "color": "brown_background",
+                    "is_toggleable": False,
+                },
+            })
+            continue
+
+        # Sweep news headlines (non-bullet lines in THE SWEEP) → H3 brown
+        if in_sweep and not stripped.startswith("▸"):
+            blocks.append({
+                "object": "block",
+                "type": "heading_3",
+                "heading_3": {
+                    "rich_text": [_rich_text(stripped)],
+                    "color": "brown_background",
                     "is_toggleable": False,
                 },
             })
