@@ -7,20 +7,28 @@ summary via OpenAI, and inserts a calendar event at 09:00 KST.
 
 import json
 import os
+import re
 import sys
-
-import requests
-from bs4 import BeautifulSoup
 from datetime import datetime, timedelta, timezone
 
+from dotenv import load_dotenv
+load_dotenv()
+
+import anthropic
+import requests
+from bs4 import BeautifulSoup
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-import anthropic
 
 # ── Config ──────────────────────────────────────────────────────────────────
 CALENDAR_ID = os.environ.get("CALENDAR_ID", "ad3a712618285ba2a011179683b92bdc10718051482df8d950ccfb95a1f0aa19@group.calendar.google.com")
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
-GCP_SA_KEY = os.environ["GCP_SA_KEY"]  # JSON string of service account key
+GCP_SA_KEY = os.environ.get("GCP_SA_KEY", "")  # JSON string of service account key
+NOTION_TOKEN = os.environ.get("NOTION_TOKEN", "")
+NOTION_DATABASE_ID = os.environ.get(
+    "NOTION_DATABASE_ID",
+    "3555bc953df380e2ae70df4401216aee",
+)
 TIMEZONE = os.environ.get("TIMEZONE", "Asia/Seoul")
 TELEGRAM_URL = "https://t.me/s/techcrunchcom"
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
@@ -184,6 +192,144 @@ def create_calendar_event(summary: str) -> str:
     return event.get("htmlLink", "")
 
 
+# ── Notion ───────────────────────────────────────────────────────────────────
+NOTION_API_URL = "https://api.notion.com/v1/pages"
+NOTION_VERSION = "2022-06-28"
+
+_SECTION_HEADERS = ["MAJOR STORIES", "OTHER NOTABLE HEADLINES", "OTHER NOTABLE", "OTHER HEADLINES"]
+_SUB_HEADERS = ["▸ What happened", "▸ Industry status", "▸ Why this is disruptive"]
+
+
+def _rt(content: str, bold: bool = False) -> dict:
+    """Build a Notion rich-text object."""
+    obj = {"type": "text", "text": {"content": content[:2000]}}
+    if bold:
+        obj["annotations"] = {"bold": True}
+    return obj
+
+
+def _text_to_notion_blocks(text: str) -> list[dict]:
+    """Convert the newsletter plain text into well-structured Notion blocks."""
+    blocks = []
+    for line in text.split("\n"):
+        stripped = line.strip()
+
+        if not stripped or stripped.startswith("DAILY STARTUP NEWS SUMMARY"):
+            continue
+
+        # Dividers
+        if "━" in stripped and stripped.count("━") >= 5:
+            blocks.append({"object": "block", "type": "divider", "divider": {}})
+            continue
+
+        # Section headers → H2 blue
+        if stripped in _SECTION_HEADERS:
+            blocks.append({
+                "object": "block",
+                "type": "heading_2",
+                "heading_2": {
+                    "rich_text": [_rt(stripped)],
+                    "color": "blue_background",
+                    "is_toggleable": False,
+                },
+            })
+            continue
+
+        # Story headers (💰 COMPANY — ...) → H3
+        if re.match(r'^[💰🤝🛒🚀🏷️]\s', stripped):
+            blocks.append({
+                "object": "block",
+                "type": "heading_3",
+                "heading_3": {
+                    "rich_text": [_rt(stripped)],
+                    "color": "default",
+                    "is_toggleable": False,
+                },
+            })
+            continue
+
+        # Sub-headers (▸ What happened) → bold
+        if stripped in _SUB_HEADERS:
+            label = stripped.replace("▸ ", "")
+            blocks.append({
+                "object": "block",
+                "type": "paragraph",
+                "paragraph": {"rich_text": [_rt(f"▸ {label}", bold=True)]},
+            })
+            continue
+
+        # Bullet points → bulleted list
+        if stripped.startswith("▸"):
+            content = stripped.lstrip("▸ ").strip()
+            blocks.append({
+                "object": "block",
+                "type": "bulleted_list_item",
+                "bulleted_list_item": {"rich_text": [_rt(content)]},
+            })
+            continue
+
+        # Sub-bullets
+        if stripped.startswith("└─"):
+            content = stripped.lstrip("└─ ").strip()
+            blocks.append({
+                "object": "block",
+                "type": "bulleted_list_item",
+                "bulleted_list_item": {"rich_text": [_rt(f"→ {content}")]},
+            })
+            continue
+
+        # Everything else → paragraph
+        blocks.append({
+            "object": "block",
+            "type": "paragraph",
+            "paragraph": {"rich_text": [_rt(stripped)]},
+        })
+
+    return blocks
+
+
+def create_notion_page(summary: str) -> str:
+    """Create a Notion page in the newsletter database with the summary."""
+    if not NOTION_TOKEN:
+        print("  ⚠ NOTION_TOKEN not set, skipping Notion.")
+        return ""
+
+    now_kst = datetime.now(KST)
+    title = f"📰 Daily Startup News – {now_kst.strftime('%b %d, %Y')}"
+
+    all_blocks = _text_to_notion_blocks(summary)
+    date_str = now_kst.strftime("%Y-%m-%d")
+
+    payload = {
+        "parent": {"database_id": NOTION_DATABASE_ID},
+        "properties": {
+            "Name": {"title": [{"text": {"content": title}}]},
+            "Date": {"date": {"start": date_str}},
+        },
+        "children": all_blocks[:100],
+    }
+
+    headers = {
+        "Authorization": f"Bearer {NOTION_TOKEN}",
+        "Notion-Version": NOTION_VERSION,
+        "Content-Type": "application/json",
+    }
+
+    resp = requests.post(NOTION_API_URL, headers=headers, json=payload, timeout=30)
+    resp.raise_for_status()
+    page = resp.json()
+    page_id = page["id"]
+
+    # Append remaining blocks in batches of 100 if needed
+    for i in range(100, len(all_blocks), 100):
+        batch = all_blocks[i:i + 100]
+        append_url = f"https://api.notion.com/v1/blocks/{page_id}/children"
+        r = requests.patch(append_url, headers=headers, json={"children": batch}, timeout=30)
+        r.raise_for_status()
+
+    return page.get("url", "")
+
+
 # ── Main ─────────────────────────────────────────────────────────────────────
 def run():
     print("▸ Scraping TechCrunch Telegram...")
@@ -196,9 +342,20 @@ def run():
     print("▸ Generating AI summary...")
     summary = generate_summary(news_items)
 
-    print("▸ Creating Google Calendar event...")
-    event_link = create_calendar_event(summary)
-    print(f"✓ Event created: {event_link}")
+    if CALENDAR_ID and GCP_SA_KEY:
+        try:
+            print("▸ Creating Google Calendar event...")
+            event_link = create_calendar_event(summary)
+            print(f"✓ Event created: {event_link}")
+        except Exception as e:
+            print(f"  ⚠ Calendar failed (non-fatal): {e}")
+    else:
+        print("  ⚠ CALENDAR_ID or GCP_SA_KEY not set, skipping Calendar.")
+
+    print("▸ Saving to Notion...")
+    notion_url = create_notion_page(summary)
+    if notion_url:
+        print(f"✓ Notion page created: {notion_url}")
 
 
 if __name__ == "__main__":
