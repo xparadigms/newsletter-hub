@@ -425,13 +425,13 @@ def _text_to_notion_blocks(text: str) -> list[dict]:
     """Convert the Rails newsletter plain text into Notion blocks.
 
     Preserves original structure and content as-is. Only applies:
-    - H2 with purple_background for section headers
-    - H3 with brown_background for numbered headlines and sweep news items
+    - H2 for section headers (no background color)
+    - H3 for numbered deep-read headlines (no background color)
+    - Bulleted list items for ▸ lines
     - Divider blocks for ━━━ lines
     - Everything else stays as plain paragraph text.
     """
     blocks = []
-    in_sweep = False
 
     for line in text.split("\n"):
         stripped = line.strip()
@@ -445,49 +445,37 @@ def _text_to_notion_blocks(text: str) -> list[dict]:
             blocks.append({"object": "block", "type": "divider", "divider": {}})
             continue
 
-        # Section headers (ALL CAPS) → H2 purple
+        # Section headers (ALL CAPS) → H2, no background
         if _is_section_header(stripped):
-            upper = stripped.upper()
-            in_sweep = "THE SWEEP" in upper or any(
-                h in upper for h in ["AMERICAS", "ASIA", "EUROPE", "INFRA & MARKETS"]
-            )
-            # Turn off sweep when we hit a non-sweep section
-            if any(h in upper for h in ["FOOD FOR THOUGHT", "THREE DEEP READS", "CLOSING"]):
-                in_sweep = False
             blocks.append({
                 "object": "block",
                 "type": "heading_2",
                 "heading_2": {
                     "rich_text": [_rich_text(stripped)],
-                    "color": "purple_background",
                     "is_toggleable": False,
                 },
             })
             continue
 
-        # Numbered headlines (1. 2. 3.) → H3 brown
+        # Numbered headlines (1. 2. 3.) → H3, no background
         if len(stripped) > 2 and stripped[0].isdigit() and stripped[1] == ".":
             blocks.append({
                 "object": "block",
                 "type": "heading_3",
                 "heading_3": {
                     "rich_text": [_rich_text(stripped)],
-                    "color": "brown_background",
                     "is_toggleable": False,
                 },
             })
             continue
 
-        # Sweep news headlines (non-bullet lines in THE SWEEP) → H3 brown
-        if in_sweep and not stripped.startswith("▸"):
+        # Bullet lines (▸) → bulleted list items
+        if stripped.startswith("▸"):
+            bullet_text = stripped.lstrip("▸").strip()
             blocks.append({
                 "object": "block",
-                "type": "heading_3",
-                "heading_3": {
-                    "rich_text": [_rich_text(stripped)],
-                    "color": "brown_background",
-                    "is_toggleable": False,
-                },
+                "type": "bulleted_list_item",
+                "bulleted_list_item": {"rich_text": [_rich_text(bullet_text)]},
             })
             continue
 
