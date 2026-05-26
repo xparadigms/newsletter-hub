@@ -339,11 +339,15 @@ def create_calendar_event(issue_text: str) -> str:
     if not CALENDAR_ID:
         print("  ⚠ CALENDAR_ID not set, skipping Calendar.")
         return ""
-    if not GCP_SA_KEY:
+    if not GCP_SA_KEY or GCP_SA_KEY.strip() in ("", "{}"):
         print("  ⚠ GCP_SA_KEY not set, skipping Calendar.")
         return ""
 
-    service = get_calendar_service()
+    try:
+        service = get_calendar_service()
+    except Exception as e:
+        print(f"  ⚠ Calendar auth failed: {e}")
+        return ""
     now_kst = datetime.now(KST)
     start = now_kst.replace(hour=9, minute=0, second=0, microsecond=0)
     end = start + timedelta(minutes=30)
