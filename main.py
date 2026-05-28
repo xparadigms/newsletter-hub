@@ -242,6 +242,9 @@ This way the reader can understand the headline even if the kanji is hard.\
 ISSUE_PROMPT = """\
 Produce a complete Japan Briefing issue from the news items below.
 
+First line MUST be:
+MAIN_TITLE: [concise English title of the single most important story, ≤8 words]
+
 HEADER:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 JAPAN BRIEFING — Issue #{issue_number}
@@ -296,8 +299,12 @@ with a blank line. This applies to both JP and KR sections.
 """
 
 
-def generate_issue(news_items: list[dict]) -> str:
-    """Call Anthropic Claude to produce the Japan Briefing issue."""
+def generate_issue(news_items: list[dict]) -> tuple[str, str]:
+    """Call Anthropic Claude to produce the Japan Briefing issue.
+
+    Returns (main_title, issue_text) where main_title is the extracted
+    headline for use in the [Japan Brief #NN] (main_title) format.
+    """
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
     now_kst = datetime.now(KST)
@@ -323,7 +330,24 @@ def generate_issue(news_items: list[dict]) -> str:
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": prompt}],
     )
-    return response.content[0].text
+    raw = response.content[0].text
+
+    # Extract the MAIN_TITLE line from the top of the response
+    main_title = "Japan Brief"
+    lines = raw.splitlines()
+    body_start = 0
+    for i, line in enumerate(lines):
+        if line.startswith("MAIN_TITLE:"):
+            main_title = line[len("MAIN_TITLE:"):].strip().strip('"').strip("'")
+            body_start = i + 1
+            break
+
+    # Strip any leading blank lines after the MAIN_TITLE directive
+    while body_start < len(lines) and not lines[body_start].strip():
+        body_start += 1
+    issue_text = "\n".join(lines[body_start:])
+
+    return main_title, issue_text
 
 
 # ── Google Calendar ──────────────────────────────────────────────────────────
@@ -335,7 +359,12 @@ def get_calendar_service():
     return build("calendar", "v3", credentials=creds)
 
 
-def create_calendar_event(issue_text: str) -> str:
+def _issue_title(main_title: str) -> str:
+    """Format the standard [Japan Brief #NN] (main_title) title string."""
+    return f"[Japan Brief #{ISSUE_NUMBER}] ({main_title})"
+
+
+def create_calendar_event(issue_text: str, main_title: str = "Japan Brief") -> str:
     if not CALENDAR_ID:
         print("  ⚠ CALENDAR_ID not set, skipping Calendar.")
         return ""
@@ -353,7 +382,7 @@ def create_calendar_event(issue_text: str) -> str:
     end = start + timedelta(minutes=30)
 
     event_body = {
-        "summary": f"Japan Briefing — Issue #{ISSUE_NUMBER} · {now_kst.strftime('%b %d, %Y')}",
+        "summary": _issue_title(main_title),
         "description": issue_text,
         "start": {"dateTime": start.isoformat(), "timeZone": TIMEZONE},
         "end": {"dateTime": end.isoformat(), "timeZone": TIMEZONE},
@@ -464,13 +493,13 @@ def _text_to_notion_blocks(text: str) -> list[dict]:
     return blocks
 
 
-def create_notion_page(issue_text: str) -> str:
+def create_notion_page(issue_text: str, main_title: str = "Japan Brief") -> str:
     if not NOTION_TOKEN or not NOTION_DATABASE_ID:
         print("  ⚠ NOTION_TOKEN or NOTION_DATABASE_ID not set, skipping Notion.")
         return ""
 
     now_kst = datetime.now(KST)
-    title = f"Japan Briefing — Issue #{ISSUE_NUMBER} · {now_kst.strftime('%b %d, %Y')}"
+    title = _issue_title(main_title)
     all_blocks = _text_to_notion_blocks(issue_text)
     date_str = now_kst.strftime("%Y-%m-%d")
 
@@ -530,15 +559,16 @@ def run():
     items_for_llm = items_for_llm[:50]
 
     print(f"▸ Generating Japan Briefing via Claude ({len(items_for_llm)} items)...")
-    issue_text = generate_issue(items_for_llm)
+    main_title, issue_text = generate_issue(items_for_llm)
+    print(f"  Title: [Japan Brief #{ISSUE_NUMBER}] ({main_title})")
 
     print("▸ Creating Google Calendar event...")
-    event_link = create_calendar_event(issue_text)
+    event_link = create_calendar_event(issue_text, main_title)
     if event_link:
         print(f"✓ Event created: {event_link}")
 
     print("▸ Saving to Notion...")
-    notion_url = create_notion_page(issue_text)
+    notion_url = create_notion_page(issue_text, main_title)
     if notion_url:
         print(f"✓ Notion page created: {notion_url}")
 
