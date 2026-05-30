@@ -248,6 +248,9 @@ ISSUE_PROMPT = """\
 Produce a complete Rails issue from the news items below. Follow this \
 structure exactly:
 
+First line MUST be:
+MAIN_TITLE: [concise English title of the single most important story, ≤8 words]
+
 HEADER:
 # Rails — Issue #{issue_number}
 {date_line} · Heechang's daily journal on the future of financial infrastructure
@@ -312,8 +315,12 @@ ROTATION_INSTRUCTIONS = {
 }
 
 
-def generate_issue(news_items: list[dict]) -> str:
-    """Call Anthropic Claude to produce the Rails issue."""
+def generate_issue(news_items: list[dict]) -> tuple[str, str]:
+    """Call Anthropic Claude to produce the Rails issue.
+
+    Returns (main_title, issue_text) where main_title is the extracted
+    headline for use in the [Finance Infra #NN] (main_title) format.
+    """
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
     now_kst = datetime.now(KST)
@@ -342,7 +349,23 @@ def generate_issue(news_items: list[dict]) -> str:
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": prompt}],
     )
-    return response.content[0].text
+    raw = response.content[0].text
+
+    # Extract the MAIN_TITLE line from the top of the response
+    main_title = "Finance Infra"
+    lines = raw.splitlines()
+    body_start = 0
+    for i, line in enumerate(lines):
+        if line.startswith("MAIN_TITLE:"):
+            main_title = line[len("MAIN_TITLE:"):].strip().strip('"').strip("'")
+            body_start = i + 1
+            break
+
+    while body_start < len(lines) and not lines[body_start].strip():
+        body_start += 1
+    issue_text = "\n".join(lines[body_start:])
+
+    return main_title, issue_text
 
 
 # ── Google Calendar ──────────────────────────────────────────────────────────
@@ -355,7 +378,12 @@ def get_calendar_service():
     return build("calendar", "v3", credentials=creds)
 
 
-def create_calendar_event(issue_text: str) -> str:
+def _issue_title(main_title: str) -> str:
+    """Format the standard [Finance Infra #NN] (main_title) title string."""
+    return f"[Finance Infra #{ISSUE_NUMBER}] ({main_title})"
+
+
+def create_calendar_event(issue_text: str, main_title: str = "Finance Infra") -> str:
     """Insert a 30-min event at 09:00 KST with the issue as description."""
     service = get_calendar_service()
 
@@ -364,7 +392,7 @@ def create_calendar_event(issue_text: str) -> str:
     end = start + timedelta(minutes=30)
 
     event_body = {
-        "summary": f"Rails — Issue #{ISSUE_NUMBER} · {now_kst.strftime('%b %d, %Y')}",
+        "summary": _issue_title(main_title),
         "description": issue_text,
         "start": {
             "dateTime": start.isoformat(),
@@ -489,14 +517,14 @@ def _text_to_notion_blocks(text: str) -> list[dict]:
     return blocks
 
 
-def create_notion_page(issue_text: str) -> str:
+def create_notion_page(issue_text: str, main_title: str = "Finance Infra") -> str:
     """Create a Notion page in the newsletter database with the issue content."""
     if not NOTION_TOKEN:
         print("  ⚠ NOTION_TOKEN not set, skipping Notion.")
         return ""
 
     now_kst = datetime.now(KST)
-    title = f"Rails — Issue #{ISSUE_NUMBER} · {now_kst.strftime('%b %d, %Y')}"
+    title = _issue_title(main_title)
 
     # Notion API limits children to 100 blocks per request
     all_blocks = _text_to_notion_blocks(issue_text)
@@ -562,14 +590,15 @@ def run():
     items_for_llm = items_for_llm[:50]
 
     print(f"▸ Generating Rails issue via Claude ({len(items_for_llm)} items)...")
-    issue_text = generate_issue(items_for_llm)
+    main_title, issue_text = generate_issue(items_for_llm)
+    print(f"  Title: [Finance Infra #{ISSUE_NUMBER}] ({main_title})")
 
     print("▸ Creating Google Calendar event...")
-    event_link = create_calendar_event(issue_text)
+    event_link = create_calendar_event(issue_text, main_title)
     print(f"✓ Event created: {event_link}")
 
     print("▸ Saving to Notion...")
-    notion_url = create_notion_page(issue_text)
+    notion_url = create_notion_page(issue_text, main_title)
     if notion_url:
         print(f"✓ Notion page created: {notion_url}")
 
