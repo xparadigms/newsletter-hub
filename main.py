@@ -70,9 +70,14 @@ def scrape_techcrunch_telegram() -> list[dict]:
 
 
 # ── LLM Summary ─────────────────────────────────────────────────────────────
+ISSUE_NUMBER = int(os.environ.get("ISSUE_NUMBER", "1"))
+
 SUMMARY_PROMPT = """\
 You are a startup industry analyst. Based on the following news items from \
 TechCrunch's Telegram channel, create a Daily Startup News Summary.
+
+First line MUST be:
+MAIN_TITLE: [concise English title of the single most important story, ≤8 words]
 
 For each major story (funding rounds, product launches, strategic \
 partnerships, acquisitions), produce:
@@ -123,8 +128,11 @@ Today's date: {today}
 """
 
 
-def generate_summary(news_items: list[dict]) -> str:
-    """Call Anthropic Claude to produce the disruption-focused summary."""
+def generate_summary(news_items: list[dict]) -> tuple[str, str]:
+    """Call Anthropic Claude to produce the disruption-focused summary.
+
+    Returns (main_title, summary_text).
+    """
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
     formatted = "\n\n".join(
@@ -146,7 +154,23 @@ def generate_summary(news_items: list[dict]) -> str:
             },
         ],
     )
-    return response.content[0].text
+    raw = response.content[0].text
+
+    # Extract the MAIN_TITLE line
+    main_title = "Startup News"
+    lines = raw.splitlines()
+    body_start = 0
+    for i, line in enumerate(lines):
+        if line.startswith("MAIN_TITLE:"):
+            main_title = line[len("MAIN_TITLE:"):].strip().strip('"').strip("'")
+            body_start = i + 1
+            break
+
+    while body_start < len(lines) and not lines[body_start].strip():
+        body_start += 1
+    summary_text = "\n".join(lines[body_start:])
+
+    return main_title, summary_text
 
 
 # ── Google Calendar ──────────────────────────────────────────────────────────
@@ -159,7 +183,12 @@ def get_calendar_service():
     return build("calendar", "v3", credentials=creds)
 
 
-def create_calendar_event(summary: str) -> str:
+def _issue_title(main_title: str) -> str:
+    """Format the standard [Startup News #NN] (main_title) title string."""
+    return f"[Startup News #{ISSUE_NUMBER}] ({main_title})"
+
+
+def create_calendar_event(summary: str, main_title: str = "Startup News") -> str:
     """Insert a 30-min event at 09:00 KST with the summary as description."""
     service = get_calendar_service()
 
@@ -168,7 +197,7 @@ def create_calendar_event(summary: str) -> str:
     end = start + timedelta(minutes=30)
 
     event_body = {
-        "summary": f"📰 Daily Startup News – {now_kst.strftime('%b %d, %Y')}",
+        "summary": _issue_title(main_title),
         "description": summary,
         "start": {
             "dateTime": start.isoformat(),
@@ -288,14 +317,14 @@ def _text_to_notion_blocks(text: str) -> list[dict]:
     return blocks
 
 
-def create_notion_page(summary: str) -> str:
+def create_notion_page(summary: str, main_title: str = "Startup News") -> str:
     """Create a Notion page in the newsletter database with the summary."""
     if not NOTION_TOKEN:
         print("  ⚠ NOTION_TOKEN not set, skipping Notion.")
         return ""
 
     now_kst = datetime.now(KST)
-    title = f"📰 Daily Startup News – {now_kst.strftime('%b %d, %Y')}"
+    title = _issue_title(main_title)
 
     all_blocks = _text_to_notion_blocks(summary)
     date_str = now_kst.strftime("%Y-%m-%d")
@@ -340,12 +369,13 @@ def run():
     print(f"  Found {len(news_items)} items.")
 
     print("▸ Generating AI summary...")
-    summary = generate_summary(news_items)
+    main_title, summary = generate_summary(news_items)
+    print(f"  Title: [Startup News #{ISSUE_NUMBER}] ({main_title})")
 
     if CALENDAR_ID and GCP_SA_KEY:
         try:
             print("▸ Creating Google Calendar event...")
-            event_link = create_calendar_event(summary)
+            event_link = create_calendar_event(summary, main_title)
             print(f"✓ Event created: {event_link}")
         except Exception as e:
             print(f"  ⚠ Calendar failed (non-fatal): {e}")
@@ -353,7 +383,7 @@ def run():
         print("  ⚠ CALENDAR_ID or GCP_SA_KEY not set, skipping Calendar.")
 
     print("▸ Saving to Notion...")
-    notion_url = create_notion_page(summary)
+    notion_url = create_notion_page(summary, main_title)
     if notion_url:
         print(f"✓ Notion page created: {notion_url}")
 
