@@ -36,7 +36,7 @@ JAPAN BRIEFING — Issue #[NNN]
 
 ### Section 1: 日本クリプト・規制ウォッチ (JAPAN CRYPTO & REGULATION WATCH)
 
-Pick 2–3 of the most consequential Japan crypto/stablecoin/regulation stories from the last 2 weeks. Bias toward: stablecoin issuance & infra (JPYC, Progmat, megabank pilots), FIEA/JVCEA/FSA regulatory developments, Japan exchange consolidation, institutional adoption signals, cross-border payment corridors (KR-JP-HK-SG).
+Pick 3–4 of the most consequential Japan crypto/stablecoin/regulation stories from the last 2 weeks. Bias toward: stablecoin issuance & infra (JPYC, Progmat, megabank pilots), FIEA/JVCEA/FSA regulatory developments, Japan exchange consolidation, institutional adoption signals, cross-border payment corridors (KR-JP-HK-SG).
 
 For **each** story, use this template:
 
@@ -51,19 +51,19 @@ For **each** story, use this template:
 
 ### Section 2: 建築・都市デザイン (ARCHITECTURE & URBAN DESIGN)
 
-1–2 stories on Tokyo/Japan architectural design and urban development. Bias toward: landmark buildings and their design philosophy (麻布台ヒルズ, 虎ノ門ヒルズ, TOKYO TORCH), architect profiles (隈研吾, 安藤忠雄, 妹島和世), interior/exterior design details, materials and structural innovation, public space design, comparisons to Seoul developments. The angle is "what makes Tokyo's built environment world-class."
+2–3 stories on Tokyo/Japan architectural design and urban development. Bias toward: landmark buildings and their design philosophy (麻布台ヒルズ, 虎ノ門ヒルズ, TOKYO TORCH), architect profiles (隈研吾, 安藤忠雄, 妹島和世), interior/exterior design details, materials and structural innovation, public space design, comparisons to Seoul developments. The angle is "what makes Tokyo's built environment world-class."
 
 Same bilingual template as Section 1.
 
 ### Section 3: 東京グルメ・発見 (TOKYO FOOD & FINDS)
 
-One food or dining recommendation. Could be: a trending restaurant, a seasonal dish, a hidden spot, a new opening in a redevelopment area, or a food trend. 3–4 sentences in Japanese + Korean translation. Include neighborhood (エリア) and price range if relevant. Practical — something to actually visit on the next Tokyo trip.
+2 food or dining recommendations. Could be: a trending restaurant, a seasonal dish, a hidden spot, a new opening in a redevelopment area, or a food trend. 3–4 sentences each in Japanese + Korean translation. Include neighborhood (エリア) and price range if relevant. Practical — something to actually visit on the next Tokyo trip.
 
 Same bilingual format (JP first, then 📝 한국어 번역).
 
 ### Section 4: 今週の話題 (THIS WEEK'S BUZZ)
 
-What Japanese people are actually talking about this week. Could be: a viral topic on X/Twitter Japan, a trending TV show or movie, a lifestyle trend, a seasonal event, a product launch, or a cultural moment. 3–4 sentences in Japanese + Korean translation. The point is "what's the vibe in Japan right now" — not analysis, just a snapshot.
+2 things Japanese people are actually talking about this week. Could be: a viral topic on X/Twitter Japan, a trending TV show or movie, a lifestyle trend, a seasonal event, a product launch, or a cultural moment. 3–4 sentences each in Japanese + Korean translation. The point is "what's the vibe in Japan right now" — not analysis, just a snapshot.
 
 Same bilingual format.
 
@@ -109,12 +109,12 @@ Issue #[NNN] · 次号: [next issue date]
 ## Length targets
 
 - Header: 4 lines
-- Each crypto story (JP + KR): ~200–300 words combined
-- Each architecture story (JP + KR): ~150–250 words combined
-- Food & Finds (JP + KR): ~100–150 words combined
-- This Week's Buzz (JP + KR): ~100–150 words combined
+- Each crypto story (JP + KR): ~200–300 words combined (3–4 stories)
+- Each architecture story (JP + KR): ~150–250 words combined (2–3 stories)
+- Food & Finds (JP + KR): ~100–150 words each (2 items)
+- This Week's Buzz (JP + KR): ~100–150 words each (2 items)
 - Expression of the week: ~80 words
-- **Total target: 1,500–2,200 words.** If pushing past 2,500, cut.
+- **Total target: 2,200–3,300 words.** If pushing past 3,500, cut.
 
 ---
 

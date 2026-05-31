@@ -266,7 +266,7 @@ JAPAN BRIEFING — Issue #{issue_number}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 SECTION 1 — 日本クリプト・規制ウォッチ (JAPAN CRYPTO & REGULATION WATCH):
-Pick 2-3 most consequential Japan crypto/stablecoin/regulation stories.
+Pick 3-4 most consequential Japan crypto/stablecoin/regulation stories.
 For EACH story:
 【見出し】 Headline in Japanese
 Japanese body (3-4 sentences, cite sources, use real terminology)
@@ -275,21 +275,21 @@ Full Korean translation of EVERY sentence above (do NOT summarize or shorten).
 Then add: 왜 중요한가: [1-2 sentences connecting to ASA/ASC/FP work]
 
 SECTION 2 — 建築・都市デザイン (ARCHITECTURE & URBAN DESIGN):
-1-2 stories on Tokyo/Japan architecture and urban design. Focus on: \
+2-3 stories on Tokyo/Japan architecture and urban design. Focus on: \
 landmark buildings and design philosophy (麻布台ヒルズ, 虎ノ門ヒルズ, TOKYO TORCH), \
 architect profiles (隈研吾, 安藤忠雄, 妹島和世), design details, materials, \
 structural innovation, public space design. Same bilingual format.
 "What makes Tokyo's built environment world-class" angle.
 
 SECTION 3 — 東京グルメ・発見 (TOKYO FOOD & FINDS):
-One food or dining recommendation: trending restaurant, seasonal dish, \
-hidden spot, new opening, or food trend. 3-4 sentences JP + KR. \
+Two food or dining recommendations: trending restaurant, seasonal dish, \
+hidden spot, new opening, or food trend. 3-4 sentences each JP + KR. \
 Include neighborhood and price range if relevant.
 
 SECTION 4 — 今週の話題 (THIS WEEK'S BUZZ):
-What Japanese people are actually talking about this week: viral topic \
+Two things Japanese people are actually talking about this week: viral topic \
 on X/Twitter Japan, trending show, lifestyle trend, seasonal event, \
-or cultural moment. 3-4 sentences JP + KR. Snapshot, not analysis.
+or cultural moment. 3-4 sentences each JP + KR. Snapshot, not analysis.
 
 SECTION 5 — 今週の日本語表現 (JAPANESE EXPRESSION OF THE WEEK):
 📖 今週の表現: [expression]
@@ -304,7 +304,7 @@ Issue #{issue_number} · 次号: {next_issue_date}
 [One-line teaser JP + KR]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-LENGTH: 1,500-2,200 words total.
+LENGTH: 2,200-3,300 words total.
 
 PARAGRAPH RULE: Every paragraph must be 3 sentences or fewer. \
 If a thought needs 4+ sentences, split into separate paragraphs \
@@ -350,7 +350,7 @@ def generate_issue(news_items: list[dict]) -> tuple[str, str]:
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=8000,
+        max_tokens=12000,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": prompt}],
     )
