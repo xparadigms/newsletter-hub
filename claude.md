@@ -49,15 +49,27 @@ For **each** story, use this template:
 [Korean translation of the above. Casual-professional tone. Add a 1-sentence "왜 중요한가" connecting to ASA/ASC/Four Pillars work if relevant.]
 ```
 
-### Section 2: 不動産・都市開発 (REAL ESTATE & URBAN DEVELOPMENT)
+### Section 2: 建築・都市デザイン (ARCHITECTURE & URBAN DESIGN)
 
-1–2 stories on Tokyo/Japan urban development. Bias toward: major redevelopment projects (再開発), zoning & FAR changes (容積率), private-led development models, comparisons to Seoul (GBC, 영동대로, 삼성동). The angle is "Seoul's 10 years from now."
+1–2 stories on Tokyo/Japan architectural design and urban development. Bias toward: landmark buildings and their design philosophy (麻布台ヒルズ, 虎ノ門ヒルズ, TOKYO TORCH), architect profiles (隈研吾, 安藤忠雄, 妹島和世), interior/exterior design details, materials and structural innovation, public space design, comparisons to Seoul developments. The angle is "what makes Tokyo's built environment world-class."
 
 Same bilingual template as Section 1.
 
-### Section 3: 今週の日本語表現 (JAPANESE EXPRESSION OF THE WEEK)
+### Section 3: 東京グルメ・発見 (TOKYO FOOD & FINDS)
 
-One business/economic Japanese expression pulled from the actual articles used in Sections 1–2. Format:
+One food or dining recommendation. Could be: a trending restaurant, a seasonal dish, a hidden spot, a new opening in a redevelopment area, or a food trend. 3–4 sentences in Japanese + Korean translation. Include neighborhood (エリア) and price range if relevant. Practical — something to actually visit on the next Tokyo trip.
+
+Same bilingual format (JP first, then 📝 한국어 번역).
+
+### Section 4: 今週の話題 (THIS WEEK'S BUZZ)
+
+What Japanese people are actually talking about this week. Could be: a viral topic on X/Twitter Japan, a trending TV show or movie, a lifestyle trend, a seasonal event, a product launch, or a cultural moment. 3–4 sentences in Japanese + Korean translation. The point is "what's the vibe in Japan right now" — not analysis, just a snapshot.
+
+Same bilingual format.
+
+### Section 5: 今週の日本語表現 (JAPANESE EXPRESSION OF THE WEEK)
+
+One business/economic/lifestyle Japanese expression pulled from the actual articles used in Sections 1–4. Format:
 
 ```
 📖 今週の表現: [expression in kanji]
@@ -67,11 +79,7 @@ One business/economic Japanese expression pulled from the actual articles used i
 → [Korean translation of the example]
 ```
 
-Prioritize terms useful for: crypto/finance panels, professional meetings, formal correspondence.
-
-### Section 4: カルチャー・ひとくち (CULTURE BITE)
-
-One light item: Japanese media trend, lifestyle product, tech gadget, J-pop/anime crossover, or interesting cultural observation. 3–4 sentences in Japanese + Korean translation. Palate cleanser — no analysis needed.
+Prioritize terms useful for: crypto/finance panels, professional meetings, dining, architecture, daily life in Tokyo.
 
 ### Closing
 
@@ -90,8 +98,8 @@ Issue #[NNN] · 次号: [next issue date]
 - **Source diet, in priority order:**
   1. Japanese primary: FSA (金融庁) press releases, CoinPost, CoinDesk Japan, Nikkei, JVCEA announcements, JPYC/Progmat official blogs
   2. English trade press on Japan: The Block, DL News, CoinDesk (Japan-specific), Bloomberg Asia
-  3. Real estate: Nikkei 不動産, Suumo Journal, Tokyo Metropolitan Government releases
-  4. Culture: NHK News Web, ITmedia
+  3. Architecture & real estate: Nikkei 不動産, ArchDaily Japan, 新建築, Suumo Journal, Tokyo Metropolitan Government releases
+  4. Food & lifestyle: Tabelog magazine, Time Out Tokyo, NHK News Web, ITmedia
   5. Skip: generic crypto news, token price articles, memecoin coverage
 - **Cite sources inline** (e.g., "CoinPostによると…" / "日経新聞が報じた…")
 - **If signal is thin**, say so. Don't pad. A 2-story crypto section beats 3 stories where one is filler.
@@ -102,10 +110,11 @@ Issue #[NNN] · 次号: [next issue date]
 
 - Header: 4 lines
 - Each crypto story (JP + KR): ~200–300 words combined
-- Each real estate story (JP + KR): ~150–250 words combined
+- Each architecture story (JP + KR): ~150–250 words combined
+- Food & Finds (JP + KR): ~100–150 words combined
+- This Week's Buzz (JP + KR): ~100–150 words combined
 - Expression of the week: ~80 words
-- Culture bite (JP + KR): ~100 words
-- **Total target: 1,200–1,800 words.** If pushing past 2,000, cut.
+- **Total target: 1,500–2,200 words.** If pushing past 2,500, cut.
 
 ---
 

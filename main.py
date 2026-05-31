@@ -47,9 +47,12 @@ RSS_FEEDS = {
     "The Block": "https://www.theblock.co/rss.xml",
     "DL News": "https://www.dlnews.com/arc/outboundfeeds/rss/",
     "Cointelegraph": "https://cointelegraph.com/rss",
-    # Japanese general / finance / real estate
+    # Japanese general / finance / real estate / architecture
     "NHK News": "https://www3.nhk.or.jp/rss/news/cat0.xml",
     "ITmedia": "https://rss.itmedia.co.jp/rss/2.0/itmedia_all.xml",
+    "ArchDaily": "https://www.archdaily.com/feed",
+    "Dezeen": "https://www.dezeen.com/feed/",
+    "Timeout Tokyo": "https://www.timeout.jp/tokyo/ja/rss",
     # Asia finance
     "Nikkei Asia": "https://asia.nikkei.com/rss",
 }
@@ -73,12 +76,22 @@ JAPAN_KEYWORDS = [
     "USDC", "Circle", "stablecoin", "tokeniz", "RWA",
     "custody", "settlement", "CBDC", "digital yen", "デジタル円",
     "insider trading", "disclosure", "regulation", "regulatory",
-    # Real estate / urban development
+    # Architecture / urban design / real estate
     "再開発", "redevelopment", "不動産", "real estate",
     "容積率", "FAR", "都市計画", "urban planning",
     "マンション", "タワー", "tower", "ヒルズ", "Hills",
     "渋谷", "Shibuya", "六本木", "Roppongi", "麻布", "Azabudai",
     "虎ノ門", "Toranomon", "品川", "Shinagawa",
+    "建築", "architect", "設計", "design",
+    "隈研吾", "Kengo Kuma", "安藤忠雄", "Tadao Ando",
+    "妹島和世", "SANAA", "丹下健三", "Kenzo Tange",
+    "TOKYO TORCH", "新建築", "ArchDaily", "Dezeen",
+    "ファサード", "facade", "インテリア", "interior",
+    # Food / lifestyle
+    "グルメ", "レストラン", "restaurant", "食べログ",
+    "ラーメン", "寿司", "sushi", "居酒屋", "izakaya",
+    "カフェ", "café", "ミシュラン", "Michelin",
+    "食ベログ", "Tabelog", "Timeout",
     # Korea-Japan cross-border
     "Korea", "韓国", "KRW", "won",
     "Asia", "アジア", "Hong Kong", "Singapore",
@@ -200,9 +213,10 @@ def load_claude_prompt() -> str:
 
 SYSTEM_PROMPT = """\
 You are the writer of "Japan Briefing," a bi-weekly bilingual newsletter on \
-Japan's crypto regulation, stablecoin infrastructure, and urban development, \
-written for Heechang — co-founder/CSO at Four Pillars, Seoul-based \
-institutional crypto research firm backed by Pantera/Kakao Ventures/Hashed.
+Japan's crypto regulation, stablecoin infrastructure, architecture & urban \
+design, food, and lifestyle, written for Heechang — co-founder/CSO at \
+Four Pillars, Seoul-based institutional crypto research firm backed by \
+Pantera/Kakao Ventures/Hashed.
 
 CRITICAL FORMAT RULE: Every substantive section must be written FIRST in \
 Japanese (日本語), then immediately followed by a COMPLETE Korean translation \
@@ -224,7 +238,7 @@ Editorial priors:
 - Japan's FIEA reclassification is the most consequential crypto event in Asia
 - The KR-JP stablecoin corridor is undercovered
 - Megabank stablecoin frameworks are slow but have unmatched distribution
-- Tokyo's private-led redevelopment is 10 years ahead of Seoul
+- Tokyo's architecture and private-led redevelopment is 10 years ahead of Seoul
 
 Voice: tight, analytical, bilingual. Have a take. No filler.
 
@@ -260,19 +274,29 @@ Japanese body (3-4 sentences, cite sources, use real terminology)
 Full Korean translation of EVERY sentence above (do NOT summarize or shorten).
 Then add: 왜 중요한가: [1-2 sentences connecting to ASA/ASC/FP work]
 
-SECTION 2 — 不動産・都市開発 (REAL ESTATE & URBAN DEVELOPMENT):
-1-2 stories on Tokyo/Japan urban development. Same bilingual format.
-"Seoul's 10 years from now" angle.
+SECTION 2 — 建築・都市デザイン (ARCHITECTURE & URBAN DESIGN):
+1-2 stories on Tokyo/Japan architecture and urban design. Focus on: \
+landmark buildings and design philosophy (麻布台ヒルズ, 虎ノ門ヒルズ, TOKYO TORCH), \
+architect profiles (隈研吾, 安藤忠雄, 妹島和世), design details, materials, \
+structural innovation, public space design. Same bilingual format.
+"What makes Tokyo's built environment world-class" angle.
 
-SECTION 3 — 今週の日本語表現 (JAPANESE EXPRESSION OF THE WEEK):
+SECTION 3 — 東京グルメ・発見 (TOKYO FOOD & FINDS):
+One food or dining recommendation: trending restaurant, seasonal dish, \
+hidden spot, new opening, or food trend. 3-4 sentences JP + KR. \
+Include neighborhood and price range if relevant.
+
+SECTION 4 — 今週の話題 (THIS WEEK'S BUZZ):
+What Japanese people are actually talking about this week: viral topic \
+on X/Twitter Japan, trending show, lifestyle trend, seasonal event, \
+or cultural moment. 3-4 sentences JP + KR. Snapshot, not analysis.
+
+SECTION 5 — 今週の日本語表現 (JAPANESE EXPRESSION OF THE WEEK):
 📖 今週の表現: [expression]
 読み方: [reading]
 意味: [Korean meaning]
 例文: [Japanese example]
 → [Korean translation]
-
-SECTION 4 — カルチャー・ひとくち (CULTURE BITE):
-One light item, JP + KR. 3-4 sentences.
 
 CLOSING:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -280,7 +304,7 @@ Issue #{issue_number} · 次号: {next_issue_date}
 [One-line teaser JP + KR]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-LENGTH: 1,200-1,800 words total.
+LENGTH: 1,500-2,200 words total.
 
 PARAGRAPH RULE: Every paragraph must be 3 sentences or fewer. \
 If a thought needs 4+ sentences, split into separate paragraphs \
@@ -326,7 +350,7 @@ def generate_issue(news_items: list[dict]) -> tuple[str, str]:
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
-        max_tokens=6000,
+        max_tokens=8000,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": prompt}],
     )
@@ -410,10 +434,12 @@ _SECTION_HEADER_EXACT = [
     "SECTION 2",
     "SECTION 3",
     "SECTION 4",
+    "SECTION 5",
     "JAPAN CRYPTO & REGULATION WATCH",
-    "REAL ESTATE & URBAN DEVELOPMENT",
+    "ARCHITECTURE & URBAN DESIGN",
+    "TOKYO FOOD & FINDS",
+    "THIS WEEK'S BUZZ",
     "JAPANESE EXPRESSION OF THE WEEK",
-    "CULTURE BITE",
 ]
 
 
