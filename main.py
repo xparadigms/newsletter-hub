@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Daily Startup News Summary → Google Calendar.
+"""Daily Startup News Summary → Calendar + Trilingual Notion.
 
 Scrapes TechCrunch Telegram, generates an AI-powered disruption-focused
-summary via OpenAI, and inserts a calendar event at 09:00 KST.
+summary, inserts a calendar event at 09:00 KST (English), and creates a
+trilingual (EN/JP/KR) Notion page with furigana toggles and Korean callouts.
 """
 
 import json
@@ -19,6 +20,8 @@ import requests
 from bs4 import BeautifulSoup
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+
+from upload_trilingual_to_notion import _md_to_blocks as trilingual_to_blocks
 
 # ── Config ──────────────────────────────────────────────────────────────────
 CALENDAR_ID = os.environ.get("CALENDAR_ID", "ad3a712618285ba2a011179683b92bdc10718051482df8d950ccfb95a1f0aa19@group.calendar.google.com")
@@ -173,6 +176,107 @@ def generate_summary(news_items: list[dict]) -> tuple[str, str]:
     return main_title, summary_text
 
 
+# ── Trilingual Conversion ────────────────────────────────────────────────────
+
+TRILINGUAL_PROMPT = """\
+You are a trilingual (English/Japanese/Korean) startup newsletter editor.
+
+Convert the English newsletter below into a trilingual edition in Notion-flavoured \
+Markdown. Follow the structure and rules EXACTLY.
+
+Do NOT add a top-level title — the title is handled separately.
+
+PER-STORY STRUCTURE (repeat for every major story):
+
+### 【日本語の見出し】
+(한국어 부제목)
+*English headline*
+
+Then for each sub-section (▸ What happened / ▸ Industry status / ▸ Why this is disruptive):
+
+▸ [English label]
+
+[English paragraph — keep unchanged from source]
+
+[Japanese translation]
+
+<details>
+<summary>ふりがな（ひらがな）</summary>
+\t[furigana version — keep all kanji, add reading in （） after each kanji word]
+</details>
+
+<callout icon="📝">
+\t한국어 번역
+</callout>
+[Korean translation]
+
+After each story add:
+왜 중요한가: [1-2 sentences in Korean on why this matters for startup/tech/investor readers]
+
+Then add --- divider between stories.
+
+FURIGANA RULES:
+1. Keep all kanji in place, add reading in parentheses after each kanji word: \
+暗号資産（あんごうしさん）, 評価額（ひょうかがく）
+2. Leave katakana, numbers, Latin letters, punctuation unchanged.
+3. Handle okurigana correctly: 円建（えんだ）て, 基（もと）づく
+4. Indent furigana text one tab inside the toggle.
+5. Do NOT add furigana to headings or 【…】 lines.
+
+FOR BULLET-LIST SECTIONS ("Other Notable Headlines" etc.):
+Each bullet as:
+- **English headline**
+Japanese（with inline furigana）
+Korean
+
+No toggle needed for single-line headlines.
+
+CLOSING SECTION — add at the very end:
+## 今週の表現 / 이번 주 표현
+
+Pick one useful Japanese business/tech term from the issue:
+**[term（reading）]**
+- 読み方: [hiragana]
+- 意味: [Korean meaning]
+- 例文: [example sentence]
+
+<details>
+<summary>ふりがな</summary>
+\t[furigana version of example]
+</details>
+
+- メモ: [one-line usage note]
+
+TONE:
+- Japanese: clean journalistic newsletter (です/ます or だ/である, match source register)
+- Korean: natural, concise, startup/tech-savvy reader
+- Currency: $10B → 100億ドル (JP) / 100억 달러 (KR). Keep English figure in English layer.
+
+--- ENGLISH NEWSLETTER TO CONVERT ---
+{english_summary}
+"""
+
+
+def generate_trilingual(english_summary: str) -> str:
+    """Convert the English newsletter summary into trilingual Notion Markdown."""
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+
+    response = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=16000,
+        system="You are an expert trilingual (EN/JP/KR) startup newsletter editor.",
+        messages=[
+            {
+                "role": "user",
+                "content": TRILINGUAL_PROMPT.format(
+                    english_summary=english_summary
+                ),
+            },
+        ],
+    )
+    return response.content[0].text
+
+
 # ── Google Calendar ──────────────────────────────────────────────────────────
 def get_calendar_service():
     """Build a Calendar API client from the service-account JSON env var."""
@@ -317,8 +421,8 @@ def _text_to_notion_blocks(text: str) -> list[dict]:
     return blocks
 
 
-def create_notion_page(summary: str, main_title: str = "Startup News") -> str:
-    """Create a Notion page in the newsletter database with the summary."""
+def create_notion_page(trilingual_md: str, main_title: str = "Startup News") -> str:
+    """Create a Notion page with trilingual content."""
     if not NOTION_TOKEN:
         print("  ⚠ NOTION_TOKEN not set, skipping Notion.")
         return ""
@@ -326,8 +430,9 @@ def create_notion_page(summary: str, main_title: str = "Startup News") -> str:
     now_kst = datetime.now(KST)
     title = _issue_title(main_title)
 
-    all_blocks = _text_to_notion_blocks(summary)
+    all_blocks = trilingual_to_blocks(trilingual_md)
     date_str = now_kst.strftime("%Y-%m-%d")
+    print(f"  Parsed {len(all_blocks)} Notion blocks.")
 
     payload = {
         "parent": {"database_id": NOTION_DATABASE_ID},
@@ -344,7 +449,7 @@ def create_notion_page(summary: str, main_title: str = "Startup News") -> str:
         "Content-Type": "application/json",
     }
 
-    resp = requests.post(NOTION_API_URL, headers=headers, json=payload, timeout=30)
+    resp = requests.post(NOTION_API_URL, headers=headers, json=payload, timeout=60)
     resp.raise_for_status()
     page = resp.json()
     page_id = page["id"]
@@ -353,8 +458,9 @@ def create_notion_page(summary: str, main_title: str = "Startup News") -> str:
     for i in range(100, len(all_blocks), 100):
         batch = all_blocks[i:i + 100]
         append_url = f"https://api.notion.com/v1/blocks/{page_id}/children"
-        r = requests.patch(append_url, headers=headers, json={"children": batch}, timeout=30)
+        r = requests.patch(append_url, headers=headers, json={"children": batch}, timeout=60)
         r.raise_for_status()
+        print(f"  Appended blocks {i}–{i + len(batch)}.")
 
     return page.get("url", "")
 
@@ -368,13 +474,13 @@ def run():
         sys.exit(1)
     print(f"  Found {len(news_items)} items.")
 
-    print("▸ Generating AI summary...")
+    print("▸ Generating English summary...")
     main_title, summary = generate_summary(news_items)
     print(f"  Title: [Startup News #{ISSUE_NUMBER}] ({main_title})")
 
     if CALENDAR_ID and GCP_SA_KEY:
         try:
-            print("▸ Creating Google Calendar event...")
+            print("▸ Creating Google Calendar event (English)...")
             event_link = create_calendar_event(summary, main_title)
             print(f"✓ Event created: {event_link}")
         except Exception as e:
@@ -382,8 +488,12 @@ def run():
     else:
         print("  ⚠ CALENDAR_ID or GCP_SA_KEY not set, skipping Calendar.")
 
-    print("▸ Saving to Notion...")
-    notion_url = create_notion_page(summary, main_title)
+    print("▸ Converting to trilingual (EN/JP/KR)...")
+    trilingual_md = generate_trilingual(summary)
+    print("  ✓ Trilingual conversion complete.")
+
+    print("▸ Saving trilingual edition to Notion...")
+    notion_url = create_notion_page(trilingual_md, main_title)
     if notion_url:
         print(f"✓ Notion page created: {notion_url}")
 
