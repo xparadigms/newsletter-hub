@@ -292,15 +292,20 @@ SECTION 2 — THE SWEEP:
 Americas / Asia / Europe / Infra & markets
 Skip a group if nothing meaningful. Don't pad.
 
-For EACH headline, add two short bullet points right below it:
+For EACH headline, output all three languages together before moving to \
+the next headline:
+
+[English headline]
 ▸ Explanation: What happened in 1 sentence.
 ▸ Implication: Why it matters for financial infra in 1 sentence.
 
-After ALL sweep items for each regional group, add:
 🇯🇵 日本語:
-[Japanese translation of all headlines + bullet points in that group]
+[Japanese translation of the headline + both bullet points above]
+
 📝 한국어 번역:
-[Korean translation of all headlines + bullet points in that group]
+[Korean translation of the headline + both bullet points above]
+
+Then move to the next headline and repeat the same EN → JP → KR pattern.
 
 SECTION 3 — FOOD FOR THOUGHT:
 Today is {weekday}. Today's rotation: {rotation_slot}.
