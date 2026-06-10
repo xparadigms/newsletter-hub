@@ -9,6 +9,7 @@ and inserts a calendar event + Notion page.
 import json
 import os
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 
 import anthropic
@@ -519,10 +520,10 @@ def _text_to_notion_blocks(text: str) -> list[dict]:
     return blocks
 
 
-def create_notion_page(issue_text: str, main_title: str = "Japan Brief") -> str:
+def create_notion_page(issue_text: str, main_title: str = "Japan Brief") -> tuple[str, str]:
     if not NOTION_TOKEN or not NOTION_DATABASE_ID:
         print("  ⚠ NOTION_TOKEN or NOTION_DATABASE_ID not set, skipping Notion.")
-        return ""
+        return "", ""
 
     now_kst = datetime.now(KST)
     title = _issue_title(main_title)
@@ -555,7 +556,229 @@ def create_notion_page(issue_text: str, main_title: str = "Japan Brief") -> str:
         r = requests.patch(append_url, headers=headers, json={"children": batch}, timeout=30)
         r.raise_for_status()
 
-    return page.get("url", "")
+    return page.get("url", ""), page_id
+
+
+# ── Furigana Reading Aids ────────────────────────────────────────────────────
+_FURIGANA_SYSTEM = """\
+あなたは日本語のふりがな付与の専門家です。与えられた日本語テキストに正確なふりがなを付けてください。"""
+
+_FURIGANA_PROMPT = """\
+以下の日本語段落それぞれにふりがなを付けてください。
+
+ルール:
+1. 漢字はそのまま残し、直後に丸括弧でひらがな読みを付ける。
+   例: 議員連盟（ぎいんれんめい）、暗号資産（あんごうしさん）
+2. カタカナ・数字・ラテン文字・句読点・記号はそのまま残す。
+3. 送り仮名を正しく処理する。
+   例: 求（もと）める、基（もと）づく、円建（えんだ）て
+4. 元のテキストにすでに読みが括弧で示されている場合はそのまま維持する。
+   例: 鮎（アユ）はそのまま鮎（アユ）とする。
+5. 固有名詞（人名・社名・地名）にもふりがなを付ける。
+   例: 隈研吾（くまけんご）、堀田丸正（ほったまるしょう）
+6. 各段落を [番号] で区切って返す。余計な説明は付けない。
+
+{paragraphs}
+"""
+
+
+def _has_japanese_chars(text: str) -> bool:
+    return any(
+        "\u3040" <= c <= "\u309f" or "\u30a0" <= c <= "\u30ff"
+        for c in text
+    )
+
+
+def _has_korean_chars(text: str) -> bool:
+    return any("\uac00" <= c <= "\ud7af" for c in text)
+
+
+def _is_jp_body(text: str) -> bool:
+    """True for Japanese body content (not Korean, not empty)."""
+    if not text or _has_korean_chars(text) or not _has_japanese_chars(text):
+        return False
+    if text.startswith("왜 "):
+        return False
+    return True
+
+
+def _block_plain_text(block: dict) -> str:
+    btype = block["type"]
+    rt = block.get(btype, {}).get("rich_text", [])
+    return "".join(t.get("plain_text", "") for t in rt)
+
+
+def _fetch_page_blocks(page_id: str) -> list[dict]:
+    """Fetch every top-level block from a Notion page."""
+    headers = {
+        "Authorization": f"Bearer {NOTION_TOKEN}",
+        "Notion-Version": NOTION_VERSION,
+    }
+    blocks: list[dict] = []
+    cursor = None
+    while True:
+        url = f"https://api.notion.com/v1/blocks/{page_id}/children?page_size=100"
+        if cursor:
+            url += f"&start_cursor={cursor}"
+        r = requests.get(url, headers=headers, timeout=30)
+        r.raise_for_status()
+        data = r.json()
+        blocks.extend(data["results"])
+        if not data.get("has_more"):
+            break
+        cursor = data["next_cursor"]
+    return blocks
+
+
+def _find_furigana_targets(blocks: list[dict]) -> list[tuple[int, str, str]]:
+    """Identify JP body paragraphs, Section 5 例文, and closing teaser."""
+    targets: list[tuple[int, str, str]] = []
+    n = len(blocks)
+    i = 0
+    while i < n:
+        b = blocks[i]
+        btype = b["type"]
+        text = _block_plain_text(b)
+
+        # Story pattern: heading_3【…】 → KR translation → JP body → callout
+        if btype == "heading_3" and text.startswith("【"):
+            i += 1
+            if i < n:
+                nxt = _block_plain_text(blocks[i])
+                if nxt.startswith("(") and _has_korean_chars(nxt):
+                    i += 1
+            while i < n:
+                bb = blocks[i]
+                bt = bb["type"]
+                tt = _block_plain_text(bb)
+                if bt in ("callout", "divider") or bt.startswith("heading"):
+                    break
+                if bt == "paragraph" and _is_jp_body(tt):
+                    targets.append((i, bb["id"], tt))
+                i += 1
+            continue
+
+        # Section 5: 例文 line
+        if btype == "paragraph" and text.startswith("例文") and _has_japanese_chars(text):
+            targets.append((i, b["id"], text))
+            i += 1
+            continue
+
+        # Closing JP teaser
+        if btype == "paragraph" and i >= n - 5:
+            if _is_jp_body(text) and not text.startswith("Issue ") and "次号" not in text:
+                targets.append((i, b["id"], text))
+
+        i += 1
+    return targets
+
+
+def _generate_furigana_batch(
+    paragraphs: list[tuple[int, str, str]],
+) -> dict[int, str]:
+    """Call Claude to produce furigana for all paragraphs at once."""
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    parts = [f"[{idx}]\n{text}" for idx, (_, _, text) in enumerate(paragraphs)]
+    prompt = _FURIGANA_PROMPT.format(paragraphs="\n\n".join(parts))
+
+    resp = client.messages.create(
+        model="claude-sonnet-4-6",
+        max_tokens=20000,
+        system=_FURIGANA_SYSTEM,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    raw = resp.content[0].text
+
+    results: dict[int, str] = {}
+    cur_idx: int | None = None
+    cur_lines: list[str] = []
+    for line in raw.split("\n"):
+        stripped = line.strip()
+        if stripped.startswith("[") and "]" in stripped:
+            try:
+                idx = int(stripped[1:stripped.index("]")])
+                if cur_idx is not None:
+                    results[cur_idx] = "\n".join(cur_lines).strip()
+                cur_idx = idx
+                cur_lines = []
+                rest = stripped[stripped.index("]") + 1:].strip()
+                if rest:
+                    cur_lines.append(rest)
+            except ValueError:
+                cur_lines.append(line)
+        elif cur_idx is not None:
+            cur_lines.append(line)
+    if cur_idx is not None:
+        results[cur_idx] = "\n".join(cur_lines).strip()
+    return results
+
+
+def _insert_notion_toggle(
+    page_id: str, after_block_id: str, furigana: str,
+) -> None:
+    """Insert a collapsed toggle block with furigana text."""
+    chunks = []
+    remaining = furigana
+    while len(remaining) > 2000:
+        chunks.append(remaining[:2000])
+        remaining = remaining[2000:]
+    chunks.append(remaining)
+
+    children = [
+        {
+            "type": "paragraph",
+            "paragraph": {
+                "rich_text": [{"type": "text", "text": {"content": c}}],
+            },
+        }
+        for c in chunks
+    ]
+    toggle = {
+        "type": "toggle",
+        "toggle": {
+            "rich_text": [
+                {"type": "text", "text": {"content": "ふりがな（ひらがな）"}},
+            ],
+            "children": children,
+        },
+    }
+    headers = {
+        "Authorization": f"Bearer {NOTION_TOKEN}",
+        "Notion-Version": NOTION_VERSION,
+        "Content-Type": "application/json",
+    }
+    url = f"https://api.notion.com/v1/blocks/{page_id}/children"
+    r = requests.patch(
+        url, headers=headers, json={"children": [toggle], "after": after_block_id},
+        timeout=30,
+    )
+    r.raise_for_status()
+
+
+def add_furigana_to_page(page_id: str) -> int:
+    """Add furigana toggles to a Notion page. Returns count inserted."""
+    print("▸ Adding furigana reading aids...")
+    blocks = _fetch_page_blocks(page_id)
+    targets = _find_furigana_targets(blocks)
+    print(f"  {len(targets)} Japanese paragraphs found.")
+    if not targets:
+        return 0
+
+    furigana_map = _generate_furigana_batch(targets)
+    print(f"  Furigana generated for {len(furigana_map)}/{len(targets)} paragraphs.")
+
+    inserted = 0
+    for idx in reversed(range(len(targets))):
+        _, block_id, text = targets[idx]
+        furigana = furigana_map.get(idx)
+        if not furigana:
+            continue
+        _insert_notion_toggle(page_id, block_id, furigana)
+        inserted += 1
+        time.sleep(0.35)
+
+    print(f"  ✓ {inserted} furigana toggles inserted.")
+    return inserted
 
 
 # ── Main ─────────────────────────────────────────────────────────────────────
@@ -594,9 +817,16 @@ def run():
         print(f"✓ Event created: {event_link}")
 
     print("▸ Saving to Notion...")
-    notion_url = create_notion_page(issue_text, main_title)
+    notion_url, notion_page_id = create_notion_page(issue_text, main_title)
     if notion_url:
         print(f"✓ Notion page created: {notion_url}")
+
+    # Add furigana reading aids to the Notion page
+    if notion_page_id:
+        try:
+            add_furigana_to_page(notion_page_id)
+        except Exception as e:
+            print(f"  ⚠ Furigana step failed (non-fatal): {e}")
 
     # Also print the issue to stdout for debugging
     print("\n" + "=" * 60)
