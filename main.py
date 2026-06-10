@@ -25,7 +25,7 @@ CALENDAR_ID = os.environ.get(
     "ad3a712618285ba2a011179683b92bdc10718051482df8d950ccfb95a1f0aa19@group.calendar.google.com",
 )
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
-GCP_SA_KEY = os.environ["GCP_SA_KEY"]  # JSON string of service account key
+GCP_SA_KEY = os.environ.get("GCP_SA_KEY", "")
 NOTION_TOKEN = os.environ.get("NOTION_TOKEN", "")
 NOTION_DATABASE_ID = os.environ.get(
     "NOTION_DATABASE_ID",
@@ -415,7 +415,14 @@ def _issue_title(main_title: str) -> str:
 
 def create_calendar_event(issue_text: str, main_title: str = "Finance Infra") -> str:
     """Insert a 30-min event at 09:00 KST with the issue as description."""
-    service = get_calendar_service()
+    if not GCP_SA_KEY or GCP_SA_KEY.strip() in ("", "{}"):
+        print("  ⚠ GCP_SA_KEY not set, skipping Calendar.")
+        return ""
+    try:
+        service = get_calendar_service()
+    except Exception as e:
+        print(f"  ⚠ Calendar auth failed: {e}")
+        return ""
 
     now_kst = datetime.now(KST)
     start = now_kst.replace(hour=9, minute=0, second=0, microsecond=0)
