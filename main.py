@@ -273,19 +273,34 @@ last 24 hours. Bias toward: stablecoins, RWA & tokenization, custody & \
 settlement infra, Asia regulatory developments, institutional adoption, \
 payment rails. De-prioritize token price action, retail narratives, NFT/meme.
 
-For EACH of the three, use this TRILINGUAL template:
+For EACH of the three, translate PARAGRAPH BY PARAGRAPH — output each \
+subsection in EN → JP → KR before moving to the next subsection:
+
 N. [Headline as single declarative sentence]
 
-[English body: What happened (2-3 sentences), What it means (4-6 sentences), \
-Infra implication (2-4 sentences), Open question (1 sentence)]
-
+What happened. [English, 2-3 sentences]
 🇯🇵 日本語:
-[Full Japanese translation of the English body above. Native-level business \
-Japanese. Use real financial terminology. Translate EVERY sentence.]
-
+[Japanese translation of What happened]
 📝 한국어 번역:
-[Full Korean translation. Casual-professional tone. Translate EVERY sentence. \
-Then add: 왜 중요한가: 1-2 sentences connecting to ASA/ASC/FP work if relevant.]
+[Korean translation of What happened]
+
+What it means. [English, 4-6 sentences]
+🇯🇵 日本語:
+[Japanese translation of What it means]
+📝 한국어 번역:
+[Korean translation of What it means]
+
+Infra implication. [English, 2-4 sentences]
+🇯🇵 日本語:
+[Japanese translation of Infra implication]
+📝 한국어 번역:
+[Korean translation of Infra implication]
+
+Open question. [English, 1 sentence]
+🇯🇵 日本語:
+[Japanese translation]
+📝 한국어 번역:
+[Korean translation. Then add: 왜 중요한가: 1-2 sentences if relevant.]
 
 SECTION 2 — THE SWEEP:
 8-12 headlines grouped by region:
