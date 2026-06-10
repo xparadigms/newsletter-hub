@@ -45,8 +45,13 @@ For **each** story, use this template:
 
 [Japanese body: 3–4 sentences. What happened + what it means. Use real Japanese business/regulatory terminology. Cite sources.]
 
+<toggle>
+ふりがな（ひらがな）
+	[Same paragraph with furigana: keep all kanji in place, add reading in parentheses immediately after each kanji word — e.g. 規制（きせい）, 発表（はっぴょう）, 求（もと）める. Leave katakana, numbers, Latin letters, and punctuation unchanged. Handle okurigana correctly — e.g. 円建（えんだ）て, 基（もと）づく. Indent this text one tab.]
+</toggle>
+
 📝 한국어 번역:
-[Korean translation of the above. Casual-professional tone. Add a 1-sentence "왜 중요한가" connecting to ASA/ASC/Four Pillars work if relevant.]
+[Korean translation of the above. Casual-professional tone. Add a 1-sentence「왜 중요한가」connecting to ASA/ASC/Four Pillars work if relevant.]
 ```
 
 ### Section 2: 建築・都市デザイン (ARCHITECTURE & URBAN DESIGN)
@@ -76,6 +81,10 @@ One business/economic/lifestyle Japanese expression pulled from the actual artic
 読み方: [furigana/reading]
 意味: [Korean meaning]
 例文: [Example sentence in Japanese]
+<toggle>
+ふりがな（ひらがな）
+	[Same example sentence with furigana]
+</toggle>
 → [Korean translation of the example]
 ```
 
@@ -86,7 +95,12 @@ Prioritize terms useful for: crypto/finance panels, professional meetings, dinin
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 Issue #[NNN] · 次号: [next issue date]
-[One-line teaser for next issue in Japanese + Korean]
+[One-line teaser in Japanese]
+<toggle>
+ふりがな（ひらがな）
+	[Same teaser with furigana]
+</toggle>
+[Same teaser in Korean]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
@@ -152,6 +166,7 @@ Issue #[NNN] · 次号: [next issue date]
 - Use 📝 to mark Korean translation blocks
 - Use 📖 for the expression section
 - Use blank lines between sections
+- **Furigana toggles:** After every Japanese body paragraph in Sections 1–4, and after the 例文 line in Section 5, and after the Japanese teaser in the Closing — insert a `<toggle>` block. Place it DIRECTLY BELOW the paragraph and ABOVE the 📝 한국어 번역 line. Toggle label: `ふりがな（ひらがな）`. Furigana style: keep all kanji in place, add reading in parentheses after each kanji word. Indent the furigana text one tab inside the toggle. Do NOT add toggles to 【...】 headings, section titles, or any Korean text.
 
 ---
 
