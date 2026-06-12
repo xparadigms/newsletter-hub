@@ -200,22 +200,14 @@ def _md_to_blocks(md_text: str) -> list[dict]:
             blocks.append(_toggle(summary or "ふりがな（ひらがな）", body))
             continue
 
-        # <callout icon="…"> … </callout> → callout block
+        # <callout icon="…"> … </callout> → skip (Korean text follows after </callout>)
         if stripped.startswith("<callout"):
-            icon_match = re.search(r'icon="([^"]+)"', stripped)
-            icon = icon_match.group(1) if icon_match else "📝"
-            # Collect callout body lines
-            callout_lines = []
             i += 1
             while i < len(lines):
-                s = lines[i].strip()
-                if s == "</callout>":
+                if lines[i].strip() == "</callout>":
                     i += 1
                     break
-                callout_lines.append(s)
                 i += 1
-            callout_text = "\n".join(callout_lines).strip() or "한국어 번역"
-            blocks.append(_callout(callout_text, icon=icon))
             continue
 
         # ▸ Sub-section labels (What happened, Industry status, etc.)
