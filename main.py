@@ -576,16 +576,8 @@ def _text_to_notion_blocks(text: str) -> list[dict]:
             })
             continue
 
-        # 📝 Korean translation marker → callout
+        # 📝 Korean translation marker → skip (Korean text follows as plain paragraph)
         if stripped in ("📝 한국어 번역:", "📝 한국어 번역", "📝 한국어번역:", "📝 한국어번역"):
-            blocks.append({
-                "object": "block",
-                "type": "callout",
-                "callout": {
-                    "rich_text": [_rich_text("한국어 번역")],
-                    "icon": {"emoji": "📝"},
-                },
-            })
             continue
 
         # Everything else → plain paragraph
