@@ -270,8 +270,10 @@ HEADER:
 SECTION 1 — THREE DEEP READS:
 Pick the 3 most consequential stories for financial infrastructure from the \
 last 24 hours. Bias toward: stablecoins, RWA & tokenization, custody & \
-settlement infra, Asia regulatory developments, institutional adoption, \
-payment rails. De-prioritize token price action, retail narratives, NFT/meme.
+settlement infra, regulatory developments (US, Europe, Asia — balanced), \
+institutional adoption, payment rails. Maintain global balance — do not \
+over-weight any single region. De-prioritize token price action, retail \
+narratives, NFT/meme.
 
 For EACH of the three, translate PARAGRAPH BY PARAGRAPH — output each \
 subsection in EN → JP → KR before moving to the next subsection:
@@ -494,11 +496,18 @@ def _rich_text(content: str) -> dict:
 
 
 def _is_section_header(line: str) -> bool:
-    """Check if a line is an ALL-CAPS section header."""
+    """Check if a line is an ALL-CAPS section header (exact match only).
+
+    Uses exact matching after stripping decoration characters to avoid
+    false positives from body text that contains words like 'Asia',
+    'Europe', or 'Closing'.
+    """
     stripped = line.strip()
     if not stripped:
         return False
-    return any(h in stripped.upper() for h in _SECTION_HEADERS)
+    # Strip common decoration/separator chars from both ends, then exact match
+    cleaned = stripped.upper().strip("━ :—-.")
+    return cleaned in set(_SECTION_HEADERS)
 
 
 def _is_divider(line: str) -> bool:
