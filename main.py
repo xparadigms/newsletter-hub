@@ -490,17 +490,8 @@ def _text_to_notion_blocks(text: str) -> list[dict]:
                 "heading_3": {"rich_text": [_rich_text(stripped)], "is_toggleable": False},
             })
             continue
-        # 📝 and 📖 markers — only the marker line itself is a callout header,
-        # the body text below should be regular paragraphs
+        # 📝 marker line — skip (Korean text follows as a plain paragraph)
         if stripped in ("📝 한국어 번역:", "📝 한국어 번역", "📝 한국어번역:", "📝 한국어번역"):
-            blocks.append({
-                "object": "block",
-                "type": "callout",
-                "callout": {
-                    "rich_text": [_rich_text("한국어 번역")],
-                    "icon": {"emoji": "📝"},
-                },
-            })
             continue
         if stripped.startswith("📖"):
             blocks.append({
