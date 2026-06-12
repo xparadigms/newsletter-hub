@@ -34,7 +34,7 @@ If I give a specific angle ("focus on Korea today" / "skip the deep reads, just 
 
 ### Section 1: Three Deep Reads
 
-Pick the three most consequential stories of the last 24 hours for the future of financial infrastructure. Bias toward: stablecoins (issuance, distribution, regulation), RWA & tokenization, custody & settlement infra, Asia regulatory developments (Korea/Japan/HK/SG), institutional adoption signals, payment rails. De-prioritize: token price action, retail crypto narratives, NFT/memecoin news, generic "crypto market up/down" coverage.
+Pick the three most consequential stories of the last 24 hours for the future of financial infrastructure. Bias toward: stablecoins (issuance, distribution, regulation), RWA & tokenization, custody & settlement infra, Asia regulatory developments (Korea/Japan/HK/SG), institutional adoption signals, payment rails, and pure fintech (payments, banking tech, open banking, embedded finance, cross-border, card networks, neobanks). Balance crypto and non-crypto: when the day's signal supports it, at least one Deep Read should be a fintech story with no crypto angle. De-prioritize: token price action, retail crypto narratives, NFT/memecoin news, generic "crypto market up/down" coverage.
 
 For **each** of the three, use this template strictly:
 
@@ -57,7 +57,7 @@ For **each** of the three, use this template strictly:
 - **Europe**
 - **Infra & markets**
 
-Skip a group if there's nothing meaningful that day. Don't pad.
+Mix crypto and pure fintech within each group — aim for roughly half the headlines to be non-crypto fintech (payments, banking tech, open banking, neobanks, card networks). Skip a group if there's nothing meaningful that day. Don't pad.
 
 ### Section 3: Food for Thought (rotating by weekday, KST)
 

@@ -51,6 +51,9 @@ RSS_FEEDS = {
     "American Banker": "https://www.americanbanker.com/feed",
     "Tearsheet": "https://tearsheet.co/feed/",
     "Fintech Futures": "https://www.fintechfutures.com/feed/",
+    "Payments Dive": "https://www.paymentsdive.com/feeds/news/",
+    "Banking Dive": "https://www.bankingdive.com/feeds/news/",
+    "TechCrunch Fintech": "https://techcrunch.com/category/fintech/feed/",
     # Asia finance
     "Nikkei Asia": "https://asia.nikkei.com/rss",
 }
@@ -272,9 +275,12 @@ SECTION 1 — THREE DEEP READS:
 Pick the 3 most consequential stories for financial infrastructure from the \
 last 24 hours. Bias toward: stablecoins, RWA & tokenization, custody & \
 settlement infra, regulatory developments (US, Europe, Asia — balanced), \
-institutional adoption, payment rails. Maintain global balance — do not \
-over-weight any single region. De-prioritize token price action, retail \
-narratives, NFT/meme.
+institutional adoption, payment rails, and pure fintech (payments, banking \
+tech, open banking, embedded finance, cross-border, card networks, neobanks). \
+Balance crypto and non-crypto: when the day's signal supports it, at least \
+one of the three Deep Reads should be a fintech story with no crypto angle. \
+Maintain global balance — do not over-weight any single region. \
+De-prioritize token price action, retail narratives, NFT/meme.
 
 For EACH of the three, translate PARAGRAPH BY PARAGRAPH — output each \
 subsection in EN → JP → KR before moving to the next subsection:
@@ -308,7 +314,9 @@ Open question. [English, 1 sentence]
 SECTION 2 — THE SWEEP:
 8-12 headlines grouped by region:
 Americas / Asia / Europe / Infra & markets
-Skip a group if nothing meaningful. Don't pad.
+Mix crypto and pure fintech within each group — aim for roughly half the \
+headlines to be non-crypto fintech (payments, banking tech, open banking, \
+neobanks, card networks). Skip a group if nothing meaningful. Don't pad.
 
 For EACH headline, output all three languages together before moving to \
 the next headline:
