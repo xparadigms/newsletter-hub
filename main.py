@@ -242,7 +242,8 @@ Editorial priors (color your takes, but push back when evidence warrants):
 - Custody is the unsolved bottleneck, not issuance
 
 Voice: tight, not academic. Short sentences. Active voice. Have a take. \
-No hedge language. No corporate-speak. No emoji.
+No hedge language. No corporate-speak. No emoji. No paragraph may exceed \
+4 sentences — split longer thoughts into separate paragraphs.
 
 TRILINGUAL FORMAT — this is non-negotiable:
 - Every substantive section is written FIRST in English, then immediately \
@@ -286,7 +287,7 @@ What happened. [English, 2-3 sentences]
 📝 한국어 번역:
 [Korean translation of What happened]
 
-What it means. [English, 4-6 sentences]
+What it means. [English, 3-4 sentences]
 🇯🇵 日本語:
 [Japanese translation of What it means]
 📝 한국어 번역:
@@ -341,6 +342,10 @@ one-line teaser for tomorrow's rotation ({tomorrow_slot}).
 LENGTH: English content should be 900-1,300 words. Japanese and Korean \
 translations will add to the total — that is expected.
 
+PARAGRAPHS: No paragraph may exceed 4 sentences. If a section calls for \
+more sentences, split them into multiple short paragraphs. This applies \
+to the Japanese and Korean translations too.
+
 If signal is thin, say so. Don't manufacture three Deep Reads when only \
 two stories warrant it.
 
@@ -357,13 +362,13 @@ two stories warrant it.
 """
 
 ROTATION_INSTRUCTIONS = {
-    0: "Thesis Monday: State or sharpen a current conviction. Bold the thesis as the first line, then 4-6 sentences arguing it.",
-    1: "Counter-Take Tuesday: Steelman a position Heechang would disagree with. Not a strawman. 5-7 sentences.",
-    2: "Data Point Wednesday: One number or chart-worthy stat + why it matters. Lead with the number in bold. 3-5 sentences.",
-    3: "Throwback Thursday: A piece of financial history that rhymes with today (Eurodollar markets, Bretton Woods, MMF reform, etc.). Name the event, draw the parallel, name the lesson. 5-8 sentences.",
+    0: "Thesis Monday: State or sharpen a current conviction. Bold the thesis as the first line, then 4-6 sentences arguing it, split into paragraphs of 4 sentences max.",
+    1: "Counter-Take Tuesday: Steelman a position Heechang would disagree with. Not a strawman. 5-7 sentences, split into paragraphs of 4 sentences max.",
+    2: "Data Point Wednesday: One number or chart-worthy stat + why it matters. Lead with the number in bold. 3-5 sentences, split into paragraphs of 4 sentences max.",
+    3: "Throwback Thursday: A piece of financial history that rhymes with today (Eurodollar markets, Bretton Woods, MMF reform, etc.). Name the event, draw the parallel, name the lesson. 5-8 sentences, split into paragraphs of 4 sentences max.",
     4: "Founder Friday: A question you'd ask a founder building in the space. Lead with the question in italics, then 2-3 sentences of framing.",
-    5: "Long Read Saturday: A quote from a paper, book, or essay (15 words max, paraphrase the rest) + reaction. 5-8 sentences.",
-    6: "Week in Review Sunday: Pull the thread across the week. What story compounded? What question resolved? 6-10 sentences.",
+    5: "Long Read Saturday: A quote from a paper, book, or essay (15 words max, paraphrase the rest) + reaction. 5-8 sentences, split into paragraphs of 4 sentences max.",
+    6: "Week in Review Sunday: Pull the thread across the week. What story compounded? What question resolved? 6-10 sentences, split into paragraphs of 4 sentences max.",
 }
 
 
