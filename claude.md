@@ -17,6 +17,7 @@ If I give a specific angle ("focus on Korea today" / "skip the deep reads, just 
 - **Audience: me, alone.** This isn't published. The bar is "would I want to re-read this in 6 months when writing the next Pantera report?" — not "is this defensible to subscribers."
 - **Have a take.** If the "what it means" matches the consensus, the slot is wasted. Push toward the non-obvious read. Disagree with the headline framing when warranted.
 - **Tight, not academic.** Short sentences. Active voice. No hedging filler ("it's worth noting that…", "interestingly…").
+- **Short paragraphs.** No paragraph longer than 4 sentences. If a section needs more, break it into multiple paragraphs.
 - **No corporate-speak.** No "stakeholders," "ecosystem participants," "leveraging synergies." Write like you're talking to a sharp colleague over coffee.
 - **Connect to my actual work.** When relevant, tie back to: ASA News thesis, Pantera × Four Pillars institutional report, FPAP positioning, HRC, KRW stablecoin research, Asia stablecoin corridors. I'm not a generic crypto reader — I have priors and ongoing bets, name them.
 - **English only.** Even though I work in Korean, this journal is English.
@@ -33,7 +34,7 @@ If I give a specific angle ("focus on Korea today" / "skip the deep reads, just 
 
 ### Section 1: Three Deep Reads
 
-Pick the three most consequential stories of the last 24 hours for the future of financial infrastructure. Bias toward: stablecoins (issuance, distribution, regulation), RWA & tokenization, custody & settlement infra, Asia regulatory developments (Korea/Japan/HK/SG), institutional adoption signals, payment rails. De-prioritize: token price action, retail crypto narratives, NFT/memecoin news, generic "crypto market up/down" coverage.
+Pick the three most consequential stories of the last 24 hours for the future of financial infrastructure. Bias toward: stablecoins (issuance, distribution, regulation), RWA & tokenization, custody & settlement infra, Asia regulatory developments (Korea/Japan/HK/SG), institutional adoption signals, payment rails, and pure fintech (payments, banking tech, open banking, embedded finance, cross-border, card networks, neobanks). Balance crypto and non-crypto: when the day's signal supports it, at least one Deep Read should be a fintech story with no crypto angle. De-prioritize: token price action, retail crypto narratives, NFT/memecoin news, generic "crypto market up/down" coverage.
 
 For **each** of the three, use this template strictly:
 
@@ -41,7 +42,7 @@ For **each** of the three, use this template strictly:
 
 **What happened.** 2–3 sentences. Just the facts. Cite sources.
 
-**What it means.** My read, not the consensus take. This is the whole point of the issue. Push toward the non-obvious angle. 4–6 sentences.
+**What it means.** My read, not the consensus take. This is the whole point of the issue. Push toward the non-obvious angle. 3–4 sentences.
 
 **Infra implication.** Specifically: which layer of the stack does this affect (issuance / settlement / custody / distribution / compliance), and does it accelerate or delay the trajectory I'm betting on? Tie back to my ongoing work where relevant. 2–4 sentences.
 
@@ -56,17 +57,17 @@ For **each** of the three, use this template strictly:
 - **Europe**
 - **Infra & markets**
 
-Skip a group if there's nothing meaningful that day. Don't pad.
+Mix crypto and pure fintech within each group — aim for roughly half the headlines to be non-crypto fintech (payments, banking tech, open banking, neobanks, card networks). Skip a group if there's nothing meaningful that day. Don't pad.
 
 ### Section 3: Food for Thought (rotating by weekday, KST)
 
-- **Monday — Thesis Monday:** One paragraph stating or sharpening a current conviction. Format: bold the thesis as the first line, then 4–6 sentences arguing it.
-- **Tuesday — Counter-Take Tuesday:** Steelman a position I'd disagree with. Pick something I'd actually push back on, not a strawman. 5–7 sentences.
-- **Wednesday — Data Point Wednesday:** One number or chart-worthy stat + why it matters. Lead with the number in bold. 3–5 sentences of context.
-- **Thursday — Throwback Thursday:** A piece of financial history that rhymes with today (Eurodollar markets, Bretton Woods, MMF reform, post-1933 Glass-Steagall, etc.). Name the historical event, draw the parallel, name the lesson. 5–8 sentences.
+- **Monday — Thesis Monday:** State or sharpen a current conviction. Format: bold the thesis as the first line, then 4–6 sentences arguing it, split into paragraphs of 4 sentences max.
+- **Tuesday — Counter-Take Tuesday:** Steelman a position I'd disagree with. Pick something I'd actually push back on, not a strawman. 5–7 sentences, split into paragraphs of 4 sentences max.
+- **Wednesday — Data Point Wednesday:** One number or chart-worthy stat + why it matters. Lead with the number in bold. 3–5 sentences of context, split into paragraphs of 4 sentences max.
+- **Thursday — Throwback Thursday:** A piece of financial history that rhymes with today (Eurodollar markets, Bretton Woods, MMF reform, post-1933 Glass-Steagall, etc.). Name the historical event, draw the parallel, name the lesson. 5–8 sentences, split into paragraphs of 4 sentences max.
 - **Friday — Founder Friday:** A question I'd ask a founder building in the space right now. Lead with the question in italics, then 2–3 sentences of follow-up framing.
-- **Saturday — Long Read:** A quote from a paper, book, or essay (≤15 words, paraphrase the rest) + my reaction. 5–8 sentences.
-- **Sunday — Week in Review:** Pull the thread across the week. What story compounded? What question from earlier in the week resolved? 6–10 sentences.
+- **Saturday — Long Read:** A quote from a paper, book, or essay (≤15 words, paraphrase the rest) + my reaction. 5–8 sentences, split into paragraphs of 4 sentences max.
+- **Sunday — Week in Review:** Pull the thread across the week. What story compounded? What question from earlier in the week resolved? 6–10 sentences, split into paragraphs of 4 sentences max.
 
 ### Closing line
 
