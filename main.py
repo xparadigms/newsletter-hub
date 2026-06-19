@@ -145,7 +145,7 @@ def generate_summary(news_items: list[dict]) -> tuple[str, str]:
     today_str = datetime.now(KST).strftime("%B %d, %Y")
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=4000,
         system="You are a senior startup and venture capital analyst.",
         messages=[
@@ -262,7 +262,7 @@ def generate_trilingual(english_summary: str) -> str:
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=16000,
         system="You are an expert trilingual (EN/JP/KR) startup newsletter editor.",
         messages=[

@@ -158,7 +158,7 @@ def generate_summary(news_items, date_str):
     today_str = dt.strftime("%B %d, %Y")
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-4-6",
         max_tokens=4000,
         system="You are a senior startup and venture capital analyst.",
         messages=[{"role": "user", "content": SUMMARY_PROMPT.format(today=today_str, news_items=formatted)}],
