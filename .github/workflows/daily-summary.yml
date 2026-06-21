@@ -9,7 +9,9 @@ on:
 jobs:
   generate-summary:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # Two sequential Claude calls (summary + 16k-token trilingual) plus the
+    # Notion upload routinely exceed 5 minutes; give the job room to finish.
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
