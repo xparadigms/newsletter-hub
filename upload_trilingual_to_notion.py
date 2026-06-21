@@ -200,14 +200,29 @@ def _md_to_blocks(md_text: str) -> list[dict]:
             blocks.append(_toggle(summary or "ふりがな（ひらがな）", body))
             continue
 
-        # <callout icon="…"> … </callout> → skip (Korean text follows after </callout>)
+        # <callout icon="…"> … </callout>
+        # The callout is normally just a "한국어 번역" label marker, with the
+        # actual Korean translation following as a separate paragraph. But the
+        # model frequently inlines the real translation *inside* the callout
+        # instead — so collect the body, drop the label line, and render any
+        # remaining content as a paragraph. This guarantees the Korean text is
+        # never silently dropped while keeping the clean (label-free) layout.
         if stripped.startswith("<callout"):
             i += 1
+            callout_lines: list[str] = []
             while i < len(lines):
-                if lines[i].strip() == "</callout>":
+                s = lines[i].strip()
+                if s == "</callout>":
                     i += 1
                     break
+                if s:
+                    callout_lines.append(s)
                 i += 1
+            content = "\n".join(
+                l for l in callout_lines if l != "한국어 번역"
+            ).strip()
+            if content:
+                blocks.append(_paragraph(content))
             continue
 
         # ▸ Sub-section labels (What happened, Industry status, etc.)
