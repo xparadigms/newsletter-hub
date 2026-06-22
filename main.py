@@ -803,9 +803,12 @@ def run():
     print(f"  Title: [Japan Brief #{ISSUE_NUMBER}] ({main_title})")
 
     print("▸ Creating Google Calendar event...")
-    event_link = create_calendar_event(issue_text, main_title)
-    if event_link:
-        print(f"✓ Event created: {event_link}")
+    try:
+        event_link = create_calendar_event(issue_text, main_title)
+        if event_link:
+            print(f"✓ Event created: {event_link}")
+    except Exception as e:
+        print(f"  ⚠ Calendar failed (non-fatal): {e}")
 
     print("▸ Saving to Notion...")
     notion_url, notion_page_id = create_notion_page(issue_text, main_title)
