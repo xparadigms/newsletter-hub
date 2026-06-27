@@ -2,8 +2,9 @@
 """Daily Startup News Summary → Calendar + Trilingual Notion.
 
 Scrapes TechCrunch Telegram, generates an AI-powered disruption-focused
-summary, inserts a calendar event at 09:00 KST (English), and creates a
-trilingual (EN/JP/KR) Notion page with furigana toggles and Korean callouts.
+summary, converts it into a trilingual (EN/JP/KR) edition, inserts a calendar
+event at 09:00 KST with the trilingual text as plain-text description, and
+creates a trilingual Notion page with furigana toggles and Korean callouts.
 """
 
 import json
@@ -293,7 +294,11 @@ def _issue_title(main_title: str) -> str:
 
 
 def create_calendar_event(summary: str, main_title: str = "Startup News") -> str:
-    """Insert a 30-min event at 09:00 KST with the summary as description."""
+    """Insert a 30-min event at 09:00 KST with the given text as description.
+
+    `summary` is the plain-text event description — typically the trilingual
+    (EN/JP/KR) calendar text, falling back to the English summary.
+    """
     service = get_calendar_service()
 
     now_kst = datetime.now(KST)
@@ -323,6 +328,102 @@ def create_calendar_event(summary: str, main_title: str = "Startup News") -> str
         .execute()
     )
     return event.get("htmlLink", "")
+
+
+# ── Trilingual → Calendar plain text ─────────────────────────────────────────
+# Google Calendar descriptions are plain text, so the Notion-flavoured
+# trilingual Markdown (### headings, <details> furigana toggles, <callout>
+# Korean blocks, --- dividers, **bold**/*italic*) is converted into a clean
+# EN → JP → "📝 한국어 번역:" → KR layout — matching the other newsletters'
+# trilingual calendar events. Furigana toggles are dropped (a Notion-only
+# reading aid).
+_INLINE_EMPHASIS_RE = re.compile(r"\*\*(.+?)\*\*|\*(.+?)\*")
+_CAL_DIVIDER = "━" * 20
+
+
+def _strip_inline_md(text: str) -> str:
+    """Remove **bold** / *italic* markers, keeping the inner text."""
+    return _INLINE_EMPHASIS_RE.sub(lambda m: m.group(1) or m.group(2), text)
+
+
+def _trilingual_to_calendar_text(md_text: str) -> str:
+    """Convert trilingual Notion Markdown into plain text for a Calendar event."""
+    lines = md_text.split("\n")
+    out: list[str] = []
+    i = 0
+
+    while i < len(lines):
+        stripped = lines[i].strip()
+
+        # Drop furigana <details> toggles entirely (Notion-only reading aid).
+        if stripped.startswith("<details"):
+            if "</details>" not in stripped:
+                i += 1
+                while i < len(lines) and "</details>" not in lines[i]:
+                    i += 1
+            i += 1
+            continue
+
+        # Unwrap <callout> … </callout> → "📝 한국어 번역:" marker line.
+        if stripped.startswith("<callout"):
+            inner: list[str] = []
+            if "</callout>" in stripped:
+                body = re.sub(r"<callout[^>]*>", "", stripped)
+                body = body.replace("</callout>", "").strip()
+                if body and body != "한국어 번역":
+                    inner.append(_strip_inline_md(body))
+                i += 1
+            else:
+                i += 1
+                while i < len(lines) and lines[i].strip() != "</callout>":
+                    s = lines[i].strip()
+                    if s and s != "한국어 번역":
+                        inner.append(_strip_inline_md(s))
+                    i += 1
+                i += 1  # skip closing </callout>
+            out.append("📝 한국어 번역:")
+            out.extend(inner)  # usually empty; preserves any inlined Korean
+            continue
+
+        # Stray <summary> lines (outside a parsed toggle) → skip.
+        if stripped.startswith("<summary") or stripped == "</details>":
+            i += 1
+            continue
+
+        # --- dividers → plain-text ━━━━ divider.
+        if stripped == "---":
+            out.extend(["", _CAL_DIVIDER, ""])
+            i += 1
+            continue
+
+        # Headings (#, ##, ###) → strip markers, keep the text.
+        if stripped.startswith("#"):
+            out.append(_strip_inline_md(stripped.lstrip("#").strip()))
+            i += 1
+            continue
+
+        # Bullet list items "- …" → "▸ …".
+        if stripped.startswith("- "):
+            out.append("▸ " + _strip_inline_md(stripped[2:].strip()))
+            i += 1
+            continue
+
+        # Everything else → plain line with inline emphasis stripped.
+        out.append(_strip_inline_md(stripped))
+        i += 1
+
+    # Collapse runs of blank lines into a single blank line.
+    cleaned: list[str] = []
+    blank = 0
+    for line in out:
+        if line.strip():
+            blank = 0
+            cleaned.append(line)
+        else:
+            blank += 1
+            if blank <= 1:
+                cleaned.append("")
+    return "\n".join(cleaned).strip()
 
 
 # ── Notion ───────────────────────────────────────────────────────────────────
@@ -478,24 +579,38 @@ def run():
     main_title, summary = generate_summary(news_items)
     print(f"  Title: [Startup News #{ISSUE_NUMBER}] ({main_title})")
 
+    # Generate the trilingual edition first so it can feed BOTH the calendar
+    # event (plain text) and the Notion page (rich blocks).
+    print("▸ Converting to trilingual (EN/JP/KR)...")
+    try:
+        trilingual_md = generate_trilingual(summary)
+        print("  ✓ Trilingual conversion complete.")
+    except Exception as e:
+        print(f"  ⚠ Trilingual conversion failed (non-fatal): {e}")
+        trilingual_md = ""
+
     if CALENDAR_ID and GCP_SA_KEY:
         try:
-            print("▸ Creating Google Calendar event (English)...")
-            event_link = create_calendar_event(summary, main_title)
+            print("▸ Creating Google Calendar event (trilingual EN/JP/KR)...")
+            calendar_text = (
+                _trilingual_to_calendar_text(trilingual_md)
+                if trilingual_md
+                else summary
+            )
+            event_link = create_calendar_event(calendar_text, main_title)
             print(f"✓ Event created: {event_link}")
         except Exception as e:
             print(f"  ⚠ Calendar failed (non-fatal): {e}")
     else:
         print("  ⚠ CALENDAR_ID or GCP_SA_KEY not set, skipping Calendar.")
 
-    print("▸ Converting to trilingual (EN/JP/KR)...")
-    trilingual_md = generate_trilingual(summary)
-    print("  ✓ Trilingual conversion complete.")
-
-    print("▸ Saving trilingual edition to Notion...")
-    notion_url = create_notion_page(trilingual_md, main_title)
-    if notion_url:
-        print(f"✓ Notion page created: {notion_url}")
+    if trilingual_md:
+        print("▸ Saving trilingual edition to Notion...")
+        notion_url = create_notion_page(trilingual_md, main_title)
+        if notion_url:
+            print(f"✓ Notion page created: {notion_url}")
+    else:
+        print("  ⚠ Skipping Notion (no trilingual content).")
 
 
 if __name__ == "__main__":
