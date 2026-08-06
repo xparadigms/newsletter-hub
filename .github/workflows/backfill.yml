@@ -1,0 +1,54 @@
+name: Rails — Backfill Notion from Calendar
+
+# Repairs a run that created the Calendar event but failed to save to Notion.
+# Reads the issue text back out of the Calendar event description and creates
+# the missing Notion page. Manual trigger only.
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to repair (matches [Finance Infra #NN])"
+        required: true
+        type: string
+      commit:
+        description: "Write to Notion (unchecked = dry run)"
+        required: false
+        type: boolean
+        default: false
+      lookback_days:
+        description: "How far back to search the calendar"
+        required: false
+        type: string
+        default: "3"
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Backfill Notion page
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          CALENDAR_ID: ad3a712618285ba2a011179683b92bdc10718051482df8d950ccfb95a1f0aa19@group.calendar.google.com
+          NOTION_DATABASE_ID: 3535bc953df3807b83c9dc5be40b72e6
+          TIMEZONE: Asia/Seoul
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          python backfill.py \
+            --lookback-days "${{ inputs.lookback_days }}" \
+            ${{ inputs.commit && '--commit' || '' }}

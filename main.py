@@ -959,14 +959,18 @@ def run():
     main_title, issue_text = generate_issue(items_for_llm)
     print(f"  Title: [Finance Infra #{ISSUE_NUMBER}] ({main_title})")
 
-    print("▸ Creating Google Calendar event...")
-    event_link = create_calendar_event(issue_text, main_title)
-    print(f"✓ Event created: {event_link}")
-
+    # Notion first: it is the durable archive, and it is the step most prone to
+    # transient network failure. Writing it before the Calendar event means a
+    # Notion failure aborts the run *before* any external side effect exists,
+    # so a re-run recreates both cleanly instead of duplicating the event.
     print("▸ Saving to Notion...")
     notion_url, notion_page_id = create_notion_page(issue_text, main_title)
     if notion_url:
         print(f"✓ Notion page created: {notion_url}")
+
+    print("▸ Creating Google Calendar event...")
+    event_link = create_calendar_event(issue_text, main_title)
+    print(f"✓ Event created: {event_link}")
 
     # Add furigana reading aids to the Japanese sections
     if notion_page_id:
