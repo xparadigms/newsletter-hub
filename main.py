@@ -492,6 +492,75 @@ def create_calendar_event(issue_text: str, main_title: str = "Finance Infra") ->
 NOTION_API_URL = "https://api.notion.com/v1/pages"
 NOTION_VERSION = "2022-06-28"
 
+# Retry policy for the Notion API. Notion occasionally resets connections
+# mid-request and rate-limits bursts of block appends; without retries a
+# single transient TCP reset aborts the whole run after the Calendar event
+# has already been created, leaving the issue missing from Notion.
+NOTION_MAX_ATTEMPTS = 5
+NOTION_BACKOFF_BASE = 2.0
+NOTION_MAX_BACKOFF = 30.0
+
+# Transport-level failures that are safe to retry.
+_NOTION_RETRYABLE_EXC = (
+    requests.exceptions.ConnectionError,
+    requests.exceptions.Timeout,
+    requests.exceptions.ChunkedEncodingError,
+)
+
+
+def _notion_request(method: str, url: str, **kwargs) -> requests.Response:
+    """Call the Notion API, retrying transient failures with backoff.
+
+    Retries on connection resets/timeouts, HTTP 429 (honouring Retry-After),
+    and 5xx responses. The final response is returned unchanged so callers
+    keep using ``raise_for_status()`` for genuine, non-retryable errors.
+    """
+    kwargs.setdefault("timeout", 30)
+    last_exc: Exception | None = None
+    resp: requests.Response | None = None
+
+    for attempt in range(NOTION_MAX_ATTEMPTS):
+        is_last = attempt == NOTION_MAX_ATTEMPTS - 1
+
+        try:
+            resp = requests.request(method, url, **kwargs)
+            last_exc = None
+        except _NOTION_RETRYABLE_EXC as e:
+            last_exc, resp = e, None
+            if is_last:
+                break
+            delay = min(NOTION_BACKOFF_BASE ** attempt, NOTION_MAX_BACKOFF)
+            print(
+                f"  ⚠ Notion {method} network error "
+                f"({e.__class__.__name__}); retry {attempt + 1}/"
+                f"{NOTION_MAX_ATTEMPTS - 1} in {delay:.0f}s"
+            )
+            time.sleep(delay)
+            continue
+
+        if resp.status_code == 429 or resp.status_code >= 500:
+            if is_last:
+                break
+            retry_after = resp.headers.get("Retry-After")
+            try:
+                delay = float(retry_after) if retry_after else 0.0
+            except (TypeError, ValueError):
+                delay = 0.0
+            if delay <= 0:
+                delay = min(NOTION_BACKOFF_BASE ** attempt, NOTION_MAX_BACKOFF)
+            print(
+                f"  ⚠ Notion {method} returned {resp.status_code}; retry "
+                f"{attempt + 1}/{NOTION_MAX_ATTEMPTS - 1} in {delay:.0f}s"
+            )
+            time.sleep(delay)
+            continue
+
+        return resp
+
+    if last_exc is not None:
+        raise last_exc
+    return resp
+
 
 # Section headers to detect (ALL CAPS lines from the newsletter)
 _SECTION_HEADERS = [
@@ -641,7 +710,7 @@ def create_notion_page(issue_text: str, main_title: str = "Finance Infra") -> tu
         "Content-Type": "application/json",
     }
 
-    resp = requests.post(NOTION_API_URL, headers=headers, json=payload, timeout=30)
+    resp = _notion_request("POST", NOTION_API_URL, headers=headers, json=payload)
     resp.raise_for_status()
     page = resp.json()
     page_id = page["id"]
@@ -650,7 +719,9 @@ def create_notion_page(issue_text: str, main_title: str = "Finance Infra") -> tu
     for i in range(100, len(all_blocks), 100):
         batch = all_blocks[i:i+100]
         append_url = f"https://api.notion.com/v1/blocks/{page_id}/children"
-        r = requests.patch(append_url, headers=headers, json={"children": batch}, timeout=30)
+        r = _notion_request(
+            "PATCH", append_url, headers=headers, json={"children": batch}
+        )
         r.raise_for_status()
 
     return page.get("url", ""), page_id
@@ -713,7 +784,7 @@ def _fetch_page_blocks(page_id: str) -> list[dict]:
         url = f"https://api.notion.com/v1/blocks/{page_id}/children?page_size=100"
         if cursor:
             url += f"&start_cursor={cursor}"
-        r = requests.get(url, headers=headers, timeout=30)
+        r = _notion_request("GET", url, headers=headers)
         r.raise_for_status()
         data = r.json()
         blocks.extend(data["results"])
@@ -826,9 +897,9 @@ def _insert_notion_toggle(
         "Content-Type": "application/json",
     }
     url = f"https://api.notion.com/v1/blocks/{page_id}/children"
-    r = requests.patch(
-        url, headers=headers, json={"children": [toggle], "after": after_block_id},
-        timeout=30,
+    r = _notion_request(
+        "PATCH", url,
+        headers=headers, json={"children": [toggle], "after": after_block_id},
     )
     r.raise_for_status()
 
