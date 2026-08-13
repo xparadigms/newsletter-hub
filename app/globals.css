@@ -1,0 +1,2066 @@
+:root {
+  color-scheme: light;
+  /* Semantic palette — light (after tempo.xyz) */
+  --bg: #ffffff;
+  --bg-subtle: #f2f2f2;
+  --border: #d9d9d9;
+  --border-strong: #b2b2b2;
+  --text-primary: #000000;
+  --text-secondary: #333333;
+  --text-tertiary: #808080;
+  --text-faint: #b2b2b2;
+  --accent: #10b981;
+  --accent-strong: #15803d;
+  --accent-tint: #ecfdf5;
+
+  --font-sans: var(--font-archivo), Arial, Helvetica, sans-serif;
+  --font-mono: var(--font-plex-mono), monospace;
+  /* Article reading face — sans with CJK-aware fallbacks, after toss.tech */
+  --font-reading: var(--font-archivo), "Pretendard", -apple-system,
+    BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Noto Sans JP",
+    "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+
+  --header-height: 52px;
+  --tabbar-height: 54px;
+  --container-max: 1280px;
+  --container-pad: 24px;
+
+  /* Resolve to 0 off-device (desktop, non-notch phones), so every calc() that
+     uses them stays correct without a fallback branch. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+
+  /* Motion tokens — one iOS-style spring curve used everywhere. */
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --dur-fast: 0.16s;
+  --dur-base: 0.26s;
+  --dur-slow: 0.34s;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0d0d0d;
+  --bg-subtle: #1a1a1a;
+  --border: #262626;
+  --border-strong: #333333;
+  --text-primary: #f2f2f2;
+  --text-secondary: #c6c6c6;
+  --text-tertiary: #8f8f8f;
+  --text-faint: #5c5c5c;
+  --accent: #10b981;
+  --accent-strong: #34d399;
+  --accent-tint: #0e2b21;
+}
+
+/* No-JS fallback: follow the system when no explicit choice is set */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #0d0d0d;
+    --bg-subtle: #1a1a1a;
+    --border: #262626;
+    --border-strong: #333333;
+    --text-primary: #f2f2f2;
+    --text-secondary: #c6c6c6;
+    --text-tertiary: #8f8f8f;
+    --text-faint: #5c5c5c;
+    --accent: #10b981;
+    --accent-strong: #34d399;
+    --accent-tint: #0e2b21;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 450;
+  -webkit-font-smoothing: antialiased;
+  /* No rubber-band gap behind the app chrome, and a precondition for the
+     pull-to-refresh gesture to receive the drag instead of iOS bounce. */
+  overscroll-behavior-y: none;
+  /* Chrome is not selectable; article prose opts back in below. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+}
+
+/* Reading content behaves like text, not like app chrome. */
+.article__body,
+.article h1,
+.article__summary,
+.page-head h1,
+.lead__headline,
+.lead__deck {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
+a,
+button {
+  touch-action: manipulation;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+[data-theme="dark"] .article__body img {
+  opacity: 0.9;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.container {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding-left: var(--container-pad);
+  padding-right: var(--container-pad);
+}
+
+/* ---------- type utilities ---------- */
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+/* ---------- app shell: nav bar ---------- */
+
+@media (max-width: 639px) {
+  :root {
+    --container-pad: 16px;
+  }
+}
+
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  padding-top: var(--safe-top);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  border-bottom: 1px solid transparent;
+  transition: border-color var(--dur-base) var(--ease-out);
+}
+
+/* Translucent chrome, with a solid fallback where backdrop-filter is absent. */
+@supports (backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px)) {
+  .navbar {
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+  }
+}
+
+@supports not ((backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px))) {
+  .navbar {
+    background: var(--bg);
+  }
+}
+
+.navbar[data-collapsed="true"] {
+  border-bottom-color: var(--border);
+}
+
+.navbar__bar {
+  position: relative;
+  height: var(--header-height);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 0 var(--container-pad);
+  max-width: var(--container-max);
+  margin: 0 auto;
+}
+
+.navbar__side {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.navbar__side--end {
+  justify-content: flex-end;
+}
+
+/* The compact centre title only appears once the large title has collapsed. */
+.navbar__title {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0;
+  transform: translate3d(0, 7px, 0);
+  transition: opacity var(--dur-base) var(--ease-out),
+    transform var(--dur-base) var(--ease-ios);
+  will-change: transform, opacity;
+}
+
+.navbar[data-collapsed="true"] .navbar__title {
+  opacity: 1;
+  transform: none;
+}
+
+/* Article headlines are long — the centre slot must never push the buttons. */
+.navbar[data-compact="true"] .navbar__bar {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr) minmax(0, 1fr);
+}
+
+.navbar[data-compact="true"] .navbar__title {
+  font-size: 15px;
+}
+
+.navbar__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 6px 6px 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-strong);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 450;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.navbar__back:active {
+  opacity: 0.5;
+}
+
+/* Large title scrolls away with the content (it is not inside the sticky bar),
+   so the collapse costs no layout work — only the compact title fades in. */
+.largetitle {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 6px var(--container-pad) 10px;
+}
+
+.largetitle__text {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+@media (min-width: 640px) {
+  .largetitle__text {
+    font-size: 34px;
+  }
+}
+
+/* ---------- app shell: tab bar ---------- */
+
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 55;
+  padding-bottom: var(--safe-bottom);
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  border-top: 1px solid var(--border);
+}
+
+@supports (backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px)) {
+  .tabbar {
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+  }
+}
+
+@supports not ((backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px))) {
+  .tabbar {
+    background: var(--bg);
+  }
+}
+
+.tabbar__list {
+  display: flex;
+  align-items: stretch;
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: 560px;
+}
+
+.tabbar__list > li {
+  flex: 1;
+  min-width: 0;
+}
+
+.tabbar__tab {
+  height: var(--tabbar-height);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--text-tertiary);
+  transition: color var(--dur-fast) var(--ease-out),
+    transform 0.12s var(--ease-out);
+}
+
+.tabbar__tab[data-active="true"] {
+  color: var(--accent-strong);
+}
+
+.tabbar__tab:active {
+  transform: scale(0.92);
+}
+
+.tabbar__label {
+  font-size: 10px;
+  letter-spacing: 0.01em;
+  font-weight: 500;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* On desktop the bar floats as a centred pill rather than spanning the window. */
+@media (min-width: 1024px) {
+  .tabbar {
+    left: 50%;
+    right: auto;
+    bottom: 20px;
+    transform: translateX(-50%);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    box-shadow: 0 8px 30px rgb(0 0 0 / 14%);
+    overflow: hidden;
+  }
+  .tabbar__list {
+    max-width: none;
+  }
+  /* Size the pill's tabs to their labels instead of splitting a fixed width,
+     which was clipping "Startup" and "Fintech". */
+  .tabbar__list > li {
+    flex: 0 0 auto;
+  }
+  .tabbar__tab {
+    padding: 0 20px;
+  }
+  .tabbar__label {
+    font-size: 11px;
+  }
+}
+
+/* Content must never sit under the bar. */
+main {
+  display: block;
+  padding-bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 8px);
+}
+
+@media (min-width: 1024px) {
+  main {
+    padding-bottom: calc(var(--tabbar-height) + 44px);
+  }
+}
+
+/* ---------- page transitions ---------- */
+
+.page-transition {
+  /* No will-change here: it would make this a containing block for
+     position:fixed descendants, collapsing the story viewer, the TOC sheet
+     and the pull-to-refresh indicator to zero height. */
+  animation: page-in var(--dur-base) var(--ease-ios);
+}
+
+[data-nav="pop"] .page-transition {
+  animation-name: page-in-back;
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translate3d(18px, 0, 0);
+  }
+}
+
+@keyframes page-in-back {
+  from {
+    opacity: 0;
+    transform: translate3d(-18px, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-transition {
+    animation: none;
+  }
+}
+
+.theme-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.theme-toggle:hover {
+  color: var(--accent-strong);
+  border-color: var(--border-strong);
+}
+
+.theme-toggle__sun {
+  display: none;
+}
+
+[data-theme="dark"] .theme-toggle__sun {
+  display: block;
+}
+
+[data-theme="dark"] .theme-toggle__moon {
+  display: none;
+}
+
+/* ---------- front page ---------- */
+
+.front__masthead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+@media (max-width: 639px) {
+  .front__masthead .front__tagline {
+    display: none;
+  }
+}
+
+.front__top {
+  display: grid;
+  grid-template-columns: 1fr;
+  border-bottom: 1px solid var(--border);
+}
+
+.lead {
+  padding: 40px 0;
+}
+
+.lead__headline {
+  margin: 14px 0 0;
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-weight: 450;
+}
+
+.lead__headline a:hover {
+  color: var(--accent-strong);
+}
+
+.lead__deck {
+  margin: 18px 0 0;
+  font-family: var(--font-reading);
+  font-size: 19px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  max-width: 60ch;
+  /* Notion summaries concatenate several bullets; keep the deck to a glance. */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.lead__meta {
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.secondary {
+  margin-top: 36px;
+  padding-top: 28px;
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 640px) {
+  .secondary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 28px;
+  }
+}
+
+.secondary__item {
+  display: block;
+  min-width: 0;
+}
+
+.secondary__title {
+  display: block;
+  margin-top: 6px;
+  font-size: 17px;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.secondary__item:hover .secondary__title {
+  color: var(--accent-strong);
+}
+
+.latest {
+  padding: 32px 0;
+  border-top: 1px solid var(--border);
+}
+
+.latest__list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+}
+
+.latest__item {
+  border-bottom: 1px solid var(--border);
+}
+
+.latest__item:last-child {
+  border-bottom: none;
+}
+
+.latest__item a {
+  display: block;
+  padding: 13px 0;
+}
+
+.latest__meta {
+  display: block;
+  font-size: 11px;
+}
+
+.latest__title {
+  display: block;
+  margin-top: 4px;
+  font-size: 15px;
+  line-height: 1.35;
+  letter-spacing: -0.005em;
+}
+
+.latest__item a:hover .latest__title {
+  color: var(--accent-strong);
+}
+
+@media (min-width: 1024px) {
+  .front__top {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+  .lead {
+    padding-right: 40px;
+  }
+  .latest {
+    border-top: none;
+    border-left: 1px solid var(--border);
+    padding-left: 32px;
+  }
+}
+
+/* hairline-ruled module grid */
+.front__sections {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  background: var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.section-module {
+  background: var(--bg);
+  padding: 32px 0 28px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.section-module__title {
+  margin: 8px 0 0;
+  font-size: 22px;
+  font-weight: 450;
+  letter-spacing: -0.01em;
+}
+
+.section-module__title a:hover {
+  color: var(--accent-strong);
+}
+
+.section-module__list {
+  list-style: none;
+  margin: 16px 0 18px;
+  padding: 0;
+  align-self: stretch;
+}
+
+.section-module__list li {
+  border-bottom: 1px solid var(--border);
+}
+
+.section-module__list li:last-child {
+  border-bottom: none;
+}
+
+.section-module__list a {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 11px 0;
+}
+
+.section-module__item-title {
+  font-size: 15px;
+  line-height: 1.35;
+  letter-spacing: -0.005em;
+}
+
+.section-module__list a:hover .section-module__item-title {
+  color: var(--accent-strong);
+}
+
+.section-module__date {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+@media (min-width: 834px) {
+  .front__sections {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .section-module {
+    padding: 32px 32px 28px;
+  }
+  .section-module:nth-child(odd) {
+    padding-left: 0;
+  }
+  .section-module:nth-child(even) {
+    padding-right: 0;
+  }
+}
+
+/* ---------- section pages ---------- */
+
+.page-head {
+  padding: 64px 0 40px;
+}
+
+.page-head h1 {
+  margin: 12px 0 0;
+  font-size: clamp(36px, 6vw, 64px);
+  line-height: 1.02;
+  font-weight: 450;
+  letter-spacing: -0.02em;
+}
+
+.page-head p {
+  margin: 20px 0 0;
+  color: var(--text-secondary);
+  font-size: 17px;
+  max-width: 52ch;
+  line-height: 1.5;
+}
+
+.section {
+  padding: 72px 0 40px;
+  border-bottom: 1px solid var(--border);
+}
+
+.section--flat {
+  border-bottom: none;
+  padding-top: 0;
+  padding-bottom: 96px;
+}
+
+.section__desc {
+  margin: 0;
+  max-width: 44ch;
+  color: var(--text-tertiary);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.month-label {
+  display: block;
+  margin: 44px 0 10px;
+}
+
+.month-label:first-child {
+  margin-top: 0;
+}
+
+/* ---------- post list ---------- */
+
+.post-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--border);
+}
+
+.post-row {
+  border-bottom: 1px solid var(--border);
+}
+
+.post-row a {
+  display: grid;
+  grid-template-columns: 96px 1fr 24px;
+  align-items: baseline;
+  gap: 16px;
+  padding: 20px 4px;
+  transition: background 0.15s ease;
+}
+
+@media (hover: hover) {
+  .post-row a:hover {
+    background: var(--bg-subtle);
+  }
+}
+
+.post-row a:active {
+  background: var(--bg-subtle);
+}
+
+.post-row__date {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+
+.post-row__title {
+  font-size: 18px;
+  font-weight: 450;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.post-row__tags {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  padding: 3px 8px;
+}
+
+.post-row__arrow {
+  color: var(--text-faint);
+  transition: color 0.15s ease, transform 0.15s ease;
+  font-size: 18px;
+  line-height: 1;
+  align-self: center;
+}
+
+.post-row a:hover .post-row__arrow {
+  color: var(--accent);
+  transform: translateX(4px);
+}
+
+@media (max-width: 833px) {
+  .post-row a {
+    grid-template-columns: 1fr 24px;
+  }
+  .post-row__date {
+    grid-column: 1 / -1;
+    order: -1;
+  }
+}
+
+/* ---------- arrow link ---------- */
+
+.arrow-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 450;
+  color: var(--text-primary);
+}
+
+.arrow-link span:last-child {
+  transition: transform 0.15s ease;
+}
+
+.arrow-link:hover {
+  color: var(--accent-strong);
+}
+
+.arrow-link:hover span:last-child {
+  transform: translateX(4px);
+}
+
+/* ---------- article ---------- */
+
+.article {
+  padding: 56px 0 96px;
+}
+
+/* The reading column stays centred until there's room for the contents rail,
+   at which point the column + rail are centred as a group. */
+.article__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 700px);
+  justify-content: center;
+}
+
+@media (min-width: 1180px) {
+  .article__layout {
+    grid-template-columns: minmax(0, 700px) 236px;
+    gap: 56px;
+  }
+}
+
+.article__col {
+  max-width: 700px;
+  margin: 0 auto;
+  min-width: 0;
+  padding-left: var(--container-pad);
+  padding-right: var(--container-pad);
+}
+
+/* ---------- table of contents ---------- */
+
+.toc {
+  display: none;
+  min-width: 0;
+}
+
+@media (min-width: 1180px) {
+  .toc {
+    display: block;
+  }
+}
+
+.toc__inner {
+  position: sticky;
+  top: calc(var(--header-height) + 28px);
+  max-height: calc(100dvh - var(--header-height) - 64px);
+  overflow-y: auto;
+  border-left: 1px solid var(--border);
+  padding-left: 18px;
+  scrollbar-width: thin;
+}
+
+.toc__heading {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.toc__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.toc__link {
+  display: block;
+  padding: 6px 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-tertiary);
+  transition: color 0.15s ease;
+}
+
+/* Clamp on an inner box: padding inside a -webkit-box lets a third line
+   bleed through the cut. */
+.toc__text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.toc__link--sub {
+  padding-left: 12px;
+  font-size: 12.5px;
+}
+
+.toc__link:hover {
+  color: var(--text-primary);
+}
+
+.toc__link[data-active="true"] {
+  color: var(--accent-strong);
+}
+
+/* Floating contents button — phones and narrow windows */
+.toc-fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 14px);
+  z-index: 62;
+  width: 46px;
+  height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgb(0 0 0 / 18%);
+}
+
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgb(0 0 0 / 40%);
+  animation: sheet-fade var(--dur-base) var(--ease-out);
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 71;
+  max-height: min(72dvh, 620px);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  border-radius: 14px 14px 0 0;
+  box-shadow: 0 -10px 40px rgb(0 0 0 / 26%);
+  padding-bottom: var(--safe-bottom);
+  animation: sheet-up var(--dur-slow) var(--ease-ios);
+  transition: transform var(--dur-base) var(--ease-ios);
+  will-change: transform;
+}
+
+.sheet:focus {
+  outline: none;
+}
+
+/* The grab area is the drag handle for swipe-to-dismiss. */
+.sheet__grip {
+  flex-shrink: 0;
+  padding: 8px 20px 10px;
+  touch-action: none;
+  cursor: grab;
+}
+
+.sheet__grabber {
+  display: block;
+  width: 36px;
+  height: 5px;
+  margin: 0 auto 10px;
+  border-radius: 999px;
+  background: var(--border-strong);
+}
+
+.sheet__title {
+  display: block;
+}
+
+.sheet__body {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 4px 20px 20px;
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes sheet-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet,
+  .sheet-backdrop {
+    animation: none;
+  }
+}
+
+/* ---------- pull to refresh ---------- */
+
+.ptr {
+  position: fixed;
+  top: calc(var(--safe-top) + var(--header-height));
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  /* Hidden until a pull begins; the gesture writes transform/opacity inline. */
+  opacity: 0;
+  transform: translate3d(0, 0, 0);
+  transition: transform var(--dur-slow) var(--ease-ios),
+    opacity var(--dur-base) var(--ease-out);
+}
+
+.ptr__spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent-strong);
+}
+
+.ptr[data-busy="true"] .ptr__spinner {
+  animation: ptr-spin 0.7s linear infinite;
+}
+
+.ptr[data-ready="true"] .ptr__spinner {
+  border-color: var(--border-strong);
+  border-top-color: var(--accent-strong);
+}
+
+@keyframes ptr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (min-width: 1180px) {
+  .toc-fab {
+    display: none;
+  }
+}
+
+.article__meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.article h1 {
+  margin: 20px 0 0;
+  font-size: clamp(30px, 5vw, 44px);
+  line-height: 1.08;
+  font-weight: 450;
+  letter-spacing: -0.02em;
+}
+
+/* Text and spacing after toss.tech: 17px/1.6 sans, generous space above a
+   heading and almost none below it, so each heading binds to its own text. */
+.article__body {
+  margin-top: 36px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-reading);
+  font-size: 21px;
+  line-height: 1.65;
+  letter-spacing: 0;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 639px) {
+  .article__body {
+    font-size: 19.5px;
+  }
+}
+
+/* Korean breaks on word boundaries; Japanese has no spaces, so it must keep
+   the default per-character breaking or lines would overflow.
+   overflow-wrap:anywhere is the safety valve: keep-all makes an unbroken CJK
+   run one giant "word", and mixed JA-in-KO blocks ("読み方: …意味: 가상발전소")
+   would otherwise force the whole column wider than the screen. Unlike
+   break-word, anywhere also shrinks min-content, so the column can narrow. */
+.article__body [lang="ko"] {
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.article__body p {
+  margin: 26px 0 8px;
+}
+
+.article__body h2,
+.article__body h3,
+.article__body h4 {
+  font-family: var(--font-reading);
+  color: var(--text-primary);
+  font-weight: 700;
+  letter-spacing: 0;
+  /* Clear the sticky header when jumped to from the contents. */
+  scroll-margin-top: calc(var(--header-height) + 20px);
+}
+
+.article__body h2 {
+  font-size: 34px;
+  line-height: 1.5;
+  margin: 44px 0 4px;
+}
+
+.article__body h3 {
+  font-size: 28px;
+  line-height: 1.5;
+  margin: 28px 0 4px;
+}
+
+.article__body h4 {
+  font-size: 22px;
+  line-height: 1.55;
+  margin: 28px 0 4px;
+}
+
+.article__body ul,
+.article__body ol {
+  margin: 18px 0 8px;
+  padding-left: 1.2em;
+}
+
+.article__body li {
+  margin-bottom: 6px;
+}
+
+.article__body blockquote {
+  margin: 26px 0;
+  padding: 2px 0 2px 20px;
+  border-left: 3px solid var(--accent);
+  font-size: 22px;
+  line-height: 1.6;
+  font-weight: 700;
+  font-style: normal;
+  color: var(--text-primary);
+}
+
+.article__body .kicker {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+  margin: 44px 0 4px;
+}
+
+.article__body .kicker:first-child {
+  margin-top: 0;
+}
+
+.article__body .callout {
+  margin: 26px 0 8px;
+  padding: 14px 18px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: var(--font-reading);
+  font-size: 19px;
+  line-height: 1.6;
+}
+
+.article__body .callout p:last-child {
+  margin-bottom: 0;
+}
+
+.callout__label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+  margin-bottom: 6px;
+}
+
+.article__body .callout:empty,
+.article__body .callout:has(.callout__label:only-child) {
+  padding: 8px 18px;
+}
+
+.article__body .toggle {
+  margin: 26px 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0;
+  font-family: var(--font-reading);
+  font-size: 19px;
+  line-height: 1.6;
+}
+
+.article__body .toggle summary {
+  cursor: pointer;
+  padding: 9px 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-tertiary);
+  user-select: none;
+}
+
+.article__body .toggle summary:hover {
+  color: var(--accent-strong);
+}
+
+.article__body .toggle[open] summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.article__body .toggle > *:not(summary) {
+  margin: 12px 16px;
+}
+
+.article__body pre {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.article__body hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 2em 0;
+}
+
+/* A rule already separates the section; don't stack both gaps. */
+.article__body hr + .kicker,
+.article__body hr + h2,
+.article__body hr + h3 {
+  margin-top: 1.2em;
+}
+
+.article__body figure {
+  margin: 2em 0;
+}
+
+.article__body figcaption {
+  margin-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+/* ---------- language filter ---------- */
+
+/* ---------- loading skeleton ---------- */
+
+.skeleton__line {
+  height: 15px;
+  margin-bottom: 14px;
+  border-radius: 3px;
+  background: var(--bg-subtle);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.skeleton__line--label {
+  width: 180px;
+  height: 11px;
+  margin-bottom: 26px;
+}
+
+.skeleton__line--title {
+  height: 34px;
+  margin-bottom: 12px;
+}
+
+.skeleton__line--short {
+  width: 62%;
+}
+
+.skeleton__body {
+  margin-top: 46px;
+  padding-top: 36px;
+  border-top: 1px solid var(--border);
+}
+
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton__line {
+    animation: none;
+  }
+}
+
+/* ---------- furigana (ruby) ---------- */
+
+/* Readings are taken out of flow and the paragraph reserves room for them via
+   line-height, so lines with and without furigana keep an even rhythm. */
+.article__body .has-ruby {
+  line-height: 2.35;
+  margin: 26px 0 8px;
+}
+
+/* Native ruby layout, not absolute positioning: the browser widens the base so
+   a long reading over a narrow kanji can't collide with its neighbours. The
+   generous line-height above keeps rows even despite the annotations. */
+.article__body .has-ruby ruby {
+  ruby-position: over;
+  -webkit-ruby-position: before;
+}
+
+.article__body .has-ruby rt {
+  font-size: 0.58em;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: 0;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.lang-wrap {
+  display: contents;
+}
+
+.lang-wrap[lang="ja"],
+.lang-wrap[lang="ko"] {
+  line-break: strict;
+}
+
+/* Default view is Japanese + Korean; English prose is hidden until asked for.
+   Structural blocks (headings, kickers) carry no data-lang and always show. */
+html:not([data-langs]) .article__body[data-multi] [data-lang="en"],
+html[data-langs="ja-ko"] .article__body[data-multi] [data-lang="en"] {
+  display: none;
+}
+
+html[data-langs="en"] .article__body [data-lang="ja"],
+html[data-langs="en"] .article__body [data-lang="ko"] {
+  display: none;
+}
+
+.lang-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.lang-toggle button {
+  appearance: none;
+  background: none;
+  border: none;
+  border-right: 1px solid var(--border);
+  padding: 5px 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  cursor: pointer;
+}
+
+.lang-toggle button:last-child {
+  border-right: none;
+}
+
+.lang-toggle button:hover {
+  color: var(--accent-strong);
+}
+
+html:not([data-langs]) .lang-toggle button[data-value="ja-ko"],
+html[data-langs="ja-ko"] .lang-toggle button[data-value="ja-ko"],
+html[data-langs="en"] .lang-toggle button[data-value="en"],
+html[data-langs="all"] .lang-toggle button[data-value="all"] {
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+}
+
+/* ---------- article prev/next ---------- */
+
+.article__nav {
+  margin-top: 56px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.article__nav-link {
+  display: block;
+  min-width: 0;
+}
+
+.article__nav-link--next {
+  text-align: right;
+}
+
+.article__nav-title {
+  display: block;
+  margin-top: 6px;
+  font-size: 15px;
+  line-height: 1.35;
+  letter-spacing: -0.005em;
+}
+
+.article__nav-link:hover .article__nav-title {
+  color: var(--accent-strong);
+}
+
+/* ---------- notice ---------- */
+
+.notice {
+  background: var(--accent-tint);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 0;
+}
+
+.notice p {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--accent-strong);
+}
+
+/* ---------- footer ---------- */
+
+.site-footer {
+  padding: 56px 0 64px;
+}
+
+.site-footer__inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.site-footer__brand {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.site-footer__note {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-tertiary);
+  max-width: 40ch;
+  line-height: 1.5;
+}
+
+.site-footer__nav {
+  display: flex;
+  gap: 24px;
+}
+
+.site-footer__nav a {
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.site-footer__nav a:hover {
+  color: var(--accent-strong);
+}
+
+/* ---------- story mode ---------- */
+
+.story-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  margin-right: 6px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out), background var(--dur-fast) var(--ease-out);
+}
+
+.story-toggle[aria-pressed="true"] {
+  color: var(--bg);
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+}
+
+.story-toggle:active {
+  opacity: 0.55;
+}
+
+/* The viewer owns the whole screen; the app chrome steps aside. */
+body:has(.story-root) .navbar,
+body:has(.story-root) .tabbar,
+body:has(.story-root) .site-footer,
+body:has(.story-root) .largetitle {
+  display: none;
+}
+
+body:has(.story-root) main {
+  padding-bottom: 0;
+}
+
+.story-root {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: #0b0b0c;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: var(--safe-top);
+  padding-bottom: var(--safe-bottom);
+  touch-action: pan-y;
+}
+
+.story-progress {
+  display: flex;
+  gap: 3px;
+  padding: 10px 10px 0;
+  flex-shrink: 0;
+}
+
+.story-progress__seg {
+  flex: 1;
+  height: 2.5px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 26%);
+  overflow: hidden;
+}
+
+.story-progress__seg[data-state="done"],
+.story-progress__seg[data-state="active"] {
+  background: #fff;
+}
+
+.story-progress__seg[data-state="active"] {
+  animation: story-seg var(--dur-slow) var(--ease-out);
+}
+
+@keyframes story-seg {
+  from {
+    transform: scaleX(0.2);
+    transform-origin: left;
+  }
+}
+
+.story-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px 4px;
+  flex-shrink: 0;
+}
+
+.story-topbar__title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: rgb(255 255 255 / 78%);
+}
+
+.story-topbar__close {
+  display: inline-flex;
+  padding: 6px;
+  margin: -6px;
+  border: 0;
+  background: none;
+  color: #fff;
+  cursor: pointer;
+  z-index: 3;
+}
+
+.story-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  padding: 4px 20px 16px;
+}
+
+.story-slide {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  animation: story-in var(--dur-base) var(--ease-ios);
+}
+
+@keyframes story-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0) scale(0.99);
+  }
+}
+
+.story-card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  max-width: 620px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.story-card__eyebrow {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.story-card--cover {
+  justify-content: flex-end;
+  padding-bottom: 8px;
+}
+
+.story-card__title {
+  margin: 14px 0 0;
+  font-size: clamp(30px, 8vw, 46px);
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+.story-card__deck {
+  margin: 16px 0 0;
+  font-size: 17px;
+  line-height: 1.5;
+  color: rgb(255 255 255 / 72%);
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.story-card__foot {
+  margin-top: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.story-card__foot .label {
+  color: rgb(255 255 255 / 55%);
+}
+
+.story-card--section {
+  justify-content: center;
+  text-align: center;
+  align-items: center;
+}
+
+.story-card__section-title {
+  margin: 14px 0 0;
+  font-size: clamp(26px, 6.5vw, 38px);
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.story-card--content {
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.story-card__heading {
+  margin: 10px 0 0;
+  font-size: clamp(21px, 5.2vw, 28px);
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  flex-shrink: 0;
+}
+
+/* Long bodies scroll rather than clip. The tap zones are absolutely positioned
+   siblings that were painting over this, so a drag here hit a button instead of
+   scrolling; lifting the body above them restores it. Vertical drags scroll and
+   horizontal ones still reach the viewer's swipe handler. */
+.story-card__body {
+  position: relative;
+  z-index: 2;
+  touch-action: pan-y;
+  margin-top: 14px;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  border-top: none;
+  padding-top: 0;
+  font-size: 16px;
+  color: rgb(255 255 255 / 82%);
+}
+
+.story-card__body p {
+  margin: 0 0 12px;
+}
+
+/* A visible hint that there is more to read, without covering the text. */
+.story-card__body::-webkit-scrollbar {
+  width: 3px;
+}
+
+.story-card__body::-webkit-scrollbar-thumb {
+  background: rgb(255 255 255 / 26%);
+  border-radius: 3px;
+}
+
+.story-card__body .has-ruby {
+  line-height: 2.2;
+}
+
+.story-card__body rt {
+  color: rgb(255 255 255 / 60%);
+}
+
+.story-card__body .callout {
+  background: rgb(255 255 255 / 7%);
+  border-color: rgb(255 255 255 / 14%);
+  font-size: 15px;
+}
+
+.story-card__body .callout__label,
+.story-card__body .kicker {
+  color: var(--accent);
+}
+
+.story-card__body h2,
+.story-card__body h3,
+.story-card__body h4 {
+  color: #fff;
+  font-size: 19px;
+  margin: 12px 0 6px;
+}
+
+/* Tap zones sit under the content so links and the close button still work. */
+.story-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 32%;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.story-zone--prev {
+  left: 0;
+}
+
+.story-zone--next {
+  right: 0;
+  width: 68%;
+}
+
+.story-counter {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--safe-bottom) + 10px);
+  text-align: center;
+  color: rgb(255 255 255 / 45%);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .story-slide,
+  .story-progress__seg[data-state="active"] {
+    animation: none;
+  }
+}
+
+/* ---------- story loading skeleton ---------- */
+
+.story-skeleton__line {
+  display: block;
+  height: 14px;
+  margin-bottom: 12px;
+  border-radius: 3px;
+  background: rgb(255 255 255 / 11%);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+.story-skeleton__line--label {
+  width: 130px;
+  height: 11px;
+  margin-bottom: 20px;
+}
+
+.story-skeleton__line--title {
+  height: 34px;
+  margin-bottom: 14px;
+}
+
+.story-skeleton__line--short {
+  width: 58%;
+}
+
+.story-skeleton__deck {
+  margin-top: 22px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .story-skeleton__line {
+    animation: none;
+  }
+}
+
+/* Language toggle sits on the story's dark chrome. */
+.story-topbar .lang-toggle {
+  margin-left: auto;
+  margin-right: 12px;
+  border-color: rgb(255 255 255 / 22%);
+  flex-shrink: 0;
+}
+
+.story-topbar .lang-toggle button {
+  border-right-color: rgb(255 255 255 / 22%);
+  color: rgb(255 255 255 / 62%);
+  padding: 4px 8px;
+  font-size: 10.5px;
+}
+
+html:not([data-langs]) .story-topbar .lang-toggle button[data-value="ja-ko"],
+html[data-langs="ja-ko"] .story-topbar .lang-toggle button[data-value="ja-ko"],
+html[data-langs="en"] .story-topbar .lang-toggle button[data-value="en"],
+html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
+  background: rgb(255 255 255 / 16%);
+  color: #fff;
+}
+
+/* ---------- error / empty states ---------- */
+
+.state__title {
+  margin: 12px 0 0;
+  font-size: clamp(28px, 5vw, 38px);
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.state__actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-top: 28px !important;
+}
+
+.state__retry {
+  padding: 10px 18px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: none;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out);
+}
+
+.state__retry:active {
+  opacity: 0.6;
+}
+
+@media (hover: hover) {
+  .state__retry:hover {
+    border-color: var(--border-strong);
+  }
+}
+
+/* ---------- search ---------- */
+
+.search-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  margin-right: 6px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
+}
+
+.search-toggle:active {
+  opacity: 0.55;
+}
+
+@media (hover: hover) {
+  .search-toggle:hover {
+    color: var(--accent-strong);
+    border-color: var(--border-strong);
+  }
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  font-family: var(--font-reading);
+  font-size: 16px; /* 16px keeps iOS from zooming the field on focus */
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.search-results {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.search-results > li {
+  border-bottom: 1px solid var(--border);
+}
+
+.search-results > li:last-child {
+  border-bottom: none;
+}
+
+.search-results a {
+  display: block;
+  padding: 11px 0;
+}
+
+.search-results a:active {
+  opacity: 0.6;
+}
+
+.search-results__title {
+  display: block;
+  margin-top: 4px;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.search-results__empty {
+  display: block;
+  padding: 14px 0;
+}
+
+/* Korean rendering of a story's heading, kept with the heading rather than
+   paired against a Japanese paragraph. */
+.story-card__subtitle {
+  margin: 6px 0 0;
+  font-size: 16px;
+  line-height: 1.4;
+  color: rgb(255 255 255 / 55%);
+  flex-shrink: 0;
+}
+
+/* A card carries a full Japanese paragraph and its Korean translation. Larger
+   text means a long pair can outgrow the card; the body scrolls when it does. */
+.story-card__body {
+  font-size: 19px;
+}
+
+.story-card__body .has-ruby {
+  line-height: 2.05;
+  margin: 16px 0 6px;
+}
+
+.story-card__body p {
+  margin: 0 0 10px;
+}
+
+.story-card__body .callout {
+  margin: 14px 0 6px;
+  padding: 10px 14px;
+  font-size: 15.5px;
+}
