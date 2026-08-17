@@ -54,9 +54,27 @@ and Watch (`web/lib/config.ts`). It came from the `japan-newsletter-web`
 repository but is not Japan-specific, which is why it sits at `web/` rather than
 next to the generators. See `web/README.md` for its caching and data model.
 
-It is deployed on Vercel and has no GitHub Actions workflow. **After this
-migration the Vercel project's Root Directory must be set to `web/`**, otherwise
-builds fail — the repository root has no `package.json`.
+### Deploying
+
+The site is the Vercel project `heechang-newsletter`, serving
+<https://japan-newsletter.vercel.app>. It has no GitHub Actions workflow and no
+Vercel Git integration — pushing to `main` deploys nothing. Deploys are pushed
+by hand with the Vercel CLI, from inside `web/`:
+
+```bash
+cd web
+vercel deploy          # preview build; preview URLs are SSO-protected
+vercel deploy --prod   # production, re-aliases japan-newsletter.vercel.app
+```
+
+Because the CLI treats the directory you run it from as the project root,
+`web/` is the correct place to run it and no Root Directory setting is
+involved. The link lives in `web/.vercel/`, which is gitignored, so a fresh
+clone runs `vercel link --project heechang-newsletter` once first.
+
+`NOTION_TOKEN` is set on the Vercel project for both production and preview;
+`REVALIDATE_SECRET` is not set, so `POST /api/revalidate` currently answers 401
+to everything.
 
 ## Layout
 
@@ -74,7 +92,7 @@ shared root `requirements.txt`.
   watch-weekly.yml       # watch-newsletter
 requirements.txt         # shared dependency union
 <project>/main.py        # each newsletter's entry point
-web/                     # Next.js site, deployed from Vercel (no workflow)
+web/                     # Next.js site, deployed with the Vercel CLI
 ```
 
 The site keeps its own `package.json` and `tsconfig.json` inside `web/`; the
@@ -112,9 +130,8 @@ Configured as repository secrets:
 Notion database IDs and the shared calendar ID are non-sensitive and are set
 directly in each workflow.
 
-The site does not use these. Its own `NOTION_TOKEN` (a read-only integration
-shared with all four databases) and optional `REVALIDATE_SECRET` are set as
-Vercel environment variables.
+The site does not use these repository secrets; its own environment lives on
+the Vercel project instead — see "Deploying" above.
 
 ## Local development
 
