@@ -15,9 +15,17 @@ export async function generateMetadata({
 }) {
   const { section: sectionKey, id } = await params;
   const section = getSection(sectionKey);
-  // Must be notFound(), not a title: metadata resolves before the page
-  // streams, so returning here commits a 200 and the page component's
-  // own notFound() can then only replace the body — a soft 404.
+  // notFound() rather than a "Not found" title, so metadata is never built for
+  // an issue that does not exist.
+  //
+  // Note this does NOT make the response a 404. With `revalidate` set, Next
+  // renders the not-found body and then stores and serves it as a prerender
+  // with status 200 — verified against a cache MISS on a fresh path. Getting a
+  // true 404 would mean either dropping ISR on this route, or
+  // dynamicParams: false with every issue prerendered, which would 404 each new
+  // issue until the next deploy. Neither is worth it: the body is correct and
+  // the cost is a soft 404 for search engines. /section/<bad> is unaffected and
+  // does return 404.
   if (!section) notFound();
   const post = await getPost(id, section.key);
   if (!post) notFound();
