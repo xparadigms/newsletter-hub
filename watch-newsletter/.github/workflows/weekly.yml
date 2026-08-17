@@ -1,0 +1,37 @@
+name: Watch Weekly — Trilingual Newsletter
+
+on:
+  schedule:
+    # Runs at 00:00 UTC every Saturday = 09:00 KST Saturday
+    - cron: "0 0 * * 6"
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  generate-issue:
+    runs-on: ubuntu-latest
+    # Two sequential Claude calls (summary + 16k-token trilingual) plus the
+    # Notion upload can exceed 5 minutes; give the job room to finish.
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run weekly issue
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          CALENDAR_ID: ad3a712618285ba2a011179683b92bdc10718051482df8d950ccfb95a1f0aa19@group.calendar.google.com
+          NOTION_DATABASE_ID: 3965bc953df381bbb5ece93744153a6a
+          TIMEZONE: Asia/Seoul
+          ISSUE_NUMBER: ${{ github.run_number }}
+        run: python main.py
