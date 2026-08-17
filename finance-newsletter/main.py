@@ -8,6 +8,7 @@ the format spec in claude.md, and inserts a calendar event at 09:00 KST.
 
 import json
 import os
+import pathlib
 import sys
 import time
 from datetime import datetime, timedelta, timezone
@@ -18,6 +19,13 @@ import requests
 from bs4 import BeautifulSoup
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
+
+# The workflow runs with this project as the working directory, so the repo root
+# is not importable. Python only puts the *script's* directory on sys.path.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+
+from shared import furigana, issue as issue_row, store  # noqa: E402
+from shared.http import request_with_retry  # noqa: E402
 
 # ── Config ──────────────────────────────────────────────────────────────────
 CALENDAR_ID = os.environ.get(
@@ -492,77 +500,6 @@ def create_calendar_event(issue_text: str, main_title: str = "Finance Infra") ->
 NOTION_API_URL = "https://api.notion.com/v1/pages"
 NOTION_VERSION = "2022-06-28"
 
-# Retry policy for the Notion API. Notion occasionally resets connections
-# mid-request and rate-limits bursts of block appends; without retries a
-# single transient TCP reset aborts the whole run after the Calendar event
-# has already been created, leaving the issue missing from Notion.
-NOTION_MAX_ATTEMPTS = 5
-NOTION_BACKOFF_BASE = 2.0
-NOTION_MAX_BACKOFF = 30.0
-
-# Transport-level failures that are safe to retry.
-_NOTION_RETRYABLE_EXC = (
-    requests.exceptions.ConnectionError,
-    requests.exceptions.Timeout,
-    requests.exceptions.ChunkedEncodingError,
-)
-
-
-def _notion_request(method: str, url: str, **kwargs) -> requests.Response:
-    """Call the Notion API, retrying transient failures with backoff.
-
-    Retries on connection resets/timeouts, HTTP 429 (honouring Retry-After),
-    and 5xx responses. The final response is returned unchanged so callers
-    keep using ``raise_for_status()`` for genuine, non-retryable errors.
-    """
-    kwargs.setdefault("timeout", 30)
-    last_exc: Exception | None = None
-    resp: requests.Response | None = None
-
-    for attempt in range(NOTION_MAX_ATTEMPTS):
-        is_last = attempt == NOTION_MAX_ATTEMPTS - 1
-
-        try:
-            resp = requests.request(method, url, **kwargs)
-            last_exc = None
-        except _NOTION_RETRYABLE_EXC as e:
-            last_exc, resp = e, None
-            if is_last:
-                break
-            delay = min(NOTION_BACKOFF_BASE ** attempt, NOTION_MAX_BACKOFF)
-            print(
-                f"  ⚠ Notion {method} network error "
-                f"({e.__class__.__name__}); retry {attempt + 1}/"
-                f"{NOTION_MAX_ATTEMPTS - 1} in {delay:.0f}s"
-            )
-            time.sleep(delay)
-            continue
-
-        if resp.status_code == 429 or resp.status_code >= 500:
-            if is_last:
-                break
-            retry_after = resp.headers.get("Retry-After")
-            try:
-                delay = float(retry_after) if retry_after else 0.0
-            except (TypeError, ValueError):
-                delay = 0.0
-            if delay <= 0:
-                delay = min(NOTION_BACKOFF_BASE ** attempt, NOTION_MAX_BACKOFF)
-            print(
-                f"  ⚠ Notion {method} returned {resp.status_code}; retry "
-                f"{attempt + 1}/{NOTION_MAX_ATTEMPTS - 1} in {delay:.0f}s"
-            )
-            time.sleep(delay)
-            continue
-
-        return resp
-
-    if last_exc is not None:
-        raise last_exc
-    return resp
-
-
-# Section headers to detect (ALL CAPS lines from the newsletter)
 _SECTION_HEADERS = [
     "THREE DEEP READS", "THE SWEEP", "FOOD FOR THOUGHT",
     "AMERICAS", "ASIA", "EUROPE", "INFRA & MARKETS",
@@ -681,19 +618,14 @@ def _text_to_notion_blocks(text: str) -> list[dict]:
     return blocks
 
 
-def create_notion_page(issue_text: str, main_title: str = "Finance Infra") -> tuple[str, str]:
-    """Create a Notion page. Returns (url, page_id)."""
+def create_notion_page(
+    all_blocks: list, title: str, date_str: str
+) -> tuple[str, str]:
+    """Mirror an issue to Notion. Blocks are built by the caller so the same
+    list feeds Supabase, Notion and the furigana pass."""
     if not NOTION_TOKEN:
         print("  ⚠ NOTION_TOKEN not set, skipping Notion.")
         return "", ""
-
-    now_kst = datetime.now(KST)
-    title = _issue_title(main_title)
-
-    # Notion API limits children to 100 blocks per request
-    all_blocks = _text_to_notion_blocks(issue_text)
-
-    date_str = now_kst.strftime("%Y-%m-%d")
 
     payload = {
         "parent": {"database_id": NOTION_DATABASE_ID},
@@ -710,7 +642,9 @@ def create_notion_page(issue_text: str, main_title: str = "Finance Infra") -> tu
         "Content-Type": "application/json",
     }
 
-    resp = _notion_request("POST", NOTION_API_URL, headers=headers, json=payload)
+    resp = request_with_retry(
+        "POST", NOTION_API_URL, label="Notion", headers=headers, json=payload
+    )
     resp.raise_for_status()
     page = resp.json()
     page_id = page["id"]
@@ -719,212 +653,12 @@ def create_notion_page(issue_text: str, main_title: str = "Finance Infra") -> tu
     for i in range(100, len(all_blocks), 100):
         batch = all_blocks[i:i+100]
         append_url = f"https://api.notion.com/v1/blocks/{page_id}/children"
-        r = _notion_request(
-            "PATCH", append_url, headers=headers, json={"children": batch}
+        r = request_with_retry(
+            "PATCH", append_url, label="Notion", headers=headers, json={"children": batch}
         )
         r.raise_for_status()
 
     return page.get("url", ""), page_id
-
-
-# ── Furigana Reading Aids ────────────────────────────────────────────────────
-_FURIGANA_SYSTEM = """\
-あなたは日本語のふりがな付与の専門家です。与えられた日本語テキストに正確なふりがなを付けてください。"""
-
-_FURIGANA_PROMPT = """\
-以下の日本語段落それぞれにふりがなを付けてください。
-
-ルール:
-1. 漢字はそのまま残し、直後に丸括弧でひらがな読みを付ける。
-   例: 議員連盟（ぎいんれんめい）、暗号資産（あんごうしさん）
-2. カタカナ・数字・ラテン文字・句読点・記号はそのまま残す。
-3. 送り仮名を正しく処理する。
-   例: 求（もと）める、基（もと）づく、円建（えんだ）て
-4. 元のテキストにすでに読みが括弧で示されている場合はそのまま維持する。
-5. 固有名詞（人名・社名・地名）にもふりがなを付ける。
-6. 各段落を [番号] で区切って返す。余計な説明は付けない。
-
-{paragraphs}
-"""
-
-
-def _has_japanese_chars(text: str) -> bool:
-    return any(
-        "\u3040" <= c <= "\u309f" or "\u30a0" <= c <= "\u30ff"
-        for c in text
-    )
-
-
-def _has_korean_chars(text: str) -> bool:
-    return any("\uac00" <= c <= "\ud7af" for c in text)
-
-
-def _is_jp_body(text: str) -> bool:
-    if not text or _has_korean_chars(text) or not _has_japanese_chars(text):
-        return False
-    if text.startswith("왜 "):
-        return False
-    return True
-
-
-def _block_plain_text(block: dict) -> str:
-    btype = block["type"]
-    rt = block.get(btype, {}).get("rich_text", [])
-    return "".join(t.get("plain_text", "") for t in rt)
-
-
-def _fetch_page_blocks(page_id: str) -> list[dict]:
-    headers = {
-        "Authorization": f"Bearer {NOTION_TOKEN}",
-        "Notion-Version": NOTION_VERSION,
-    }
-    blocks: list[dict] = []
-    cursor = None
-    while True:
-        url = f"https://api.notion.com/v1/blocks/{page_id}/children?page_size=100"
-        if cursor:
-            url += f"&start_cursor={cursor}"
-        r = _notion_request("GET", url, headers=headers)
-        r.raise_for_status()
-        data = r.json()
-        blocks.extend(data["results"])
-        if not data.get("has_more"):
-            break
-        cursor = data["next_cursor"]
-    return blocks
-
-
-def _find_furigana_targets(blocks: list[dict]) -> list[tuple[int, str, str]]:
-    """Find Japanese paragraphs between a 🇯🇵 callout and a 📝 callout."""
-    targets: list[tuple[int, str, str]] = []
-    n = len(blocks)
-    i = 0
-    while i < n:
-        b = blocks[i]
-        btype = b["type"]
-        text = _block_plain_text(b)
-
-        # After a 🇯🇵 callout, collect JP paragraphs until 📝 callout or divider
-        if btype == "callout":
-            icon = b.get("callout", {}).get("icon", {}).get("emoji", "")
-            if icon == "🇯🇵":
-                i += 1
-                while i < n:
-                    bb = blocks[i]
-                    bt = bb["type"]
-                    tt = _block_plain_text(bb)
-                    # Stop at next callout, divider, or heading
-                    if bt in ("callout", "divider") or bt.startswith("heading"):
-                        break
-                    if bt == "paragraph" and _is_jp_body(tt):
-                        targets.append((i, bb["id"], tt))
-                    elif bt == "bulleted_list_item" and _is_jp_body(tt):
-                        targets.append((i, bb["id"], tt))
-                    i += 1
-                continue
-
-        i += 1
-    return targets
-
-
-def _generate_furigana_batch(
-    paragraphs: list[tuple[int, str, str]],
-) -> dict[int, str]:
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-    parts = [f"[{idx}]\n{text}" for idx, (_, _, text) in enumerate(paragraphs)]
-    prompt = _FURIGANA_PROMPT.format(paragraphs="\n\n".join(parts))
-    resp = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=20000,
-        system=_FURIGANA_SYSTEM,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    raw = resp.content[0].text
-    results: dict[int, str] = {}
-    cur_idx: int | None = None
-    cur_lines: list[str] = []
-    for line in raw.split("\n"):
-        stripped = line.strip()
-        if stripped.startswith("[") and "]" in stripped:
-            try:
-                idx = int(stripped[1:stripped.index("]")])
-                if cur_idx is not None:
-                    results[cur_idx] = "\n".join(cur_lines).strip()
-                cur_idx = idx
-                cur_lines = []
-                rest = stripped[stripped.index("]") + 1:].strip()
-                if rest:
-                    cur_lines.append(rest)
-            except ValueError:
-                cur_lines.append(line)
-        elif cur_idx is not None:
-            cur_lines.append(line)
-    if cur_idx is not None:
-        results[cur_idx] = "\n".join(cur_lines).strip()
-    return results
-
-
-def _insert_notion_toggle(
-    page_id: str, after_block_id: str, furigana: str,
-) -> None:
-    chunks = []
-    remaining = furigana
-    while len(remaining) > 2000:
-        chunks.append(remaining[:2000])
-        remaining = remaining[2000:]
-    chunks.append(remaining)
-    children = [
-        {
-            "type": "paragraph",
-            "paragraph": {
-                "rich_text": [{"type": "text", "text": {"content": c}}],
-            },
-        }
-        for c in chunks
-    ]
-    toggle = {
-        "type": "toggle",
-        "toggle": {
-            "rich_text": [
-                {"type": "text", "text": {"content": "ふりがな（ひらがな）"}},
-            ],
-            "children": children,
-        },
-    }
-    headers = {
-        "Authorization": f"Bearer {NOTION_TOKEN}",
-        "Notion-Version": NOTION_VERSION,
-        "Content-Type": "application/json",
-    }
-    url = f"https://api.notion.com/v1/blocks/{page_id}/children"
-    r = _notion_request(
-        "PATCH", url,
-        headers=headers, json={"children": [toggle], "after": after_block_id},
-    )
-    r.raise_for_status()
-
-
-def add_furigana_to_page(page_id: str) -> int:
-    """Add furigana toggles to Japanese paragraphs on a Notion page."""
-    print("▸ Adding furigana reading aids...")
-    blocks = _fetch_page_blocks(page_id)
-    targets = _find_furigana_targets(blocks)
-    print(f"  {len(targets)} Japanese paragraphs found.")
-    if not targets:
-        return 0
-    furigana_map = _generate_furigana_batch(targets)
-    print(f"  Furigana generated for {len(furigana_map)}/{len(targets)} paragraphs.")
-    inserted = 0
-    for idx in reversed(range(len(targets))):
-        _, block_id, _ = targets[idx]
-        furigana = furigana_map.get(idx)
-        if not furigana:
-            continue
-        _insert_notion_toggle(page_id, block_id, furigana)
-        inserted += 1
-        time.sleep(0.35)
-    print(f"  ✓ {inserted} furigana toggles inserted.")
-    return inserted
 
 
 # ── Main ─────────────────────────────────────────────────────────────────────
@@ -959,25 +693,64 @@ def run():
     main_title, issue_text = generate_issue(items_for_llm)
     print(f"  Title: [Finance Infra #{ISSUE_NUMBER}] ({main_title})")
 
-    # Notion first: it is the durable archive, and it is the step most prone to
-    # transient network failure. Writing it before the Calendar event means a
-    # Notion failure aborts the run *before* any external side effect exists,
-    # so a re-run recreates both cleanly instead of duplicating the event.
-    print("▸ Saving to Notion...")
-    notion_url, notion_page_id = create_notion_page(issue_text, main_title)
-    if notion_url:
-        print(f"✓ Notion page created: {notion_url}")
+    # Build the blocks once. They feed the furigana pass, Supabase and Notion,
+    # so the three can never disagree about what the issue contains.
+    all_blocks = _text_to_notion_blocks(issue_text)
+    try:
+        all_blocks = furigana.augment(
+            all_blocks, variant="callout", api_key=ANTHROPIC_API_KEY
+        )
+    except furigana.NoFuriganaTargets as e:
+        # Loud, because silently publishing without furigana is the failure this
+        # is designed to surface. Not fatal: the issue is still worth shipping.
+        print(f"  ✗ FURIGANA FOUND NO TARGETS — publishing without it: {e}")
+    except Exception as e:
+        print(f"  ⚠ Furigana failed (non-fatal): {e}")
+
+    date_str = now_kst.strftime("%Y-%m-%d")
+    raw_title = _issue_title(main_title)
+
+    # Supabase first. This inverts the old ordering, where Notion went first
+    # precisely so a Notion failure aborted the run before the Calendar event
+    # existed. Notion is a mirror now and the site reads Supabase, so this is
+    # the write that must land; a failed mirror leaves a live issue with
+    # notion_page_id null rather than no issue at all.
+    print("▸ Saving to Supabase...")
+    row = issue_row.build_row(
+        section="fintech",
+        issue_date=date_str,
+        raw_title=raw_title,
+        notion_blocks=all_blocks,
+        source_text=issue_text,
+        source_format="plain",
+    )
+    stored = store.upsert_issue(row)
+    if stored.get("slug"):
+        print(f"✓ Stored: fintech/{stored['slug']}")
+
+    print("▸ Mirroring to Notion...")
+    try:
+        notion_url, notion_page_id = create_notion_page(all_blocks, raw_title, date_str)
+        if notion_url:
+            print(f"✓ Notion page created: {notion_url}")
+            if stored.get("slug"):
+                store.patch_issue(
+                    row["run_key"],
+                    {"notion_page_id": notion_page_id, "notion_url": notion_url},
+                )
+    except Exception as e:
+        print(f"  ⚠ Notion mirror failed (non-fatal): {e}")
 
     print("▸ Creating Google Calendar event...")
-    event_link = create_calendar_event(issue_text, main_title)
-    print(f"✓ Event created: {event_link}")
+    try:
+        event_link = create_calendar_event(issue_text, main_title)
+        if event_link:
+            print(f"✓ Event created: {event_link}")
+    except Exception as e:
+        print(f"  ⚠ Calendar failed (non-fatal): {e}")
 
-    # Add furigana reading aids to the Japanese sections
-    if notion_page_id:
-        try:
-            add_furigana_to_page(notion_page_id)
-        except Exception as e:
-            print(f"  ⚠ Furigana step failed (non-fatal): {e}")
+    if stored.get("slug"):
+        store.ping_revalidate("fintech", stored["slug"])
 
 
 if __name__ == "__main__":

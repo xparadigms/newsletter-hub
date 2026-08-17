@@ -9,6 +9,7 @@ creates a trilingual Notion page with furigana toggles and Korean callouts.
 
 import json
 import os
+import pathlib
 import re
 import sys
 from datetime import datetime, timedelta, timezone
@@ -22,7 +23,13 @@ from bs4 import BeautifulSoup
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
-from upload_trilingual_to_notion import _md_to_blocks as trilingual_to_blocks
+# The workflow runs with this project as the working directory, so the repo
+# root is not importable. Python only puts the *script's* directory on sys.path.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+
+from shared import issue as issue_row, store  # noqa: E402
+from shared.http import request_with_retry  # noqa: E402
+from shared.trilingual import md_to_blocks as trilingual_to_blocks  # noqa: E402
 
 # ── Config ──────────────────────────────────────────────────────────────────
 CALENDAR_ID = os.environ.get("CALENDAR_ID", "ad3a712618285ba2a011179683b92bdc10718051482df8d950ccfb95a1f0aa19@group.calendar.google.com")
@@ -522,18 +529,13 @@ def _text_to_notion_blocks(text: str) -> list[dict]:
     return blocks
 
 
-def create_notion_page(trilingual_md: str, main_title: str = "Startup News") -> str:
-    """Create a Notion page with trilingual content."""
+def create_notion_page(all_blocks: list, title: str, date_str: str) -> str:
+    """Mirror an issue to Notion. Blocks are built by the caller so the same
+    list feeds both Supabase and Notion."""
     if not NOTION_TOKEN:
         print("  ⚠ NOTION_TOKEN not set, skipping Notion.")
         return ""
 
-    now_kst = datetime.now(KST)
-    title = _issue_title(main_title)
-
-    all_blocks = trilingual_to_blocks(trilingual_md)
-    date_str = now_kst.strftime("%Y-%m-%d")
-    print(f"  Parsed {len(all_blocks)} Notion blocks.")
 
     payload = {
         "parent": {"database_id": NOTION_DATABASE_ID},
@@ -550,7 +552,10 @@ def create_notion_page(trilingual_md: str, main_title: str = "Startup News") -> 
         "Content-Type": "application/json",
     }
 
-    resp = requests.post(NOTION_API_URL, headers=headers, json=payload, timeout=60)
+    resp = request_with_retry(
+        "POST", NOTION_API_URL, label="Notion", headers=headers, json=payload,
+        timeout=60,
+    )
     resp.raise_for_status()
     page = resp.json()
     page_id = page["id"]
@@ -559,7 +564,10 @@ def create_notion_page(trilingual_md: str, main_title: str = "Startup News") -> 
     for i in range(100, len(all_blocks), 100):
         batch = all_blocks[i:i + 100]
         append_url = f"https://api.notion.com/v1/blocks/{page_id}/children"
-        r = requests.patch(append_url, headers=headers, json={"children": batch}, timeout=60)
+        r = request_with_retry(
+            "PATCH", append_url, label="Notion", headers=headers,
+            json={"children": batch}, timeout=60,
+        )
         r.raise_for_status()
         print(f"  Appended blocks {i}–{i + len(batch)}.")
 
@@ -589,28 +597,56 @@ def run():
         print(f"  ⚠ Trilingual conversion failed (non-fatal): {e}")
         trilingual_md = ""
 
+    if not trilingual_md:
+        print("✗ No trilingual content — nothing to publish.")
+        sys.exit(1)
+
+    # Build the blocks once so the same list feeds Supabase and Notion.
+    all_blocks = trilingual_to_blocks(trilingual_md)
+    print(f"  Parsed {len(all_blocks)} Notion blocks.")
+
+    date_str = datetime.now(KST).strftime("%Y-%m-%d")
+    raw_title = _issue_title(main_title)
+
+    # Supabase first: it is what the site reads, so it is the write that must
+    # land. Notion and Calendar are mirrors and neither can fail the run.
+    print("▸ Saving to Supabase...")
+    row = issue_row.build_row(
+        section="startup",
+        issue_date=date_str,
+        raw_title=raw_title,
+        notion_blocks=all_blocks,
+        source_text=trilingual_md,
+        source_format="trilingual_md",
+    )
+    stored = store.upsert_issue(row)
+    if stored.get("slug"):
+        print(f"✓ Stored: startup/{stored['slug']}")
+
+    print("▸ Mirroring to Notion...")
+    try:
+        notion_url = create_notion_page(all_blocks, raw_title, date_str)
+        if notion_url:
+            print(f"✓ Notion page created: {notion_url}")
+            if stored.get("slug"):
+                store.patch_issue(row["run_key"], {"notion_url": notion_url})
+    except Exception as e:
+        print(f"  ⚠ Notion mirror failed (non-fatal): {e}")
+
     if CALENDAR_ID and GCP_SA_KEY:
         try:
             print("▸ Creating Google Calendar event (trilingual EN/JP/KR)...")
-            calendar_text = (
-                _trilingual_to_calendar_text(trilingual_md)
-                if trilingual_md
-                else summary
+            event_link = create_calendar_event(
+                _trilingual_to_calendar_text(trilingual_md), main_title
             )
-            event_link = create_calendar_event(calendar_text, main_title)
             print(f"✓ Event created: {event_link}")
         except Exception as e:
             print(f"  ⚠ Calendar failed (non-fatal): {e}")
     else:
         print("  ⚠ CALENDAR_ID or GCP_SA_KEY not set, skipping Calendar.")
 
-    if trilingual_md:
-        print("▸ Saving trilingual edition to Notion...")
-        notion_url = create_notion_page(trilingual_md, main_title)
-        if notion_url:
-            print(f"✓ Notion page created: {notion_url}")
-    else:
-        print("  ⚠ Skipping Notion (no trilingual content).")
+    if stored.get("slug"):
+        store.ping_revalidate("startup", stored["slug"])
 
 
 if __name__ == "__main__":

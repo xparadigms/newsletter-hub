@@ -13,6 +13,7 @@ Format mirrors ../startup-newsletter; source is watch RSS instead of Telegram.
 from __future__ import annotations
 
 import os
+import pathlib
 import re
 import sys
 import json
@@ -28,7 +29,13 @@ from bs4 import BeautifulSoup
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
-from upload_trilingual_to_notion import _md_to_blocks as trilingual_to_blocks
+# The workflow runs with this project as the working directory, so the repo
+# root is not importable. Python only puts the *script's* directory on sys.path.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+
+from shared import issue as issue_row, store  # noqa: E402
+from shared.http import request_with_retry  # noqa: E402
+from shared.trilingual import md_to_blocks as trilingual_to_blocks  # noqa: E402
 
 # ── Config ──────────────────────────────────────────────────────────────────
 CALENDAR_ID = os.environ.get(
@@ -461,57 +468,36 @@ def _notion_headers() -> dict:
     }
 
 
-def _discover_props() -> tuple[str, str | None]:
-    """Find the DB's title property and an optional date property by type.
-
-    Makes the writer resilient to whatever the target database is named.
-    """
-    r = requests.get(
-        f"https://api.notion.com/v1/databases/{NOTION_DATABASE_ID}",
-        headers=_notion_headers(), timeout=30,
-    )
-    r.raise_for_status()
-    props = r.json().get("properties", {})
-    title_prop = next((n for n, p in props.items() if p.get("type") == "title"), "Name")
-    date_prop = next((n for n, p in props.items() if p.get("type") == "date"), None)
-    return title_prop, date_prop
-
-
-def create_notion_page(trilingual_md: str, main_title: str = "Watch Weekly") -> str:
-    """Create a Notion page with trilingual content in the target database."""
+def create_notion_page(all_blocks: list, title: str, date_str: str) -> str:
+    """Mirror an issue to Notion. Blocks are built by the caller so the same
+    list feeds both Supabase and Notion."""
     if not NOTION_TOKEN:
         print("  ⚠ NOTION_TOKEN not set, skipping Notion.")
         return ""
 
-    now_kst = datetime.now(KST)
-    title = _issue_title(main_title)
-    date_str = now_kst.strftime("%Y-%m-%d")
-
-    all_blocks = trilingual_to_blocks(trilingual_md)
-    print(f"  Parsed {len(all_blocks)} Notion blocks.")
-
-    title_prop, date_prop = _discover_props()
-    properties = {title_prop: {"title": [{"text": {"content": title}}]}}
-    if date_prop:
-        properties[date_prop] = {"date": {"start": date_str}}
-
     payload = {
         "parent": {"database_id": NOTION_DATABASE_ID},
-        "properties": properties,
+        "properties": {
+            "Name": {"title": [{"text": {"content": title}}]},
+            "Date": {"date": {"start": date_str}},
+        },
         "children": all_blocks[:100],
     }
     headers = _notion_headers()
 
-    resp = requests.post(NOTION_API_URL, headers=headers, json=payload, timeout=60)
+    resp = request_with_retry(
+        "POST", NOTION_API_URL, label="Notion", headers=headers, json=payload,
+        timeout=60,
+    )
     resp.raise_for_status()
     page = resp.json()
     page_id = page["id"]
 
     for i in range(100, len(all_blocks), 100):
         batch = all_blocks[i:i + 100]
-        r = requests.patch(
-            f"https://api.notion.com/v1/blocks/{page_id}/children",
-            headers=headers, json={"children": batch}, timeout=60,
+        r = request_with_retry(
+            "PATCH", f"https://api.notion.com/v1/blocks/{page_id}/children",
+            label="Notion", headers=headers, json={"children": batch}, timeout=60,
         )
         r.raise_for_status()
         print(f"  Appended blocks {i}–{i + len(batch)}.")
@@ -543,29 +529,56 @@ def run():
         print(f"  ⚠ Trilingual conversion failed (non-fatal): {e}")
         trilingual_md = ""
 
+    if not trilingual_md:
+        print("✗ No trilingual content — nothing to publish.")
+        sys.exit(1)
+
+    # Build the blocks once so the same list feeds Supabase and Notion.
+    all_blocks = trilingual_to_blocks(trilingual_md)
+    print(f"  Parsed {len(all_blocks)} Notion blocks.")
+
+    date_str = datetime.now(KST).strftime("%Y-%m-%d")
+    raw_title = _issue_title(main_title)
+
+    # Supabase first: it is what the site reads, so it is the write that must
+    # land. Notion and Calendar are mirrors and neither can fail the run.
+    print("▸ Saving to Supabase...")
+    row = issue_row.build_row(
+        section="watch",
+        issue_date=date_str,
+        raw_title=raw_title,
+        notion_blocks=all_blocks,
+        source_text=trilingual_md,
+        source_format="trilingual_md",
+    )
+    stored = store.upsert_issue(row)
+    if stored.get("slug"):
+        print(f"✓ Stored: watch/{stored['slug']}")
+
+    print("▸ Mirroring to Notion...")
+    try:
+        notion_url = create_notion_page(all_blocks, raw_title, date_str)
+        if notion_url:
+            print(f"✓ Notion page created: {notion_url}")
+            if stored.get("slug"):
+                store.patch_issue(row["run_key"], {"notion_url": notion_url})
+    except Exception as e:
+        print(f"  ⚠ Notion mirror failed (non-fatal): {e}")
+
     if CALENDAR_ID and _load_gcp_sa_info():
         try:
             print("▸ Creating Google Calendar event (trilingual EN/JP/KR)...")
-            calendar_text = (
-                _trilingual_to_calendar_text(trilingual_md) if trilingual_md else summary
+            event_link = create_calendar_event(
+                _trilingual_to_calendar_text(trilingual_md), main_title
             )
-            event_link = create_calendar_event(calendar_text, main_title)
             print(f"✓ Event created: {event_link}")
         except Exception as e:
             print(f"  ⚠ Calendar failed (non-fatal): {e}")
     else:
         print("  ⚠ CALENDAR_ID or GCP_SA_KEY not set, skipping Calendar.")
 
-    if trilingual_md:
-        print("▸ Saving trilingual edition to Notion...")
-        try:
-            notion_url = create_notion_page(trilingual_md, main_title)
-            if notion_url:
-                print(f"✓ Notion page created: {notion_url}")
-        except Exception as e:
-            print(f"  ⚠ Notion failed: {e}")
-    else:
-        print("  ⚠ Skipping Notion (no trilingual content).")
+    if stored.get("slug"):
+        store.ping_revalidate("watch", stored["slug"])
 
 
 if __name__ == "__main__":

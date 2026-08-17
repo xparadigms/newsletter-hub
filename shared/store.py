@@ -18,6 +18,10 @@ from . import http
 TABLE = "newsletter"
 
 
+def configured() -> bool:
+    return bool(os.environ.get("SUPABASE_URL") and os.environ.get("SUPABASE_SECRET_KEY"))
+
+
 def _config() -> tuple[str, str]:
     url = (os.environ.get("SUPABASE_URL") or "").rstrip("/")
     key = os.environ.get("SUPABASE_SECRET_KEY") or ""
@@ -45,6 +49,14 @@ def upsert_issue(row: dict[str, Any]) -> dict[str, Any]:
     the database trigger derives it and preserves an existing one, so a rerun
     whose headline changed keeps the URL it published under.
     """
+    if not configured():
+        # During the migration the secrets may not exist yet. Skipping keeps the
+        # Notion and Calendar mirrors working rather than failing the whole run
+        # before either has happened — the same posture as a missing
+        # NOTION_TOKEN. A configured-but-failing write still raises.
+        print("  ⚠ SUPABASE_URL/SUPABASE_SECRET_KEY not set, skipping Supabase.")
+        return {}
+
     url, key = _config()
     row = {k: v for k, v in row.items() if k != "slug"}
     resp = http.request_with_retry(
