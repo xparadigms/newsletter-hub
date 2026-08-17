@@ -1,5 +1,25 @@
+# Python
 __pycache__/
 *.pyc
+*.pyo
+.venv/
+venv/
+
+# Secrets — never commit. Each project keeps its own local env file.
 .env
+.env.*
+!.env.example
+*-service-account.json
+service-account*.json
+credentials*.json
+gcp-*.json
+
+# Google/Notion credential dumps and other stray JSON
 *.json
 !requirements.txt
+!package.json
+!tsconfig.json
+
+# OS / editor
+.DS_Store
+.conductor/
