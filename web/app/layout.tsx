@@ -6,7 +6,7 @@ import ServiceWorker from "@/components/ServiceWorker";
 import SwipeBack from "@/components/SwipeBack";
 import TabBar from "@/components/TabBar";
 import { SECTIONS, SITE } from "@/lib/config";
-import { notionConnected } from "@/lib/notion";
+import { dataConnected } from "@/lib/posts";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -133,7 +133,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: bootScript }} />
         <ServiceWorker />
         <NavBar />
-        {!notionConnected && (
+        {!dataConnected && (
           <div className="notice">
             <div className="container">
               <p>Set NOTION_TOKEN to load content from the Notion databases</p>

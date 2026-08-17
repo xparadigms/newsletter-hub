@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { SECTIONS, SITE } from "@/lib/config";
-import { getAllPosts } from "@/lib/notion";
+import { getAllPosts } from "@/lib/posts";
 
 export const revalidate = 3600;
 

@@ -14,7 +14,7 @@ interface Entry {
   r: string | null; // series
 }
 
-const CACHE_KEY = "search-index";
+const CACHE_KEY = "search-index-v2";
 const LIMIT = 25;
 
 export default function Search() {

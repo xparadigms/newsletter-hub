@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { SECTIONS } from "@/lib/config";
-import { getAllPosts } from "@/lib/notion";
+import { getAllPosts } from "@/lib/posts";
 
 export const revalidate = 300;
 

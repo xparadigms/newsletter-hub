@@ -25,10 +25,11 @@ export const dataConnected = Boolean(url && key);
 const supabase =
   url && key ? createClient(url, key, { auth: { persistSession: false } }) : null;
 
-// Cache tags, invalidated on demand by /api/revalidate.
+// The list cache tag, invalidated on demand by /api/revalidate. There is no
+// body tag: getPost is wrapped in React cache() only, so a body tag would have
+// nothing attached to it — the route's ISR entry is what holds a stale issue,
+// and /api/revalidate calls revalidatePath for that.
 export const POSTS_TAG = "posts";
-export const POST_TAG = "post";
-export const postTag = (slug: string) => `${POST_TAG}:${slug}`;
 
 // Everything a list needs. Never "*": blocks is ~40KB a row and a section index
 // is ~130 rows, so selecting it here would move megabytes per render for data

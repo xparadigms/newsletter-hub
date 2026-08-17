@@ -1,19 +1,14 @@
 import { notFound } from "next/navigation";
-import { after } from "next/server";
 import PageTransition from "@/components/PageTransition";
 import PostList from "@/components/PostList";
 import PullToRefresh from "@/components/PullToRefresh";
 import { getSection, SECTIONS, SITE } from "@/lib/config";
 import { groupByMonth } from "@/lib/feed";
-import { getPosts } from "@/lib/notion";
-import { warmRecent } from "@/lib/warm";
+import { getPosts } from "@/lib/posts";
 
 export const revalidate = 300;
 // Warming runs in after(), which shares this invocation's time budget. The
 // default 10s cuts a pass off after two issues; 60s lets a full pass finish.
-// The page itself still returns in well under a second.
-export const maxDuration = 60;
-
 export function generateStaticParams() {
   return SECTIONS.map((s) => ({ key: s.key }));
 }
@@ -48,8 +43,6 @@ export default async function SectionPage({
   const groups = groupByMonth(posts);
 
   // Fill the article cache for this section's newest issues once the list has
-  // been sent, so the reader's next tap doesn't wait on Notion.
-  after(() => warmRecent(posts));
 
   return (
     <PageTransition>

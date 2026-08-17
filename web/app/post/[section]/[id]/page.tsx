@@ -6,7 +6,7 @@ import PageTransition from "@/components/PageTransition";
 import TableOfContents from "@/components/TableOfContents";
 import { getSection, SECTIONS, SITE } from "@/lib/config";
 import { findAdjacent, formatShortDate } from "@/lib/feed";
-import { getAllPosts, getPost, getPosts } from "@/lib/notion";
+import { getAllPosts, getPost, getPosts } from "@/lib/posts";
 import { annotateBlocks, buildToc, readingTime } from "@/lib/text";
 
 // A published issue is immutable and its body is cached until /api/revalidate

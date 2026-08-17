@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import StoryViewer from "@/components/story/StoryViewer";
 import { getSection } from "@/lib/config";
 import { findAdjacent } from "@/lib/feed";
-import { getPost, getPosts } from "@/lib/notion";
+import { getPost, getPosts } from "@/lib/posts";
 import { buildDeck } from "@/lib/story";
 import { annotateBlocks, readingTime } from "@/lib/text";
 

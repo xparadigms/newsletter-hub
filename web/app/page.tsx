@@ -1,4 +1,3 @@
-import { after } from "next/server";
 import LatestRail from "@/components/LatestRail";
 import PageTransition from "@/components/PageTransition";
 import PrefetchLink from "@/components/PrefetchLink";
@@ -6,15 +5,11 @@ import PullToRefresh from "@/components/PullToRefresh";
 import SectionModule from "@/components/SectionModule";
 import { getSection, SECTIONS, SITE } from "@/lib/config";
 import { flattenLatest, formatShortDate, pickLead } from "@/lib/feed";
-import { getAllPosts } from "@/lib/notion";
-import { warmRecent } from "@/lib/warm";
+import { getAllPosts } from "@/lib/posts";
 
 export const revalidate = 300;
 // Warming runs in after(), which shares this invocation's time budget. The
 // default 10s cuts a pass off after two issues; 60s lets a full pass finish.
-// The page itself still returns in well under a second.
-export const maxDuration = 60;
-
 function formatDate(date: string | null): string | null {
   if (!date) return null;
   const d = new Date(`${date}T00:00:00`);
@@ -35,7 +30,6 @@ export default async function Home() {
   const secondary = rest.slice(0, 3);
   const rail = rest.slice(3, 9);
   // The lead, secondary row and rail are the most likely next taps.
-  after(() => warmRecent([lead, ...secondary, ...rail].filter((p) => p !== null)));
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
