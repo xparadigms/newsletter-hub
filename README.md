@@ -4,9 +4,29 @@ Monorepo for four automated newsletters. Each generates an issue with Anthropic
 Claude, writes it to a Notion database, and adds a Google Calendar event.
 
 Consolidated from four separate repositories: `finance-newsletter`,
-`japan-newsletter`, `startup-techcrunch-summary`, and `watch-newsletter`. Each
-project's full commit history was preserved via `git subtree`, so
-`git log --follow -- <project>/main.py` still shows its development record.
+`japan-newsletter`, `startup-techcrunch-summary`, and `watch-newsletter`. Every
+project's full commit history is preserved.
+
+### Reading pre-migration history
+
+Finance was moved with `git mv`, so ordinary rename following works:
+
+```bash
+git log --follow -- finance-newsletter/main.py
+```
+
+Japan, Startup, and Watch were brought in with `git subtree`, which attaches
+their history through a merge commit. `--follow` does **not** traverse merges,
+so it reports nothing for those paths. Reach their original commits through the
+merge commit's second parent instead:
+
+```bash
+# list a project's pre-migration commits
+git log --oneline "$(git log --format=%H --grep='Merge japan-newsletter into monorepo' -1)^2"
+```
+
+The original commit SHAs are unchanged, so `git show <old-sha>` also still works
+directly.
 
 ## Projects
 
