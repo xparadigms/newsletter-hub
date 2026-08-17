@@ -44,6 +44,64 @@ def parse_meta(issue_text: str) -> tuple[str, str | None]:
     return main_title, summary
 
 
+def to_notion_blocks(blocks: list[dict]) -> list[dict]:
+    """The website's Block[] → Notion blocks, for the browsable mirror.
+
+    Notion has no per-word ruby, so a `pinyin` block becomes the Chinese
+    sentence as a paragraph followed by a 拼音 toggle holding the readings —
+    the same shape the Japanese newsletters use for furigana, so the two read
+    consistently in Notion. The readings are joined in reading order, which is
+    what you want when checking a word rather than reading the line.
+    """
+    out: list[dict] = []
+
+    def rich(text: str) -> list[dict]:
+        return [{"type": "text", "text": {"content": text[:2000]}}]
+
+    for b in blocks:
+        kind = b["type"]
+        if kind == "heading":
+            out.append(
+                {"type": "heading_3", "heading_3": {"rich_text": rich(b["text"])}}
+            )
+        elif kind == "pinyin":
+            sentence = "".join(w["text"] for w in b["words"])
+            reading = " ".join(w["pinyin"] for w in b["words"] if w.get("pinyin"))
+            out.append({"type": "paragraph", "paragraph": {"rich_text": rich(sentence)}})
+            if reading:
+                out.append(
+                    {
+                        "type": "toggle",
+                        "toggle": {
+                            "rich_text": rich("拼音"),
+                            "children": [
+                                {
+                                    "type": "paragraph",
+                                    "paragraph": {"rich_text": rich(reading)},
+                                }
+                            ],
+                        },
+                    }
+                )
+        elif kind == "quote":
+            # The Korean read-through, in the callout the other newsletters use
+            # for translations so it reads the same in Notion.
+            out.append(
+                {
+                    "type": "callout",
+                    "callout": {
+                        "rich_text": rich(b["text"]),
+                        "icon": {"emoji": "📝"},
+                    },
+                }
+            )
+        elif kind == "paragraph":
+            out.append({"type": "paragraph", "paragraph": {"rich_text": rich(b["text"])}})
+        elif kind == "divider":
+            out.append({"type": "divider", "divider": {}})
+    return out
+
+
 def build_blocks(issue_text: str) -> tuple[list[dict], int, int]:
     """Return (blocks, story_count, unsegmented_line_count)."""
     blocks: list[dict] = []

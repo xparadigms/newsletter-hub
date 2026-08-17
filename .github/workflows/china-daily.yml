@@ -33,11 +33,12 @@ jobs:
         run: pip install -r ../requirements.txt
 
       - name: Run daily issue
-        # Supabase-only: no NOTION_TOKEN, no NOTION_DATABASE_ID, no GCP_SA_KEY
-        # and no CALENDAR_ID, because this newsletter has no Notion mirror and
-        # creates no calendar event.
+        # No GCP_SA_KEY and no CALENDAR_ID: this newsletter creates no calendar
+        # event. Notion is a browsable mirror, written after Supabase.
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: 3bf5bc953df38025952ce0086f4e5576
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           SITE_URL: ${{ secrets.SITE_URL }}

@@ -15,9 +15,12 @@ export async function generateMetadata({
 }) {
   const { section: sectionKey, id } = await params;
   const section = getSection(sectionKey);
-  if (!section) return { title: "Not found" };
+  // Must be notFound(), not a title: metadata resolves before the page
+  // streams, so returning here commits a 200 and the page component's
+  // own notFound() can then only replace the body — a soft 404.
+  if (!section) notFound();
   const post = await getPost(id, section.key);
-  if (!post) return { title: "Not found" };
+  if (!post) notFound();
   const description = post.summary ?? `${section.title} in story form.`;
   return {
     title: `${post.title} — Story`,

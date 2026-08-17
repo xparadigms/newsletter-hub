@@ -5,9 +5,9 @@ Scrapes Chinese-language and China-desk news, writes a short-paragraph issue in
 Simplified Chinese with a Korean translation per story, segments each sentence
 into words with pinyin, and stores it.
 
-Supabase-only. Unlike the other four generators there is no Notion mirror and no
-calendar event: the site reads Supabase now, so a second copy would be a
-liability rather than an archive.
+Supabase is the system of record and is written first. Notion gets a mirror for
+browsing, like the other four, but it cannot fail the run — and there is no
+calendar event.
 """
 
 import os
@@ -27,9 +27,16 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 import blocks as china_blocks  # noqa: E402
 from shared import issue as issue_row, store  # noqa: E402
+from shared.http import request_with_retry  # noqa: E402
 
 # ── Config ──────────────────────────────────────────────────────────────────
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
+NOTION_TOKEN = os.environ.get("NOTION_TOKEN", "")
+NOTION_DATABASE_ID = os.environ.get(
+    "NOTION_DATABASE_ID", "3bf5bc953df38025952ce0086f4e5576"
+)
+NOTION_API_URL = "https://api.notion.com/v1/pages"
+NOTION_VERSION = "2022-06-28"
 TIMEZONE = os.environ.get("TIMEZONE", "Asia/Seoul")
 KST = timezone(timedelta(hours=9))
 ISSUE_NUMBER = int(os.environ.get("ISSUE_NUMBER", "1"))
@@ -251,6 +258,47 @@ def _issue_title(main_title: str) -> str:
     return f"[China Daily #{ISSUE_NUMBER}] ({main_title})"
 
 
+def create_notion_page(all_blocks: list, title: str, date_str: str) -> str:
+    """Mirror the issue to Notion. Returns the page URL, or "" if unconfigured."""
+    if not NOTION_TOKEN or not NOTION_DATABASE_ID:
+        print("  ⚠ NOTION_TOKEN or NOTION_DATABASE_ID not set, skipping Notion.")
+        return ""
+
+    headers = {
+        "Authorization": f"Bearer {NOTION_TOKEN}",
+        "Notion-Version": NOTION_VERSION,
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "parent": {"database_id": NOTION_DATABASE_ID},
+        "properties": {
+            "Name": {"title": [{"text": {"content": title}}]},
+            "Date": {"date": {"start": date_str}},
+        },
+        "children": all_blocks[:100],
+    }
+    resp = request_with_retry(
+        "POST", NOTION_API_URL, label="Notion", headers=headers, json=payload, timeout=60
+    )
+    resp.raise_for_status()
+    page = resp.json()
+    page_id = page["id"]
+
+    # Notion caps children at 100 per request.
+    for i in range(100, len(all_blocks), 100):
+        r = request_with_retry(
+            "PATCH",
+            f"https://api.notion.com/v1/blocks/{page_id}/children",
+            label="Notion",
+            headers=headers,
+            json={"children": all_blocks[i : i + 100]},
+            timeout=60,
+        )
+        r.raise_for_status()
+
+    return page.get("url", "")
+
+
 # ── Main ────────────────────────────────────────────────────────────────────
 def run():
     now_kst = datetime.now(KST)
@@ -307,6 +355,23 @@ def run():
     stored = store.upsert_issue(row)
     if stored.get("slug"):
         print(f"✓ Stored: china/{stored['slug']}")
+
+    # Notion is a mirror for browsing, written after the row the site reads.
+    # It cannot fail the run: a Notion outage should leave a live issue with no
+    # mirror, not no issue.
+    print("▸ Mirroring to Notion...")
+    try:
+        notion_url = create_notion_page(
+            china_blocks.to_notion_blocks(blocks), _issue_title(main_title), date_str
+        )
+        if notion_url:
+            print(f"✓ Notion page created: {notion_url}")
+            if stored.get("slug"):
+                store.patch_issue(row["run_key"], {"notion_url": notion_url})
+    except Exception as e:  # noqa: BLE001
+        print(f"  ⚠ Notion mirror failed (non-fatal): {e}")
+
+    if stored.get("slug"):
         store.ping_revalidate("china", stored["slug"])
 
     print("\n" + "=" * 60)
