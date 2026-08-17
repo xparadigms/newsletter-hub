@@ -2,6 +2,7 @@ import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
 import { unstable_cache } from "next/cache";
+import { sectionKeys } from "./config";
 import { cache } from "react";
 import type { Block, Post, PostDetail, SectionKey } from "./types";
 
@@ -83,13 +84,14 @@ export const getPosts = unstable_cache(fetchPosts, ["posts", "v3"], {
 });
 
 export async function getAllPosts(): Promise<Record<SectionKey, Post[]>> {
-  const [startup, fintech, japan, watch] = await Promise.all([
-    getPosts("startup"),
-    getPosts("fintech"),
-    getPosts("japan"),
-    getPosts("watch"),
-  ]);
-  return { startup, fintech, japan, watch };
+  // Derived from SECTIONS rather than destructured, so adding a section is one
+  // edit and forgetting one here is impossible. The cast is sound because the
+  // Covers guard in lib/config.ts proves SECTIONS spans the union.
+  const keys = sectionKeys();
+  const lists = await Promise.all(keys.map((key) => getPosts(key)));
+  return Object.fromEntries(
+    keys.map((key, i) => [key, lists[i]])
+  ) as Record<SectionKey, Post[]>;
 }
 
 // One indexed row, so no cross-request cache: the Notion version needed

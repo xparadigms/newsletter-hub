@@ -103,7 +103,7 @@ async function fetchPosts(section: SectionKey): Promise<Post[]> {
   if (!notion) return [];
   const config = SECTIONS.find((s) => s.key === section)!;
   try {
-    const dataSourceId = await getDataSourceId(config.notionId);
+    const dataSourceId = await getDataSourceId(config.notionId!);
     const posts: Post[] = [];
     let cursor: string | undefined;
     do {
@@ -137,13 +137,17 @@ export const getPosts = unstable_cache(fetchPosts, ["posts", "v2"], {
 });
 
 export async function getAllPosts(): Promise<Record<SectionKey, Post[]>> {
-  const [startup, fintech, japan, watch] = await Promise.all([
-    getPosts("startup"),
-    getPosts("fintech"),
-    getPosts("japan"),
-    getPosts("watch"),
-  ]);
-  return { startup, fintech, japan, watch };
+  // china has no Notion database, so this path can never serve it. It returns
+  // an empty list rather than omitting the key, which would break every
+  // Record<SectionKey, Post[]> consumer. Retired with this file in the flip.
+  const keys = SECTIONS.map((s) => s.key);
+  const lists = await Promise.all(
+    keys.map((key) => (key === "china" ? Promise.resolve([]) : getPosts(key)))
+  );
+  return Object.fromEntries(keys.map((k, i) => [k, lists[i]])) as Record<
+    SectionKey,
+    Post[]
+  >;
 }
 
 async function listChildren(blockId: string): Promise<any[]> {

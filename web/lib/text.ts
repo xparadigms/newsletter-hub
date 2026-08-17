@@ -130,6 +130,10 @@ export function blockText(block: Block): string {
       return block.text;
     case "list":
       return block.items.join(" ");
+    case "pinyin":
+      // Without this the block flattens to "" and classifies as English, which
+      // hides the entire Chinese body in the default reading view.
+      return block.words.map((w) => w.text).join("");
     case "callout":
     case "toggle":
       return [block.text, ...block.children.map(blockText)].join(" ");

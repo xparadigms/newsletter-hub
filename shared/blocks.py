@@ -149,6 +149,10 @@ def plain_text(blocks: list[Block]) -> str:
             parts.append(b.get("text", ""))
         elif t == "list":
             parts.append(" ".join(b.get("items", [])))
+        elif t == "pinyin":
+            # Without this the Chinese body is absent from plain_text and from
+            # the generated fts column — the issue would be unsearchable.
+            parts.append("".join(w.get("text", "") for w in b.get("words", [])))
         elif t in ("callout", "toggle"):
             inner = [b.get("text", "")] + [
                 plain_text([c]) for c in b.get("children", [])

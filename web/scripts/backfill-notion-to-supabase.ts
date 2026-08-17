@@ -74,7 +74,9 @@ function fail(msg: string): never {
 }
 
 const notion = new Client({ auth: NOTION_TOKEN });
-const sections = SECTIONS.filter((s) => !ONLY || s.key === ONLY);
+// notionId gates this, not the key: china is Supabase-only and has no Notion
+// database, so there is nothing here to migrate from.
+const sections = SECTIONS.filter((s) => s.notionId && (!ONLY || s.key === ONLY));
 
 // ---------------------------------------------------------------------------
 // Notion access — a local copy of lib/notion.ts's throttle+retry, because that
@@ -284,7 +286,7 @@ async function runBackfill(): Promise<void> {
 
   for (const section of sections) {
     const key = section.key;
-    const pages = await listPages(section.notionId);
+    const pages = await listPages(section.notionId!);
     const seen = FORCE ? new Set<string>() : await existingPageIds(key);
     const todo = pages.filter((p) => !seen.has(p.id));
 
@@ -374,7 +376,7 @@ async function runVerify(): Promise<void> {
 
   for (const section of sections) {
     const key = section.key;
-    const notionCount = (await listPages(section.notionId)).length;
+    const notionCount = (await listPages(section.notionId!)).length;
     const rowCount = bySection.get(key) ?? 0;
     const ok = notionCount === rowCount;
     if (!ok) problems++;
@@ -420,7 +422,7 @@ async function runVerify(): Promise<void> {
     ).json();
     const byId = new Map(stored.map((r) => [r.notion_page_id, r]));
 
-    for (const page of await listPages(section.notionId)) {
+    for (const page of await listPages(section.notionId!)) {
       const row = byId.get(page.id);
       if (!row) {
         problems++;

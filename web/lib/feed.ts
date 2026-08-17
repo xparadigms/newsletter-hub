@@ -1,8 +1,14 @@
-import type { Post, SectionKey } from "./types";
+import type { Covers, Post, SectionKey } from "./types";
 
 // Fixed tie-break order for same-day posts in the merged feed (dates are
 // date-only, so daily newsletters collide constantly).
-const ORDER: SectionKey[] = ["fintech", "startup", "japan", "watch"];
+// `as const`, not SectionKey[]: with a widened element type, omitting a section
+// compiles fine and that section silently disappears from the home page — while
+// still appearing in its own index, in search and in the sitemap. The guard
+// below turns that into a build failure.
+const ORDER = ["fintech", "startup", "japan", "china", "watch"] as const;
+const _orderCovers: Covers<typeof ORDER> = true;
+void _orderCovers;
 
 export function flattenLatest(
   posts: Record<SectionKey, Post[]>,
