@@ -1,5 +1,5 @@
 # Shared dependencies for all newsletter projects in this monorepo.
-# Union of what the four projects previously declared separately.
+# Union of what the five projects previously declared separately.
 google-api-python-client==2.*
 google-auth==2.*
 anthropic==0.*
@@ -7,3 +7,8 @@ requests==2.*
 beautifulsoup4==4.*
 feedparser==6.*
 python-dotenv==1.*
+
+# china-newsletter: word segmentation and phrase-aware pinyin. Deterministic,
+# so the readings are reproducible and testable rather than model output.
+jieba==0.42.*
+pypinyin==0.55.*
