@@ -42,7 +42,7 @@ KST = timezone(timedelta(hours=9))
 ISSUE_NUMBER = int(os.environ.get("ISSUE_NUMBER", "1"))
 
 MODEL = "claude-sonnet-4-6"
-MAX_TOKENS = 12000
+MAX_TOKENS = 24000  # roughly twice the issue length
 
 # ── Sources ─────────────────────────────────────────────────────────────────
 # The risk here is not that mainland sites are blocked from us — the runner sits
@@ -207,7 +207,7 @@ SUMMARY: <one Korean sentence, at most 60 characters, summarising the day>
 Line 2 must be:
 MAIN_TITLE: <English title of the single most important story, 8 words or fewer>
 
-Then 6 to 8 stories. Each story is exactly:
+Then 12 to 16 stories. Each story is exactly:
 
 ### <headline in Korean>
 <Chinese sentence line>
@@ -219,8 +219,8 @@ Rules that matter:
 - The ### headline is written in KOREAN and is NOT numbered. Do not write "1.", \
 "2." or any ordinal — numbering is added afterwards.
 - Each line under a ### is one to three Chinese sentences and at most 60 \
-characters. Break longer thoughts across several lines. Two to four lines per \
-story.
+characters. Break longer thoughts across several lines. Four to six lines per \
+story — give the background and the consequence, not only the headline fact.
 - Write ONLY Simplified Chinese in those lines. No Traditional characters.
 - NEVER write pinyin or romanisation anywhere, and never put a reading in \
 parentheses after a word. Readings are added afterwards by a separate tool, and \
@@ -229,6 +229,9 @@ anything you add corrupts it.
 that story into Korean — a full translation, not a summary.
 - Do not repeat a story. Do not invent facts, numbers or dates that are not in \
 the items below.
+- Spread the stories across the three areas: roughly a third politics and \
+policy, a third technology and industry, a third society and what people are \
+talking about. Do not let any one area take more than half the issue.
 
 --- NEWS ITEMS ---
 {news_items}
@@ -245,13 +248,18 @@ def generate_issue(items: list[dict]) -> str:
     prompt = ISSUE_PROMPT.format(
         date_line=now.strftime("%A, %B %d, %Y"), news_items=news
     )
-    resp = client.messages.create(
+    # Streamed, not a plain create: at this max_tokens the SDK refuses a
+    # non-streaming request outright, because the response could take longer
+    # than ten minutes. A full-length issue is what needs the budget, so stream
+    # rather than trim the issue back to fit.
+    with client.messages.stream(
         model=MODEL,
         max_tokens=MAX_TOKENS,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": prompt}],
-    )
-    return resp.content[0].text.strip()
+    ) as stream:
+        message = stream.get_final_message()
+    return message.content[0].text.strip()
 
 
 def _issue_title(main_title: str) -> str:
@@ -314,12 +322,12 @@ def run():
     print(f"  Found {len(other)} items.")
 
     items = dedupe(google_items + other)
-    if len(items) < 8:
+    if len(items) < 14:
         # Publishing a thin issue is worse than publishing none: it would take
         # the slug for the day and a rerun would keep the sparse URL.
-        print(f"✗ Only {len(items)} usable items — too thin to publish.")
+        print(f"✗ Only {len(items)} usable items — too thin for a full issue.")
         sys.exit(1)
-    items = items[:60]
+    items = items[:90]
     print(f"  {len(items)} items after dedupe.")
 
     print(f"▸ Generating issue via Claude ({len(items)} items)...")

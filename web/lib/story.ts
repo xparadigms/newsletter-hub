@@ -155,6 +155,22 @@ export function buildDeck(
         (a) => a.lang !== "ja" && a.lang !== "zh" && a.lang !== "ko"
       );
 
+      // China writes one Korean read-through per story rather than one per
+      // sentence, so there is nothing to pair positionally: pairing put the
+      // translation after the first Chinese line and folded the rest in behind
+      // it, leaving Korean stranded in the middle. Keep the source order.
+      const source = ja.length ? ja : zh;
+      if (ko.length === 1 && source.length > 1) {
+        cards.push({
+          kind: "content",
+          heading: g.heading,
+          subtitle: g.subtitle,
+          kicker: g.kicker,
+          blocks: [...chunk],
+        });
+        continue;
+      }
+
       // Where a chunk holds several paragraphs per language — news briefs list
       // all the Japanese then all the Korean, dialogues interleave them —
       // pairing by position lines the translations up either way.

@@ -2162,10 +2162,19 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
 .article__body .pinyin {
   font-family: var(--font-reading-zh);
   color: var(--text-primary);
-  /* Room for the pinyin row above every line, so rows stay evenly spaced
-     whether or not a given line carries readings. */
-  line-height: 2.75;
-  margin: 22px 0 10px;
+  /* Larger than the 21px body: hanzi carry more detail per glyph than Latin at
+     the same size, and this is read character by character rather than skimmed.
+     The line-height reserves the pinyin row above every line so rows stay
+     evenly spaced whether or not a given line carries readings. */
+  font-size: 27px;
+  line-height: 2.5;
+  margin: 26px 0 12px;
+}
+
+@media (max-width: 639px) {
+  .article__body .pinyin {
+    font-size: 23px;
+  }
 }
 
 /* inline-block so the rule spans exactly one word and a word never breaks
@@ -2195,7 +2204,8 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
   /* Pinyin is Latin: keep it off the CJK face or the tone marks fall back
      unevenly between glyphs. */
   font-family: var(--font-sans);
-  font-size: 0.46em;
+  /* Relative to the enlarged hanzi above, so the pair scales together. */
+  font-size: 0.44em;
   font-weight: 400;
   line-height: 1.2;
   letter-spacing: 0.005em;
@@ -2240,9 +2250,9 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
 /* ---------- china: story mode ---------- */
 
 .story-card__body .pinyin {
-  font-size: 18px;
-  line-height: 2.4;
-  margin: 10px 0 8px;
+  font-size: 23px;
+  line-height: 2.3;
+  margin: 14px 0 10px;
   color: #fff;
 }
 
