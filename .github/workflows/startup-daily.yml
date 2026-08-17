@@ -1,0 +1,47 @@
+name: Daily Startup News Summary
+
+# ISSUE_NUMBER continuity: the old startup-techcrunch-summary repo never passed
+# ISSUE_NUMBER, so main.py fell back to its default of 1 and every issue was
+# titled "[Startup News #1]". That repo reached run 163, so the offset below
+# both fixes the numbering and continues from where the run count left off.
+
+on:
+  schedule:
+    # 23:20 UTC = 08:20 KST, staggered after the Rails daily job so the two
+    # API-heavy jobs do not hit Anthropic and Notion at the same moment.
+    - cron: "20 23 * * *"
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  generate-summary:
+    runs-on: ubuntu-latest
+    # Two sequential Claude calls (summary + 16k-token trilingual) plus the
+    # Notion upload routinely exceed 5 minutes; give the job room to finish.
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: startup-newsletter
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r ../requirements.txt
+
+      - name: Run daily summary
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          CALENDAR_ID: ad3a712618285ba2a011179683b92bdc10718051482df8d950ccfb95a1f0aa19@group.calendar.google.com
+          NOTION_DATABASE_ID: 3555bc953df380e2ae70df4401216aee
+          TIMEZONE: Asia/Seoul
+          ISSUE_NUMBER_OFFSET: "163"
+        run: ISSUE_NUMBER=$((GITHUB_RUN_NUMBER + ISSUE_NUMBER_OFFSET)) python main.py

@@ -1,8 +1,8 @@
 #!/bin/bash
 # Japan Briefing — Daily runner
-# Add to crontab: 0 8 * * * /Users/heechangkang/ai-test/newsletter/japan-newsletter/run-daily.sh
+# Add to crontab: 0 8 * * * /Users/heechangkang/ai-test/newsletter/newsletter-hub/japan-newsletter/run-daily.sh
 
-cd /Users/heechangkang/ai-test/newsletter/japan-newsletter
+cd /Users/heechangkang/ai-test/newsletter/newsletter-hub/japan-newsletter
 set -a
 source .env.local
 set +a

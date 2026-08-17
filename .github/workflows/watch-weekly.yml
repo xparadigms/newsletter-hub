@@ -1,5 +1,9 @@
 name: Watch Weekly — Trilingual Newsletter
 
+# ISSUE_NUMBER continuity: this workflow file is new, so github.run_number
+# restarts at 1. The old watch-newsletter repo reached run 6, so the offset
+# below keeps issue numbering continuous.
+
 on:
   schedule:
     # Runs at 00:00 UTC every Saturday = 09:00 KST Saturday
@@ -13,6 +17,10 @@ jobs:
     # Notion upload can exceed 5 minutes; give the job room to finish.
     timeout-minutes: 15
 
+    defaults:
+      run:
+        working-directory: watch-newsletter
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,7 +31,7 @@ jobs:
           python-version: "3.11"
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r ../requirements.txt
 
       - name: Run weekly issue
         env:
@@ -33,5 +41,5 @@ jobs:
           CALENDAR_ID: ad3a712618285ba2a011179683b92bdc10718051482df8d950ccfb95a1f0aa19@group.calendar.google.com
           NOTION_DATABASE_ID: 3965bc953df381bbb5ece93744153a6a
           TIMEZONE: Asia/Seoul
-          ISSUE_NUMBER: ${{ github.run_number }}
-        run: python main.py
+          ISSUE_NUMBER_OFFSET: "6"
+        run: ISSUE_NUMBER=$((GITHUB_RUN_NUMBER + ISSUE_NUMBER_OFFSET)) python main.py

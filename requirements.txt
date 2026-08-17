@@ -1,0 +1,9 @@
+# Shared dependencies for all newsletter projects in this monorepo.
+# Union of what the four projects previously declared separately.
+google-api-python-client==2.*
+google-auth==2.*
+anthropic==0.*
+requests==2.*
+beautifulsoup4==4.*
+feedparser==6.*
+python-dotenv==1.*
