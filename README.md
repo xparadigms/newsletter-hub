@@ -1,11 +1,13 @@
 # Newsletter Hub
 
-Monorepo for four automated newsletters. Each generates an issue with Anthropic
-Claude, writes it to a Notion database, and adds a Google Calendar event.
+Monorepo for four automated newsletters and the site that publishes them. Each
+newsletter generates an issue with Anthropic Claude, writes it to a Notion
+database, and adds a Google Calendar event. `web/` reads those same Notion
+databases back out and renders them as a website.
 
-Consolidated from four separate repositories: `finance-newsletter`,
-`japan-newsletter`, `startup-techcrunch-summary`, and `watch-newsletter`. Every
-project's full commit history is preserved.
+Consolidated from five separate repositories: `finance-newsletter`,
+`japan-newsletter`, `startup-techcrunch-summary`, `watch-newsletter`, and
+`japan-newsletter-web`. Every project's full commit history is preserved.
 
 ### Reading pre-migration history
 
@@ -15,10 +17,10 @@ Finance was moved with `git mv`, so ordinary rename following works:
 git log --follow -- finance-newsletter/main.py
 ```
 
-Japan, Startup, and Watch were brought in with `git subtree`, which attaches
-their history through a merge commit. `--follow` does **not** traverse merges,
-so it reports nothing for those paths. Reach their original commits through the
-merge commit's second parent instead:
+Japan, Startup, Watch, and the web app were brought in with `git subtree`, which
+attaches their history through a merge commit. `--follow` does **not** traverse
+merges, so it reports nothing for those paths. Reach their original commits
+through the merge commit's second parent instead:
 
 ```bash
 # list a project's pre-migration commits
@@ -44,6 +46,18 @@ Japan is paused deliberately: its `schedule` trigger in
 `.github/workflows/japan-daily.yml` is commented out. Uncomment the two
 `schedule` lines to resume it.
 
+## The site (`web/`)
+
+`web/` is "The Brief", a Next.js app that renders all four newsletters from
+their Notion databases — one numbered section each for Startup, Fintech, Japan,
+and Watch (`web/lib/config.ts`). It came from the `japan-newsletter-web`
+repository but is not Japan-specific, which is why it sits at `web/` rather than
+next to the generators. See `web/README.md` for its caching and data model.
+
+It is deployed on Vercel and has no GitHub Actions workflow. **After this
+migration the Vercel project's Root Directory must be set to `web/`**, otherwise
+builds fail — the repository root has no `package.json`.
+
 ## Layout
 
 Workflows live in the root `.github/workflows/` because GitHub only reads
@@ -60,7 +74,11 @@ shared root `requirements.txt`.
   watch-weekly.yml       # watch-newsletter
 requirements.txt         # shared dependency union
 <project>/main.py        # each newsletter's entry point
+web/                     # Next.js site, deployed from Vercel (no workflow)
 ```
+
+The site keeps its own `package.json` and `tsconfig.json` inside `web/`; the
+root `.gitignore` covers both the Python and the Node build artefacts.
 
 ## Issue numbering
 
@@ -94,6 +112,10 @@ Configured as repository secrets:
 Notion database IDs and the shared calendar ID are non-sensitive and are set
 directly in each workflow.
 
+The site does not use these. Its own `NOTION_TOKEN` (a read-only integration
+shared with all four databases) and optional `REVALIDATE_SECRET` are set as
+Vercel environment variables.
+
 ## Local development
 
 Each project reads its own untracked env file (`.env`, or `.env.local` for
@@ -107,7 +129,13 @@ python main.py
 ```
 
 Note that running a project locally writes to the real Notion database and
-calendar.
+calendar. The site only reads, so it is safe to run:
+
+```bash
+cd web
+npm install
+npm run dev            # needs NOTION_TOKEN in web/.env.local
+```
 
 ## Recovering a failed run
 
