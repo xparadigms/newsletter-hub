@@ -338,6 +338,28 @@ async function runBackfill(): Promise<void> {
   if (!COMMIT) console.log("Re-run with --commit to write.");
 }
 
+/**
+ * Postgres jsonb does not preserve object key order — it normalises it, so a
+ * block written as {type, level, text} reads back as {text, type, level}. Array
+ * order, which is the part that actually matters for blocks, is preserved.
+ * Compare on a canonical key ordering so the diff reports real differences
+ * rather than that normalisation.
+ */
+function canonical(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(canonical);
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.keys(value as Record<string, unknown>)
+        .sort()
+        .map((k) => [k, canonical((value as Record<string, unknown>)[k])])
+    );
+  }
+  return value;
+}
+
+const sameBlocks = (a: unknown, b: unknown): boolean =>
+  JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
+
 async function runVerify(): Promise<void> {
   console.log("Verifying\n");
   let problems = 0;
@@ -409,7 +431,7 @@ async function runVerify(): Promise<void> {
       const children = stripExpiringImages(await listChildren(page.id));
       const fresh = await mapBlockList(children, getChildrenFiltered);
       compared++;
-      if (JSON.stringify(fresh) !== JSON.stringify(row.blocks)) {
+      if (!sameBlocks(fresh, row.blocks)) {
         problems++;
         mismatched++;
         console.log(`FAIL blocks differ for ${key}/${row.slug} (${page.id})`);
