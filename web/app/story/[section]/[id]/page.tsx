@@ -53,6 +53,7 @@ export default async function StoryPage({
   return (
     <StoryViewer
       cards={deck}
+      sectionKey={section.key}
       title={section.label}
       nav={{
         // "next" in a story feed means the next issue chronologically, which is

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { renderAnnotated } from "@/components/ArticleBlocks";
+import type { SectionKey } from "@/lib/types";
 import LangToggle from "@/components/LangToggle";
 import type { StoryCard } from "@/lib/story";
 
@@ -15,7 +16,7 @@ export interface StoryNav {
 const SWIPE_X = 48;
 const SWIPE_DOWN = 90;
 
-function Card({ card }: { card: StoryCard }) {
+function Card({ card, sectionKey }: { card: StoryCard; sectionKey: SectionKey }) {
   if (card.kind === "cover") {
     return (
       <div className="story-card story-card--cover">
@@ -56,7 +57,11 @@ function Card({ card }: { card: StoryCard }) {
           {card.subtitle}
         </p>
       )}
-      <div className="story-card__body article__body" data-multi="">
+      <div
+        className="story-card__body article__body"
+        data-section={sectionKey}
+        data-multi=""
+      >
         {card.blocks.map(renderAnnotated)}
       </div>
     </div>
@@ -67,10 +72,12 @@ export default function StoryViewer({
   cards,
   nav,
   title,
+  sectionKey,
 }: {
   cards: StoryCard[];
   nav: StoryNav;
   title: string;
+  sectionKey: SectionKey;
 }) {
   const router = useRouter();
   const [index, setIndex] = useState(0);
@@ -193,7 +200,7 @@ export default function StoryViewer({
 
       <div className="story-stage">
         <div className="story-slide" key={index}>
-          <Card card={cards[index]} />
+          <Card card={cards[index]} sectionKey={sectionKey} />
         </div>
       </div>
 

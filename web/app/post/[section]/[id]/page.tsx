@@ -114,6 +114,7 @@ export default async function PostPage({
                 issues never render blank. */}
             <div
               className="article__body"
+              data-section={section.key}
               data-multi={hasJa || hasKo ? "" : undefined}
             >
               {annotated.length > 0 ? (

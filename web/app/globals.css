@@ -12,9 +12,17 @@
   --accent: #10b981;
   --accent-strong: #15803d;
   --accent-tint: #ecfdf5;
+  /* China story ordinals and the pinyin rule. --gold carries text so it is
+     darkened for contrast on white; --gold-rule carries none and stays bright. */
+  --gold: #8a6d1f;
+  --gold-rule: #c9a227;
 
   --font-sans: var(--font-archivo), Arial, Helvetica, sans-serif;
   --font-mono: var(--font-plex-mono), monospace;
+  /* Simplified Chinese face for china issues. System fonts only — Noto Sans
+     SC as a webfont is ~9MB and must never go through next/font. */
+  --font-reading-zh: var(--font-archivo), "PingFang SC", "Hiragino Sans GB",
+    "Noto Sans SC", "Source Han Sans SC", "Microsoft YaHei", sans-serif;
   /* Article reading face — sans with CJK-aware fallbacks, after toss.tech */
   --font-reading: var(--font-archivo), "Pretendard", -apple-system,
     BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Noto Sans JP",
@@ -53,6 +61,8 @@
   --accent: #10b981;
   --accent-strong: #34d399;
   --accent-tint: #0e2b21;
+  --gold: #c8a951;
+  --gold-rule: #7a6535;
 }
 
 /* No-JS fallback: follow the system when no explicit choice is set */
@@ -70,6 +80,8 @@
     --accent: #10b981;
     --accent-strong: #34d399;
     --accent-tint: #0e2b21;
+    --gold: #c8a951;
+    --gold-rule: #7a6535;
   }
 }
 
@@ -2142,4 +2154,122 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
   margin: 14px 0 6px;
   padding: 10px 14px;
   font-size: 15.5px;
+}
+
+/* ---------- china: pinyin body ---------- */
+
+.article__body .pinyin {
+  font-family: var(--font-reading-zh);
+  color: var(--text-primary);
+  /* Room for the pinyin row above every line, so rows stay evenly spaced
+     whether or not a given line carries readings. */
+  line-height: 2.75;
+  margin: 22px 0 10px;
+}
+
+/* inline-block so the rule spans exactly one word and a word never breaks
+   across lines. <ruby> widens the box when the reading is wider than the base,
+   which is what keeps 中国 centred under Zhōngguó. */
+.article__body .pinyin__w {
+  display: inline-block;
+  margin-right: 0.2em;
+  padding-bottom: 3px;
+  border-bottom: 1.5px solid var(--gold-rule);
+}
+
+/* Punctuation and numerals carry no reading, so no rule, and they hug the
+   word before them instead of sitting on their own. */
+.article__body .pinyin__w--bare {
+  border-bottom: none;
+  margin-right: 0.06em;
+}
+
+.article__body .pinyin ruby {
+  ruby-position: over;
+  -webkit-ruby-position: before;
+  ruby-align: space-around;
+}
+
+.article__body .pinyin rt {
+  /* Pinyin is Latin: keep it off the CJK face or the tone marks fall back
+     unevenly between glyphs. */
+  font-family: var(--font-sans);
+  font-size: 0.46em;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0.005em;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+/* ---------- china: numbered story heading ---------- */
+
+.article__body[data-section="china"] .heading__num,
+.story-card__body[data-section="china"] .heading__num {
+  color: var(--gold);
+}
+
+/* ---------- china: the Korean translation ---------- */
+
+/* The base blockquote rule is a 22px bold pull-quote. Here the quote carries
+   body prose — a read-through of the Chinese above it — so only the left rule
+   is wanted, not the emphasis. */
+.article__body[data-section="china"] blockquote {
+  font-size: 18px;
+  line-height: 1.75;
+  font-weight: 400;
+  color: var(--text-secondary);
+  border-left-color: var(--border-strong);
+}
+
+/* Pre-existing and not china-specific: .story-card__body had no blockquote rule
+   at all, so a quote block inherited --text-primary and rendered black on the
+   black card under the light theme. */
+.story-card__body blockquote {
+  margin: 12px 0;
+  padding: 2px 0 2px 14px;
+  border-left: 2px solid rgb(255 255 255 / 26%);
+  font-size: 16px;
+  line-height: 1.6;
+  font-weight: 400;
+  font-style: normal;
+  color: rgb(255 255 255 / 82%);
+}
+
+/* ---------- china: story mode ---------- */
+
+.story-card__body .pinyin {
+  font-size: 18px;
+  line-height: 2.4;
+  margin: 10px 0 8px;
+  color: #fff;
+}
+
+.story-card__body .pinyin__w {
+  border-bottom-color: rgb(200 169 81 / 55%);
+}
+
+/* ---------- five sections ---------- */
+
+@media (min-width: 834px) {
+  /* The grid is a 1px gap over a --border background with each module painting
+     --bg, so an odd module count leaves the trailing cell unpainted — a solid
+     border-coloured rectangle, not merely a ragged row. */
+  .section-module:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+/* Six tabs rather than five: the labels were already relying on ellipsis. */
+.tabbar__list {
+  max-width: 640px;
+}
+
+@media (max-width: 380px) {
+  .tabbar__label {
+    font-size: 9px;
+    letter-spacing: 0;
+  }
 }
