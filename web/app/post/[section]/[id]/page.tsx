@@ -87,9 +87,12 @@ export default async function PostPage({
   ]);
   if (!post) notFound();
 
-  const annotated = annotateBlocks(post.blocks);
+  const annotated = annotateBlocks(post.blocks, {
+    hanLang: section.key === "china" ? "zh" : "ja",
+  });
   const hasJa = annotated.some((a) => a.lang === "ja");
   const hasKo = annotated.some((a) => a.lang === "ko");
+  const hasZh = annotated.some((a) => a.lang === "zh");
   const minutes = readingTime(annotated);
   const toc = buildToc(annotated);
   const { prev, next } = findAdjacent(sectionPosts, post.id);
@@ -107,7 +110,7 @@ export default async function PostPage({
                   .filter(Boolean)
                   .join(" · ")}
               </span>
-              {(hasJa || hasKo) && <LangToggle />}
+              {(hasJa || hasKo || hasZh) && <LangToggle source={section.key === "china" ? "中文" : "日本語"} />}
             </div>
             <h1>{post.title}</h1>
             {/* data-multi gates the default "hide English" rule so English-only
@@ -115,7 +118,7 @@ export default async function PostPage({
             <div
               className="article__body"
               data-section={section.key}
-              data-multi={hasJa || hasKo ? "" : undefined}
+              data-multi={hasJa || hasKo || hasZh ? "" : undefined}
             >
               {annotated.length > 0 ? (
                 annotated.map(renderAnnotated)

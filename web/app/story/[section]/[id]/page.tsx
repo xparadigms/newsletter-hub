@@ -46,7 +46,9 @@ export default async function StoryPage({
   ]);
   if (!post) notFound();
 
-  const annotated = annotateBlocks(post.blocks);
+  const annotated = annotateBlocks(post.blocks, {
+    hanLang: section.key === "china" ? "zh" : "ja",
+  });
   const deck = buildDeck(annotated, post, section, readingTime(annotated));
   const { prev, next } = findAdjacent(sectionPosts, post.id);
 

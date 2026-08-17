@@ -98,7 +98,7 @@ export function buildDeck(
       a.lang === "ko" &&
       a.block.type === "paragraph" &&
       !current.subtitle &&
-      !current.blocks.some((b) => b.lang === "ja")
+      !current.blocks.some((b) => b.lang === "ja" || b.lang === "zh")
     ) {
       current.subtitle = a.block.text.trim();
       continue;
@@ -145,13 +145,20 @@ export function buildDeck(
 
     for (const chunk of chunks) {
       const ja = chunk.filter((a) => a.lang === "ja");
+      const zh = chunk.filter((a) => a.lang === "zh");
       const ko = chunk.filter((a) => a.lang === "ko");
-      const en = chunk.filter((a) => a.lang !== "ja" && a.lang !== "ko");
+      // Still defined negatively so lang-null leftovers land here as before;
+      // adding "zh" to the exclusion is the fix. Without it Chinese body text
+      // was bucketed as English filler and spread across cards, and a
+      // Chinese-only chunk gave pairs === 0 and was dropped outright.
+      const en = chunk.filter(
+        (a) => a.lang !== "ja" && a.lang !== "zh" && a.lang !== "ko"
+      );
 
       // Where a chunk holds several paragraphs per language — news briefs list
       // all the Japanese then all the Korean, dialogues interleave them —
       // pairing by position lines the translations up either way.
-      const pairs = Math.max(ja.length, ko.length);
+      const pairs = Math.max(ja.length, zh.length, ko.length);
 
       if (pairs === 0) {
         if (!en.length) continue;
@@ -168,7 +175,7 @@ export function buildDeck(
       const enPerCard = Math.ceil(en.length / pairs);
 
       for (let i = 0; i < pairs; i++) {
-        const pair = [ja[i], ko[i]].filter(Boolean) as AnnotatedBlock[];
+        const pair = [ja[i], zh[i], ko[i]].filter(Boolean) as AnnotatedBlock[];
         if (!pair.length) continue;
 
         // A block with no counterpart — a Korean-only "왜 중요한가" note, say —

@@ -1494,7 +1494,8 @@ html[data-langs="ja-ko"] .article__body[data-multi] [data-lang="en"] {
 }
 
 html[data-langs="en"] .article__body [data-lang="ja"],
-html[data-langs="en"] .article__body [data-lang="ko"] {
+html[data-langs="en"] .article__body [data-lang="ko"],
+html[data-langs="en"] .article__body [data-lang="zh"] {
   display: none;
 }
 

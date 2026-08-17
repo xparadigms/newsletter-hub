@@ -1,6 +1,6 @@
 import type { Block } from "./types";
 
-export type Lang = "en" | "ja" | "ko";
+export type Lang = "en" | "ja" | "ko" | "zh";
 
 export interface RubySegment {
   text: string;
@@ -110,14 +110,19 @@ function scriptCounts(text: string) {
   };
 }
 
-export function classifyLang(text: string): Lang {
+// Han script alone cannot tell Japanese kanji from Chinese hanzi, so the caller
+// decides. Defaulting to "ja" keeps every existing section byte-identical:
+// attachFurigana only walks blocks with lang === "ja", so reclassifying kana-free
+// Han runs globally would stop furigana attaching across the whole archive — and
+// the unmatched-toggle fallback would then re-emit each reading as a duplicate
+// paragraph. Only the china routes pass "zh".
+export function classifyLang(text: string, hanLang: "ja" | "zh" = "ja"): Lang {
   const { hangul, kana, han, latin } = scriptCounts(text);
   // Floor of 3 keeps single quoted foreign words inside English prose "en";
   // "kana + han > latin" keeps English sentences citing a Japanese term "en".
   if (hangul >= 3 && hangul > kana) return "ko";
   if (kana > 0 && kana + han > latin) return "ja";
-  // Kanji-only lines: no Chinese content exists in these newsletters.
-  if (kana === 0 && han >= 3 && han > latin) return "ja";
+  if (kana === 0 && han >= 3 && han > latin) return hanLang;
   return "en";
 }
 
@@ -276,7 +281,15 @@ function attachFurigana(out: AnnotatedBlock[], furigana: string): boolean {
   return false;
 }
 
-export function annotateBlocks(blocks: Block[]): AnnotatedBlock[] {
+export interface AnnotateOptions {
+  /** Which language a kana-free Han run belongs to. See classifyLang. */
+  hanLang?: "ja" | "zh";
+}
+
+export function annotateBlocks(
+  blocks: Block[],
+  { hanLang = "ja" }: AnnotateOptions = {}
+): AnnotatedBlock[] {
   const out: AnnotatedBlock[] = [];
   let prev: Lang | null = null;
 
@@ -288,6 +301,13 @@ export function annotateBlocks(blocks: Block[]): AnnotatedBlock[] {
   for (const block of blocks.slice(start)) {
     if (block.type === "divider" || block.type === "image") {
       out.push({ block, lang: null, kicker: false });
+      continue;
+    }
+    // A pinyin block carries its own readings and is Chinese by construction.
+    // Classifying it would be guesswork over text that is already segmented.
+    if (block.type === "pinyin") {
+      out.push({ block, lang: "zh", kicker: false });
+      prev = "zh";
       continue;
     }
     // Headings anchor the issue's structure; keep them visible in every mode.
@@ -332,11 +352,11 @@ export function annotateBlocks(blocks: Block[]): AnnotatedBlock[] {
       lang = "ja";
     } else {
       const text = blockText(block);
-      lang = classifyLang(text);
-      if (lang === "en" && prev === "ja") {
-        // Short kanji-only fragments between Japanese paragraphs stay Japanese.
+      lang = classifyLang(text, hanLang);
+      if (lang === "en" && (prev === "ja" || prev === "zh")) {
+        // Short Han-only fragments between CJK paragraphs stay with their run.
         const c = scriptCounts(text);
-        if (c.kana === 0 && c.latin === 0 && c.han > 0) lang = "ja";
+        if (c.kana === 0 && c.latin === 0 && c.han > 0) lang = prev;
       }
     }
     // Kickers are the English structural skeleton ("WHAT HAPPENED"), so only
@@ -355,10 +375,17 @@ export function annotateBlocks(blocks: Block[]): AnnotatedBlock[] {
 // translation-filter setting.
 export function readingTime(annotated: AnnotatedBlock[]): number {
   let words = 0;
+  let hanzi = 0;
   for (const a of annotated) {
     if (a.lang === "en") {
       words += blockText(a.block).split(/\s+/).filter(Boolean).length;
+    } else if (a.lang === "zh") {
+      // Chinese has no spaces to count, and a china issue carries no English at
+      // all — without this every one of them would report "1 min read".
+      hanzi += (blockText(a.block).match(/[\u4E00-\u9FFF\u3400-\u4DBF]/g) ?? [])
+        .length;
     }
   }
-  return Math.max(1, Math.round(words / 230));
+  // 230 English words a minute; 180 hanzi a minute reading with pinyin.
+  return Math.max(1, Math.round(words / 230 + hanzi / 180));
 }
