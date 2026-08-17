@@ -6,7 +6,7 @@ import Search from "@/components/Search";
 import StoryModeToggle from "@/components/StoryModeToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 import { getSection, SITE } from "@/lib/config";
-import { getDepth, markDirection, parentPath } from "@/lib/nav";
+import { getDepth, parentPath } from "@/lib/nav";
 
 // Scroll distance after which the large title has fully collapsed into the bar.
 const COLLAPSE_AT = 44;
@@ -61,11 +61,15 @@ export default function NavBar() {
   }, [pathname, isArticle]);
 
   const goBack = () => {
-    markDirection("pop");
     // A cold entry (shared link, Home Screen launch) has nothing to pop —
     // router.back() would leave the app instead of going up a level.
+    //
+    // back() can't carry a transition type (Next only applies them on
+    // push/replace), which is exactly why PageTransition defaults untyped
+    // navigations to the back slide. The push below can be typed, and is, so
+    // both paths animate the same way.
     if (getDepth() > 0) router.back();
-    else router.push(parentPath(pathname));
+    else router.push(parentPath(pathname), { transitionTypes: ["nav-back"] });
   };
 
   return (

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import PrefetchLink from "@/components/PrefetchLink";
 import type { Post } from "@/lib/types";
 
 function formatDate(date: string | null): string {
@@ -20,7 +20,10 @@ export default function PostList({ posts }: { posts: Post[] }) {
     <ul className="post-list">
       {posts.map((post) => (
         <li key={post.id} className="post-row">
-          <Link href={`/post/${post.section}/${post.id}`} prefetch={false}>
+          <PrefetchLink
+            href={`/post/${post.section}/${post.id}`}
+            transitionTypes={["nav-forward"]}
+          >
             <span className="post-row__date">{formatDate(post.date)}</span>
             <span>
               <span className="post-row__title">{post.title}</span>
@@ -33,7 +36,7 @@ export default function PostList({ posts }: { posts: Post[] }) {
             <span className="post-row__arrow" aria-hidden>
               →
             </span>
-          </Link>
+          </PrefetchLink>
         </li>
       ))}
     </ul>

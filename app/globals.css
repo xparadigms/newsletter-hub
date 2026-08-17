@@ -403,34 +403,113 @@ main {
 
 /* ---------- page transitions ---------- */
 
-.page-transition {
-  /* No will-change here: it would make this a containing block for
-     position:fixed descendants, collapsing the story viewer, the TOC sheet
-     and the pull-to-refresh indicator to zero height. */
-  animation: page-in var(--dur-base) var(--ease-ios);
+/* Page transitions, driven by React's <ViewTransition> in
+   components/PageTransition.tsx. Direction comes from the transitionTypes each
+   link carries; untyped navigations fall back to nav-back.
+
+   Naming the page content is safe here where the old will-change was not.
+   React writes view-transition-name inline for the length of the transition and
+   clears it again afterwards, so the containing block it creates for
+   position:fixed descendants (.ptr, .sheet, .toc-fab) lasts ~400ms — and none
+   of those are on screen while a navigation is running. will-change was
+   permanent, which is what collapsed them. */
+::view-transition-old(.nav-forward) {
+  --slide-offset: -60px;
+  animation: var(--dur-fast) var(--ease-out) both vt-fade reverse,
+    var(--dur-slow) var(--ease-ios) both vt-slide reverse;
 }
 
-[data-nav="pop"] .page-transition {
-  animation-name: page-in-back;
+::view-transition-new(.nav-forward) {
+  --slide-offset: 60px;
+  animation: var(--dur-base) var(--ease-out) var(--dur-fast) both vt-fade,
+    var(--dur-slow) var(--ease-ios) both vt-slide;
 }
 
-@keyframes page-in {
+::view-transition-old(.nav-back) {
+  --slide-offset: 60px;
+  animation: var(--dur-fast) var(--ease-out) both vt-fade reverse,
+    var(--dur-slow) var(--ease-ios) both vt-slide reverse;
+}
+
+::view-transition-new(.nav-back) {
+  --slide-offset: -60px;
+  animation: var(--dur-base) var(--ease-out) var(--dur-fast) both vt-fade,
+    var(--dur-slow) var(--ease-ios) both vt-slide;
+}
+
+/* Old content leaves quickly so it stops competing for attention; new content
+   waits for it to clear, then arrives more gently. */
+@keyframes vt-fade {
   from {
     opacity: 0;
-    transform: translate3d(18px, 0, 0);
   }
 }
 
-@keyframes page-in-back {
+@keyframes vt-slide {
   from {
-    opacity: 0;
-    transform: translate3d(-18px, 0, 0);
+    translate: var(--slide-offset);
   }
 }
 
+/* The tab bar is fixed over every screen, so without its own group the sliding
+   page would pass straight over it. Pinned above the content and never
+   animated, it becomes the fixed reference point that makes the content read as
+   the thing that moved.
+
+   The nav bar is deliberately left unnamed: the search bottom sheet renders
+   inside it, and a permanent view-transition-name would make .navbar the
+   containing block for that fixed panel. It also hardly overlaps the content
+   box in practice, since a new route starts at scroll top. */
+.tabbar {
+  view-transition-name: tabbar;
+}
+
+::view-transition-group(tabbar) {
+  z-index: 100;
+  animation: none;
+}
+
+::view-transition-old(tabbar) {
+  /* Both snapshots are live for a moment; without this the two bars flash. */
+  display: none;
+}
+
+::view-transition-new(tabbar) {
+  animation: none;
+}
+
+/* The transition overlay swallows taps for the length of the animation. */
+::view-transition {
+  pointer-events: none;
+}
+
+/* A swipe already paints its own finger-tracked slide, so the navigation it
+   commits must not animate a second time. SwipeBack.tsx sets the flag. */
+:root[data-swiping]::view-transition-group(*),
+:root[data-swiping]::view-transition-old(*),
+:root[data-swiping]::view-transition-new(*) {
+  animation: none;
+}
+
+/* Stand-in for the previous page during a swipe. Negative z-index keeps it
+   behind #app-main while staying above the body background. */
+.swipe-underlay {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  pointer-events: none;
+}
+
+/* Directional slides simulate movement across the viewport, which is the most
+   common motion-sensitivity trigger. Drop to the browser's instant swap. */
 @media (prefers-reduced-motion: reduce) {
-  .page-transition {
-    animation: none;
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 }
 

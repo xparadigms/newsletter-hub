@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { after } from "next/server";
+import PageTransition from "@/components/PageTransition";
 import PostList from "@/components/PostList";
 import PullToRefresh from "@/components/PullToRefresh";
 import { getSection, SECTIONS, SITE } from "@/lib/config";
@@ -51,7 +52,7 @@ export default async function SectionPage({
   after(() => warmRecent(posts));
 
   return (
-    <>
+    <PageTransition>
       <PullToRefresh />
       {/* The nav bar's large title carries the section name and the page's h1. */}
       <div className="page-head">
@@ -72,6 +73,6 @@ export default async function SectionPage({
           ))}
         </div>
       </section>
-    </>
+    </PageTransition>
   );
 }

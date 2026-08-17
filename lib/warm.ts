@@ -9,9 +9,16 @@ import type { Post } from "./types";
 // unstable_cache, so warming an already-warm issue is a cache hit costing zero
 // Notion calls. Only genuinely cold issues do any work.
 
-// A cold issue costs ~4s to assemble, and warming runs inside a 60s budget, so
-// ten fits with headroom. Ten dailies is roughly a fortnight of back-issues.
-const WARM_COUNT = 10;
+// A cold issue costs ~4s to assemble. Bodies no longer expire on a timer, so
+// warming one is a one-time cost rather than a debt repaid every five minutes,
+// and a steady-state pass is 25 cache hits costing nothing — which buys room to
+// reach deeper into the archive than the old ten.
+//
+// Twenty-five genuinely cold issues would overrun the 60s budget, and that's
+// fine: the loop is sequential and each getPost caches on its own, so a pass cut
+// short still banks everything it finished. The next pass resumes where this one
+// stopped. Only a cache-cold deploy ever sees more than a couple of misses.
+const WARM_COUNT = 25;
 
 export async function warmRecent(posts: Post[], count = WARM_COUNT) {
   // after() also runs while pages are prerendered, where warming is exactly

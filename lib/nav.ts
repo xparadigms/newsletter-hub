@@ -17,10 +17,6 @@ export function setDepth(value: number) {
   } catch {}
 }
 
-export function markDirection(direction: "push" | "pop") {
-  document.documentElement.setAttribute("data-nav", direction);
-}
-
 // Where "back" should land when there is no history to pop — i.e. the app was
 // opened cold on this URL from a shared link or the Home Screen.
 export function parentPath(pathname: string): string {

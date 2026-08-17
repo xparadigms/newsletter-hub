@@ -25,7 +25,33 @@ npm run dev
 ```
 
 `NOTION_TOKEN` is an internal-integration token that has been shared with all
-four databases. Content revalidates every 5 minutes in production.
+four databases.
+
+`REVALIDATE_SECRET` is optional and guards `POST /api/revalidate`; the route
+returns 401 for every request when it isn't set.
+
+## Caching
+
+Lists (the homepage, section indexes, search) revalidate every 5 minutes.
+
+Issue bodies don't expire at all. Assembling one costs ~45 Notion calls and a
+few seconds, and a published issue doesn't change, so a timer only ever bought
+the same content back at full price — which is what made archive issues and
+deep links slow. They're evicted on demand instead:
+
+```bash
+# every issue, plus the lists
+curl -X POST "$SITE/api/revalidate" -H "authorization: Bearer $REVALIDATE_SECRET"
+
+# just one issue
+curl -X POST "$SITE/api/revalidate" \
+  -H "authorization: Bearer $REVALIDATE_SECRET" \
+  -H 'content-type: application/json' \
+  -d '{"id":"<notion-page-id>"}'
+```
+
+Run this after editing an issue that's already published. New issues appear on
+their own once the lists refresh.
 
 ## Data mapping (`lib/notion.ts`)
 

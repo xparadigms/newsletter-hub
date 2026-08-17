@@ -12,6 +12,12 @@ const notion = token ? new Client({ auth: token }) : null;
 
 export const notionConnected = Boolean(token);
 
+// Cache tags, invalidated on demand by /api/revalidate. Lists expire on a timer
+// as well; issue bodies only ever expire through these.
+export const POSTS_TAG = "posts";
+export const POST_TAG = "post";
+export const postTag = (id: string) => `${POST_TAG}:${id}`;
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 // Assembling an issue takes ~45 Notion calls. Notion tolerates short bursts but
@@ -156,6 +162,7 @@ async function fetchPosts(section: SectionKey): Promise<Post[]> {
 // queries Notion once per section instead of once per page.
 export const getPosts = unstable_cache(fetchPosts, ["posts", "v2"], {
   revalidate: 300,
+  tags: [POSTS_TAG],
 });
 
 export async function getAllPosts(): Promise<Record<SectionKey, Post[]>> {
@@ -249,9 +256,22 @@ async function fetchPost(
 
 // An issue costs ~45 Notion calls (one per furigana toggle), so the result is
 // cached across requests, not just deduped within one render.
-const cachedPost = unstable_cache(fetchPost, ["post", "v2"], {
-  revalidate: 300,
-});
+//
+// It never expires on a timer. An issue doesn't change after publication, but a
+// five-minute TTL threw the assembly away anyway, so every archive issue, every
+// deep link, and every issue opened after a quiet spell paid the full ~4s again
+// — warming only ever covered the newest handful. Freshness now comes from
+// /api/revalidate, which is the only thing that can evict a body.
+//
+// The wrapper is built per call rather than at module scope so the id can reach
+// both the cache key and the tags; that's what makes single-issue invalidation
+// possible. The inner function takes no arguments, so ["post", "v3", id] is the
+// whole key.
+const cachedPost = (id: string, section: SectionKey) =>
+  unstable_cache(() => fetchPost(id, section), ["post", "v3", id], {
+    revalidate: false,
+    tags: [POST_TAG, postTag(id)],
+  })();
 
 // React cache() additionally dedupes the generateMetadata + page-component
 // calls within a single render.

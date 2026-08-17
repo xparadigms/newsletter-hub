@@ -1,6 +1,7 @@
-import Link from "next/link";
 import { after } from "next/server";
 import LatestRail from "@/components/LatestRail";
+import PageTransition from "@/components/PageTransition";
+import PrefetchLink from "@/components/PrefetchLink";
 import PullToRefresh from "@/components/PullToRefresh";
 import SectionModule from "@/components/SectionModule";
 import { getSection, SECTIONS, SITE } from "@/lib/config";
@@ -44,71 +45,76 @@ export default async function Home() {
   });
 
   return (
-    <div className="container front">
-      <PullToRefresh />
-      <div className="front__masthead">
-        <span className="label">{today}</span>
-        <span className="label front__tagline">{SITE.tagline}</span>
-      </div>
-
-      {lead && leadSection && (
-        <div className="front__top">
-          <article className="lead">
-            <span className="label">
-              {leadSection.number} / {leadSection.label}
-            </span>
-            {/* h2: the nav bar's large title is the page's h1. */}
-            <h2 className="lead__headline">
-              <Link href={`/post/${lead.section}/${lead.id}`} prefetch={false}>
-                {lead.title}
-              </Link>
-            </h2>
-            {lead.summary && <p className="lead__deck">{lead.summary}</p>}
-            <div className="lead__meta">
-              <span className="label">{formatDate(lead.date)}</span>
-              <Link
-                href={`/post/${lead.section}/${lead.id}`}
-                className="arrow-link"
-                prefetch={false}
-              >
-                Read issue <span aria-hidden>→</span>
-              </Link>
-            </div>
-
-            {secondary.length > 0 && (
-              <div className="secondary">
-                {secondary.map((post) => {
-                  const s = getSection(post.section);
-                  return (
-                    <Link
-                      key={post.id}
-                      href={`/post/${post.section}/${post.id}`}
-                      className="secondary__item"
-                      prefetch={false}
-                    >
-                      <span className="label">
-                        {s?.label} · {formatShortDate(post.date)}
-                      </span>
-                      <span className="secondary__title">{post.title}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
-          </article>
-          <LatestRail posts={rail} />
+    <PageTransition>
+      <div className="container front">
+        <PullToRefresh />
+        <div className="front__masthead">
+          <span className="label">{today}</span>
+          <span className="label front__tagline">{SITE.tagline}</span>
         </div>
-      )}
 
-      <div className="front__sections">
-        {SECTIONS.map((section) => (
-          <SectionModule
-            key={section.key}
-            section={section}
-            posts={posts[section.key].slice(0, 6)}
-          />
-        ))}
+        {lead && leadSection && (
+          <div className="front__top">
+            <article className="lead">
+              <span className="label">
+                {leadSection.number} / {leadSection.label}
+              </span>
+              {/* h2: the nav bar's large title is the page's h1. */}
+              <h2 className="lead__headline">
+                <PrefetchLink
+                  href={`/post/${lead.section}/${lead.id}`}
+                  transitionTypes={["nav-forward"]}
+                >
+                  {lead.title}
+                </PrefetchLink>
+              </h2>
+              {lead.summary && <p className="lead__deck">{lead.summary}</p>}
+              <div className="lead__meta">
+                <span className="label">{formatDate(lead.date)}</span>
+                <PrefetchLink
+                  href={`/post/${lead.section}/${lead.id}`}
+                  className="arrow-link"
+                  transitionTypes={["nav-forward"]}
+                >
+                  Read issue <span aria-hidden>→</span>
+                </PrefetchLink>
+              </div>
+
+              {secondary.length > 0 && (
+                <div className="secondary">
+                  {secondary.map((post) => {
+                    const s = getSection(post.section);
+                    return (
+                      <PrefetchLink
+                        key={post.id}
+                        href={`/post/${post.section}/${post.id}`}
+                        className="secondary__item"
+                        transitionTypes={["nav-forward"]}
+                      >
+                        <span className="label">
+                          {s?.label} · {formatShortDate(post.date)}
+                        </span>
+                        <span className="secondary__title">{post.title}</span>
+                      </PrefetchLink>
+                    );
+                  })}
+                </div>
+              )}
+            </article>
+            <LatestRail posts={rail} />
+          </div>
+        )}
+
+        <div className="front__sections">
+          {SECTIONS.map((section) => (
+            <SectionModule
+              key={section.key}
+              section={section}
+              posts={posts[section.key].slice(0, 6)}
+            />
+          ))}
+        </div>
       </div>
-    </div>
+    </PageTransition>
   );
 }
