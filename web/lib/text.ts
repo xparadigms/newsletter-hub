@@ -121,7 +121,7 @@ export function classifyLang(text: string): Lang {
   return "en";
 }
 
-function blockText(block: Block): string {
+export function blockText(block: Block): string {
   switch (block.type) {
     case "paragraph":
     case "heading":
