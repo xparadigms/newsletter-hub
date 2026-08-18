@@ -54,6 +54,14 @@ EDGE = [
     ("他了解了情况", "他 了解了 情况", None),
     # 的 is not an aspect particle and must stay its own unit.
     ("中国的经济", "中国 的 经济", None),
+    # A numeral binds to its measure: separated, it is also a place the line can
+    # break, which is how 诞辰100 got split from 周年.
+    ("诞辰100周年纪念", "诞辰 100周年 纪念", None),
+    # …but the two-character cap stops it swallowing a noun that merely starts
+    # with a measure character.
+    ("18年轻人参加", "18 年轻人 参加", None),
+    # A decimal point between digits is a separator, not punctuation.
+    ("增长0.6%", "增长 0.6%", None),
 ]
 
 failures: list[str] = []
@@ -83,7 +91,9 @@ for sentence, units, readings in GOLDEN:
 
 for sentence, units, readings in EDGE:
     words = pinyin.annotate(sentence)
-    check(f"edge units:    {sentence}", " ".join(w["text"] for w in words if w.get("pinyin")), units)
+    # Every unit, including the ones with no reading: these cases are about
+    # where the boundaries fall, and a bare numeral is exactly such a boundary.
+    check(f"edge units:    {sentence}", " ".join(w["text"] for w in words), units)
     if readings is not None:
         check(
             f"edge readings: {sentence}",

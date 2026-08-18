@@ -2238,19 +2238,6 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
   color: var(--gold);
 }
 
-/* ---------- china: the Korean translation ---------- */
-
-/* The base blockquote rule is a 22px bold pull-quote. Here the quote carries
-   body prose — a read-through of the Chinese above it — so only the left rule
-   is wanted, not the emphasis. */
-.article__body[data-section="china"] blockquote {
-  font-size: 18px;
-  line-height: 1.75;
-  font-weight: 400;
-  color: var(--text-secondary);
-  border-left-color: var(--border-strong);
-}
-
 /* Pre-existing and not china-specific: .story-card__body had no blockquote rule
    at all, so a quote block inherited --text-primary and rendered black on the
    black card under the light theme. */

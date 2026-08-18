@@ -29,6 +29,7 @@ from shared import pinyin  # noqa: E402
 # Tolerates a leading ordinal in case the model adds one anyway.
 _HEADING = re.compile(r"^###\s+(?:\d{1,2}[.)]\s*)?(.*)$")
 _TRANSLATION = re.compile(r"^>\s*(.*)$")
+_HANGUL = re.compile(r"[가-힣]")
 
 
 def parse_meta(issue_text: str) -> tuple[str, str | None]:
@@ -83,20 +84,25 @@ def to_notion_blocks(blocks: list[dict]) -> list[dict]:
                         },
                     }
                 )
-        elif kind == "quote":
-            # The Korean read-through, in the callout the other newsletters use
-            # for translations so it reads the same in Notion.
-            out.append(
-                {
-                    "type": "callout",
-                    "callout": {
-                        "rich_text": rich(b["text"]),
-                        "icon": {"emoji": "📝"},
-                    },
-                }
-            )
         elif kind == "paragraph":
-            out.append({"type": "paragraph", "paragraph": {"rich_text": rich(b["text"])}})
+            # Korean is the read-through; it keeps the 📝 callout the other
+            # newsletters use for translations so Notion reads consistently.
+            # Detecting it by script rather than by block type is exact here:
+            # in a China issue the only Korean lines are translations.
+            if _HANGUL.search(b["text"]):
+                out.append(
+                    {
+                        "type": "callout",
+                        "callout": {
+                            "rich_text": rich(b["text"]),
+                            "icon": {"emoji": "📝"},
+                        },
+                    }
+                )
+            else:
+                out.append(
+                    {"type": "paragraph", "paragraph": {"rich_text": rich(b["text"])}}
+                )
         elif kind == "divider":
             out.append({"type": "divider", "divider": {}})
     return out
@@ -126,7 +132,11 @@ def build_blocks(issue_text: str) -> tuple[list[dict], int, int]:
 
         translation = _TRANSLATION.match(line)
         if translation:
-            blocks.append({"type": "quote", "text": translation.group(1).strip()})
+            # A paragraph, not a quote. The Japanese newsletters write their
+            # Korean translations as ordinary paragraphs, so a quote block gave
+            # China a left rule and a demoted size the other four never had —
+            # and in China the Korean IS the payload, not an aside.
+            blocks.append({"type": "paragraph", "text": translation.group(1).strip()})
             continue
 
         words = pinyin.annotate(line)

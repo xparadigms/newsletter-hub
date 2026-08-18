@@ -43,10 +43,24 @@ for _term in ORG_TERMS:
 
 
 def _split_punct(token: str) -> list[str]:
-    """Peel punctuation out of a token into standalone units."""
+    """Peel punctuation out of a token into standalone units.
+
+    A period or comma between two digits is a decimal or thousands separator,
+    not punctuation: splitting 3.5% into 3 / . / 5% made three units where the
+    reader sees one number, and put two break opportunities inside it.
+    """
     out: list[str] = []
     buf = ""
-    for ch in token:
+    for i, ch in enumerate(token):
+        if (
+            ch in ".,"
+            and buf
+            and buf[-1].isdigit()
+            and i + 1 < len(token)
+            and token[i + 1].isdigit()
+        ):
+            buf += ch
+            continue
         if ch in _PUNCT:
             if buf:
                 out.append(buf)
@@ -117,7 +131,10 @@ def annotate(sentence: str) -> list[dict]:
 
 
 # Measure words that follow a numeral and read as one unit with it: 8月, 17日.
-_MEASURES = set("月日年号点分秒岁个次亿万千百元件条张台辆架届期%")
+# First characters of measure words that follow a numeral. 周 is here for 周年
+# (anniversary) and 周 (week); the caller caps the unit at two characters, so
+# 年 matches 年/年前 but never 年轻人.
+_MEASURES = set("月日年号点分秒岁个次亿万千百元件条张台辆架届期周%")
 
 
 # Aspect particles read as part of the verb before them rather than as words in
@@ -147,23 +164,35 @@ def _merge_particles(words: list[dict]) -> list[dict]:
     return out
 
 
+# A digit run, optionally with separators and a percent sign: 100, 1.5, 3,000.
+_NUMERAL = re.compile(r"\d+(?:[.,]\d+)*%?$")
+
+
 def _merge_measures(words: list[dict]) -> list[dict]:
     """Fold a bare numeral into the measure word after it.
 
     A lone "8" carries no reading and so no rule, which left it floating beside
-    an underlined 月. The image reads them as one unit, and so does a speaker.
+    an underlined 月; and a numeral separated from its unit is also a place the
+    line can break, which is how 诞辰100 ended up split from 周年.
+
+    The unit is matched on its FIRST character rather than as a whole string:
+    100周年 failed because 周年 is two characters and only single measure chars
+    are listed. The two-character cap is what stops it swallowing 年轻人 after a
+    digit — 年 is a measure, 年轻人 is not.
     """
     out: list[dict] = []
     for w in words:
+        prev = out[-1] if out else None
         if (
-            out
-            and "pinyin" not in out[-1]
-            and out[-1]["text"].isdigit()
+            prev
+            and "pinyin" not in prev
+            and _NUMERAL.match(prev["text"])
             and w.get("pinyin")
-            and w["text"] in _MEASURES
+            and len(w["text"]) <= 2
+            and w["text"][0] in _MEASURES
         ):
-            merged = out.pop()
-            out.append({"text": merged["text"] + w["text"], "pinyin": w["pinyin"]})
+            out.pop()
+            out.append({"text": prev["text"] + w["text"], "pinyin": w["pinyin"]})
             continue
         out.append(w)
     return out
