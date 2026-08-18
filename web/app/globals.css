@@ -20,6 +20,28 @@
   /* Annotations sit quieter than prose without a per-surface override. */
   --text-ruby: #4a4a4a;
 
+  /* Three tracks. The UI track is fixed-step; only display is fluid; the
+     reading track is one base everything derives from, which is what lets story
+     mode rebind the whole ladder in one line. Before this there were 22 fixed
+     sizes and 7 unrelated clamp curves, including four half-pixel steps that
+     carried no perceptible distinction. */
+  --text-2xs: 11px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 15px;
+  --text-base: 17px;
+  --text-lg: 19px;
+  --text-xl: 22px;
+
+  --text-display: clamp(30px, 5vw, 44px);
+  --text-display-sm: clamp(30px, 2vw + 20px, 36px);
+
+  --read-base: 21px;
+  --read-sm: 17px;
+  --read-zh: 27px;
+  --ruby-scale: 0.58;
+  --pinyin-scale: 0.52;
+
   --font-sans: var(--font-archivo), Arial, Helvetica, sans-serif;
   --font-mono: var(--font-plex-mono), monospace;
   /* Simplified Chinese face for china issues. System fonts only — Noto Sans
@@ -106,7 +128,7 @@ body {
   background: var(--bg);
   color: var(--text-primary);
   font-family: var(--font-sans);
-  font-size: 16px;
+  font-size: var(--text-base);
   line-height: 1.4;
   font-weight: 450;
   -webkit-font-smoothing: antialiased;
@@ -167,7 +189,7 @@ img {
 
 .label {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -179,6 +201,9 @@ img {
 @media (max-width: 639px) {
   :root {
     --container-pad: 16px;
+    --read-base: 19px;
+    --read-sm: 16px;
+    --read-zh: 23px;
   }
 }
 
@@ -236,7 +261,7 @@ img {
 
 /* The compact centre title only appears once the large title has collapsed. */
 .navbar__title {
-  font-size: 16px;
+  font-size: var(--text-base);
   font-weight: 600;
   letter-spacing: -0.01em;
   white-space: nowrap;
@@ -260,7 +285,7 @@ img {
 }
 
 .navbar[data-compact="true"] .navbar__title {
-  font-size: 15px;
+  font-size: var(--text-md);
 }
 
 .navbar__back {
@@ -273,7 +298,7 @@ img {
   background: none;
   color: var(--accent-strong);
   font-family: inherit;
-  font-size: 16px;
+  font-size: var(--text-base);
   font-weight: 450;
   letter-spacing: -0.01em;
   cursor: pointer;
@@ -297,7 +322,7 @@ img {
 
 .largetitle__text {
   margin: 0;
-  font-size: 30px;
+  font-size: var(--text-display-sm);
   line-height: 1.15;
   font-weight: 700;
   letter-spacing: -0.03em;
@@ -305,7 +330,7 @@ img {
 
 @media (min-width: 640px) {
   .largetitle__text {
-    font-size: 34px;
+
   }
 }
 
@@ -372,7 +397,7 @@ img {
 }
 
 .tabbar__label {
-  font-size: 10px;
+  font-size: var(--text-2xs);
   letter-spacing: 0.01em;
   font-weight: 500;
   max-width: 100%;
@@ -405,7 +430,7 @@ img {
     padding: 0 20px;
   }
   .tabbar__label {
-    font-size: 11px;
+    font-size: var(--text-2xs);
   }
 }
 
@@ -595,7 +620,7 @@ main {
 
 .lead__headline {
   margin: 14px 0 0;
-  font-size: clamp(28px, 4vw, 44px);
+  font-size: var(--text-display);
   line-height: 1.05;
   letter-spacing: -0.02em;
   font-weight: 450;
@@ -608,7 +633,7 @@ main {
 .lead__deck {
   margin: 18px 0 0;
   font-family: var(--font-reading);
-  font-size: 19px;
+  font-size: var(--text-lg);
   line-height: 1.5;
   color: var(--text-secondary);
   max-width: 60ch;
@@ -651,7 +676,7 @@ main {
 .secondary__title {
   display: block;
   margin-top: 6px;
-  font-size: 17px;
+  font-size: var(--text-base);
   line-height: 1.3;
   letter-spacing: -0.01em;
 }
@@ -686,13 +711,13 @@ main {
 
 .latest__meta {
   display: block;
-  font-size: 11px;
+  font-size: var(--text-2xs);
 }
 
 .latest__title {
   display: block;
   margin-top: 4px;
-  font-size: 15px;
+  font-size: var(--text-md);
   line-height: 1.35;
   letter-spacing: -0.005em;
 }
@@ -735,7 +760,7 @@ main {
 
 .section-module__title {
   margin: 8px 0 0;
-  font-size: 22px;
+  font-size: var(--text-xl);
   font-weight: 450;
   letter-spacing: -0.01em;
 }
@@ -768,7 +793,7 @@ main {
 }
 
 .section-module__item-title {
-  font-size: 15px;
+  font-size: var(--text-md);
   line-height: 1.35;
   letter-spacing: -0.005em;
 }
@@ -779,7 +804,7 @@ main {
 
 .section-module__date {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-2xs);
   color: var(--text-tertiary);
   white-space: nowrap;
 }
@@ -811,7 +836,7 @@ main {
 .page-head p {
   margin: 0;
   color: var(--text-secondary);
-  font-size: 17px;
+  font-size: var(--text-base);
   max-width: 52ch;
   line-height: 1.5;
 }
@@ -831,7 +856,7 @@ main {
   margin: 0;
   max-width: 44ch;
   color: var(--text-tertiary);
-  font-size: 15px;
+  font-size: var(--text-md);
   line-height: 1.5;
 }
 
@@ -881,13 +906,13 @@ main {
 
 .post-row__date {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--text-tertiary);
   white-space: nowrap;
 }
 
 .post-row__title {
-  font-size: 18px;
+  font-size: var(--text-base);
   font-weight: 450;
   letter-spacing: -0.01em;
   line-height: 1.3;
@@ -902,7 +927,7 @@ main {
 
 .tag {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-2xs);
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--text-secondary);
@@ -915,7 +940,7 @@ main {
 .post-row__arrow {
   color: var(--text-faint);
   transition: color 0.15s ease, transform 0.15s ease;
-  font-size: 18px;
+  font-size: var(--text-base);
   line-height: 1;
   align-self: center;
 }
@@ -941,7 +966,7 @@ main {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: var(--text-md);
   font-weight: 450;
   color: var(--text-primary);
 }
@@ -1024,7 +1049,7 @@ main {
 .toc__link {
   display: block;
   padding: 6px 0;
-  font-size: 13px;
+  font-size: var(--text-sm);
   line-height: 1.4;
   color: var(--text-tertiary);
   transition: color 0.15s ease;
@@ -1042,7 +1067,9 @@ main {
 
 .toc__link--sub {
   padding-left: 12px;
-  font-size: 12.5px;
+  /* Same size as a top-level entry: the indent and the colour carry the
+     hierarchy, and half a pixel never did. */
+  font-size: var(--text-sm);
 }
 
 .toc__link:hover {
@@ -1207,7 +1234,7 @@ main {
 
 .article h1 {
   margin: 20px 0 0;
-  font-size: clamp(30px, 5vw, 44px);
+  font-size: var(--text-display);
   line-height: 1.08;
   font-weight: 450;
   letter-spacing: -0.02em;
@@ -1220,17 +1247,11 @@ main {
   padding-top: 32px;
   border-top: 1px solid var(--border);
   font-family: var(--font-reading);
-  font-size: 21px;
+  font-size: var(--read-base);
   line-height: 1.65;
   letter-spacing: 0;
   color: var(--text-secondary);
   overflow-wrap: anywhere;
-}
-
-@media (max-width: 639px) {
-  .article__body {
-    font-size: 19.5px;
-  }
 }
 
 /* Korean breaks on word boundaries; Japanese has no spaces, so it must keep
@@ -1260,20 +1281,25 @@ main {
 }
 
 .article__body h2 {
-  font-size: 34px;
-  line-height: 1.5;
+  /* Derived, not fixed: at 34px against an h1 of clamp(30,5vw,44) — which only
+     reaches 34 at a 680px viewport — every body h2 was LARGER than the article
+     title on every phone. */
+  font-size: calc(var(--read-base) * 1.34);
+  line-height: 1.4;
   margin: 44px 0 4px;
 }
 
 .article__body h3 {
-  font-size: 28px;
-  line-height: 1.5;
+  font-size: calc(var(--read-base) * 1.15);
+  line-height: 1.45;
   margin: 28px 0 4px;
 }
 
 .article__body h4 {
-  font-size: 22px;
-  line-height: 1.55;
+  /* Same size as body; weight carries the distinction. It was 22px against a
+     21px body, a step nobody could see. */
+  font-size: var(--read-base);
+  line-height: 1.5;
   margin: 28px 0 4px;
 }
 
@@ -1291,7 +1317,7 @@ main {
   margin: 26px 0;
   padding: 2px 0 2px 20px;
   border-left: 3px solid var(--accent);
-  font-size: 22px;
+  font-size: calc(var(--read-base) * 1.1);
   line-height: 1.6;
   font-weight: 700;
   font-style: normal;
@@ -1300,7 +1326,7 @@ main {
 
 .article__body .kicker {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1319,7 +1345,7 @@ main {
   border: 1px solid var(--border);
   border-radius: 6px;
   font-family: var(--font-reading);
-  font-size: 19px;
+  font-size: var(--read-sm);
   line-height: 1.6;
 }
 
@@ -1330,7 +1356,7 @@ main {
 .callout__label {
   display: block;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-2xs);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--accent-strong);
@@ -1348,7 +1374,7 @@ main {
   border-radius: 6px;
   padding: 0;
   font-family: var(--font-reading);
-  font-size: 19px;
+  font-size: var(--read-sm);
   line-height: 1.6;
 }
 
@@ -1356,7 +1382,7 @@ main {
   cursor: pointer;
   padding: 9px 16px;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--text-tertiary);
   user-select: none;
 }
@@ -1380,7 +1406,7 @@ main {
   padding: 16px 20px;
   overflow-x: auto;
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: var(--text-sm);
   line-height: 1.6;
 }
 
@@ -1404,7 +1430,7 @@ main {
 .article__body figcaption {
   margin-top: 8px;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--text-tertiary);
 }
 
@@ -1475,7 +1501,7 @@ main {
 }
 
 .article__body .has-ruby rt {
-  font-size: 0.58em;
+  font-size: calc(var(--read-base) * var(--ruby-scale));
   font-weight: 400;
   line-height: 1.1;
   letter-spacing: 0;
@@ -1520,7 +1546,7 @@ html[data-langs="en"] .article__body [data-lang="zh"] {
   border-right: 1px solid var(--border);
   padding: 5px 10px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: var(--text-2xs);
   letter-spacing: 0.05em;
   color: var(--text-tertiary);
   cursor: pointer;
@@ -1600,7 +1626,7 @@ html[data-langs="all"] .lang-toggle button[data-value="all"] {
   -webkit-box-orient: vertical;
   overflow: hidden;
   margin-top: 6px;
-  font-size: 15px;
+  font-size: var(--text-md);
   line-height: 1.35;
   letter-spacing: -0.005em;
 }
@@ -1620,7 +1646,7 @@ html[data-langs="all"] .lang-toggle button[data-value="all"] {
 .notice p {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--text-xs);
   color: var(--accent-strong);
 }
 
@@ -1640,12 +1666,12 @@ html[data-langs="all"] .lang-toggle button[data-value="all"] {
 
 .site-footer__brand {
   font-weight: 600;
-  font-size: 16px;
+  font-size: var(--text-base);
 }
 
 .site-footer__note {
   margin-top: 10px;
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--text-tertiary);
   max-width: 40ch;
   line-height: 1.5;
@@ -1657,7 +1683,7 @@ html[data-langs="all"] .lang-toggle button[data-value="all"] {
 }
 
 .site-footer__nav a {
-  font-size: 13px;
+  font-size: var(--text-sm);
   color: var(--text-tertiary);
 }
 
@@ -1790,7 +1816,7 @@ body:has(.story-root) main {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
@@ -1851,7 +1877,7 @@ body:has(.story-root) main {
 
 .story-card__title {
   margin: 14px 0 0;
-  font-size: clamp(30px, 8vw, 46px);
+  font-size: var(--text-display);
   line-height: 1.1;
   font-weight: 700;
   letter-spacing: -0.03em;
@@ -1859,7 +1885,7 @@ body:has(.story-root) main {
 
 .story-card__deck {
   margin: 16px 0 0;
-  font-size: 17px;
+  font-size: var(--text-base);
   line-height: 1.5;
   color: var(--text-secondary);
   display: -webkit-box;
@@ -1889,7 +1915,7 @@ body:has(.story-root) main {
 
 .story-card__section-title {
   margin: 14px 0 0;
-  font-size: clamp(26px, 6.5vw, 38px);
+  font-size: var(--text-display-sm);
   line-height: 1.2;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -1903,7 +1929,7 @@ body:has(.story-root) main {
 
 .story-card__heading {
   margin: 10px 0 0;
-  font-size: clamp(21px, 5.2vw, 28px);
+  font-size: var(--text-xl);
   line-height: 1.25;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -1914,7 +1940,13 @@ body:has(.story-root) main {
    siblings that were painting over this, so a drag here hit a button instead of
    scrolling; lifting the body above them restores it. Vertical drags scroll and
    horizontal ones still reach the viewer's swipe handler. */
+/* One rebind instead of a size on every rule: the whole reading ladder — body,
+   headings, callouts, ruby, hanzi — derives from these three. */
 .story-card__body {
+  --read-base: 19px;
+  --read-sm: 15px;
+  --read-zh: 21px;
+
   position: relative;
   z-index: 2;
   touch-action: pan-y;
@@ -2041,7 +2073,7 @@ body:has(.story-root) main {
   border-right-color: var(--border);
   color: var(--text-tertiary);
   padding: 4px 8px;
-  font-size: 10.5px;
+  font-size: var(--text-2xs);
 }
 
 html:not([data-langs]) .story-topbar .lang-toggle button[data-value="ja-ko"],
@@ -2060,7 +2092,7 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
 
 .state__title {
   margin: 12px 0 0;
-  font-size: clamp(28px, 5vw, 38px);
+  font-size: var(--text-display-sm);
   line-height: 1.1;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -2071,7 +2103,7 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
 .state__text {
   margin: 16px 0 0;
   color: var(--text-secondary);
-  font-size: 17px;
+  font-size: var(--text-base);
   max-width: 52ch;
   line-height: 1.5;
 }
@@ -2091,7 +2123,7 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
   background: none;
   color: var(--text-primary);
   font-family: inherit;
-  font-size: 14px;
+  font-size: var(--text-md);
   font-weight: 500;
   cursor: pointer;
   transition: border-color var(--dur-fast) var(--ease-out);
@@ -2147,7 +2179,7 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
   background: var(--bg-subtle);
   color: var(--text-primary);
   font-family: var(--font-reading);
-  font-size: 16px; /* 16px keeps iOS from zooming the field on focus */
+  font-size: var(--text-base); /* 16px keeps iOS from zooming the field on focus */
   -webkit-user-select: text;
   user-select: text;
 }
@@ -2183,7 +2215,7 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
 .search-results__title {
   display: block;
   margin-top: 4px;
-  font-size: 15px;
+  font-size: var(--text-md);
   line-height: 1.35;
 }
 
@@ -2196,14 +2228,12 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
    paired against a Japanese paragraph. */
 .story-card__subtitle {
   margin: 6px 0 0;
-  font-size: 16px;
+  font-size: var(--text-base);
   line-height: 1.4;
   color: var(--text-tertiary);
   flex-shrink: 0;
 }
 
-/* A card carries a full paragraph and its translation. Larger text means a long
-   pair can outgrow the card; the body scrolls when it does. */
 .story-card__body .callout {
   margin: 14px 0 6px;
   padding: 10px 14px;
@@ -2218,7 +2248,7 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
      the same size, and this is read character by character rather than skimmed.
      The line-height reserves the pinyin row above every line so rows stay
      evenly spaced whether or not a given line carries readings. */
-  font-size: 27px;
+  font-size: var(--read-zh);
   /* Reserves the pinyin row above every line. 2.5 was sized for the old
      inline-block's own line box; with plain inlines only the annotation needs
      headroom. */
@@ -2229,12 +2259,6 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
      must not get emergency mid-word breaks. */
   overflow-wrap: normal;
   word-break: normal;
-}
-
-@media (max-width: 639px) {
-  .article__body .pinyin {
-    font-size: 23px;
-  }
 }
 
 /* `inline`, not `inline-block` — see renderPinyin. On an inline box the border
@@ -2270,7 +2294,7 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
      unevenly between glyphs. */
   font-family: var(--font-sans);
   /* Relative to the enlarged hanzi above, so the pair scales together. */
-  font-size: 0.44em;
+  font-size: calc(var(--read-zh) * var(--pinyin-scale));
   font-weight: 400;
   line-height: 1.2;
   letter-spacing: 0.005em;
@@ -2292,7 +2316,7 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
   margin: 12px 0;
   padding: 2px 0 2px 14px;
   border-left: 2px solid var(--border-strong);
-  font-size: 16px;
+  font-size: calc(var(--read-base) * 1.1);
   line-height: 1.6;
   font-weight: 400;
   font-style: normal;
@@ -2300,13 +2324,6 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
 }
 
 /* ---------- china: story mode ---------- */
-
-.story-card__body .pinyin {
-  font-size: 23px;
-  line-height: 2.3;
-  margin: 14px 0 10px;
-  color: #fff;
-}
 
 /* ---------- five sections ---------- */
 
@@ -2328,7 +2345,6 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
 
 @media (max-width: 380px) {
   .tabbar__label {
-    font-size: 9px;
     letter-spacing: 0;
   }
 }
