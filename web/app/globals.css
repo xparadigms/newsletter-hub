@@ -1837,6 +1837,7 @@ body:has(.story-root) main {
   position: relative;
   flex: 1;
   min-height: 0;
+  min-width: 0;
   display: flex;
   padding: 4px 20px 8px;
 }
@@ -1844,6 +1845,7 @@ body:has(.story-root) main {
 .story-slide {
   flex: 1;
   min-height: 0;
+  min-width: 0;
   display: flex;
   animation: story-in var(--dur-base) var(--ease-ios);
 }
@@ -1858,6 +1860,7 @@ body:has(.story-root) main {
 .story-card {
   flex: 1;
   min-height: 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   max-width: 620px;
@@ -1952,6 +1955,7 @@ body:has(.story-root) main {
   touch-action: pan-y;
   margin-top: 14px;
   min-height: 0;
+  min-width: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;

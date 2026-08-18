@@ -43,6 +43,7 @@ export function renderPinyin(words: PinyinWord[], i: number): React.ReactNode {
     }
   };
 
+  let lastWasWord = false;
   words.forEach((w, j) => {
     if (!w.pinyin) {
       // Punctuation and bare numerals become text nodes, not spans: they need no
@@ -50,9 +51,18 @@ export function renderPinyin(words: PinyinWord[], i: number): React.ReactNode {
       // the browser apply its own rules to them. Consecutive ones concatenate so
       // React never emits two adjacent text children.
       bare += w.text;
+      lastWasWord = false;
       return;
     }
     flush();
+    // An explicit break opportunity between two word spans. Each span is
+    // white-space: nowrap so a word never splits, and React emits them with no
+    // text node between — which left the browser nowhere to break the line at
+    // all, so a sentence became one unbreakable run that overflowed the screen
+    // and dragged the card's width with it. <wbr> says "here is a break
+    // opportunity" without depending on how an engine resolves white-space at
+    // the boundary between two elements.
+    if (lastWasWord) out.push(<wbr key={`b${j}`} />);
     out.push(
       <span key={j} className="pinyin__w">
         <ruby>
@@ -61,6 +71,7 @@ export function renderPinyin(words: PinyinWord[], i: number): React.ReactNode {
         </ruby>
       </span>
     );
+    lastWasWord = true;
   });
   flush();
 
