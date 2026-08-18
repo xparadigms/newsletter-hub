@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { renderAnnotated } from "@/components/ArticleBlocks";
+import { headingContent, renderAnnotated } from "@/components/ArticleBlocks";
 import type { SectionKey } from "@/lib/types";
 import LangToggle from "@/components/LangToggle";
 import type { StoryCard } from "@/lib/story";
@@ -51,7 +51,7 @@ function Card({ card, sectionKey }: { card: StoryCard; sectionKey: SectionKey })
   return (
     <div className="story-card story-card--content">
       {card.kicker && <span className="label story-card__eyebrow">{card.kicker}</span>}
-      {card.heading && <h2 className="story-card__heading">{card.heading}</h2>}
+      {card.heading && <h2 className="story-card__heading">{headingContent(card.heading)}</h2>}
       {card.subtitle && (
         <p className="story-card__subtitle" lang="ko">
           {card.subtitle}
@@ -202,14 +202,20 @@ export default function StoryViewer({
         <div className="story-slide" key={index}>
           <Card card={cards[index]} sectionKey={sectionKey} />
         </div>
+
+        {/* Inside the stage, not the root: as siblings of the fixed root these
+            spanned the whole viewport and covered the top bar, so tapping the
+            language toggle advanced the card instead of switching language.
+            Scoping them here makes that structurally impossible rather than a
+            z-index race. The card body still sits above them at z-index 2. */}
+        <button type="button" data-zone className="story-zone story-zone--prev" onClick={zone("prev")} aria-label="Previous card" />
+        <button type="button" data-zone className="story-zone story-zone--next" onClick={zone("next")} aria-label="Next card" />
       </div>
 
-      {/* Tap zones sit behind the card content so links stay clickable. */}
-      <button type="button" data-zone className="story-zone story-zone--prev" onClick={zone("prev")} aria-label="Previous card" />
-      <button type="button" data-zone className="story-zone story-zone--next" onClick={zone("next")} aria-label="Next card" />
-
-      <div className="story-counter label">
-        {index + 1} / {count}
+      <div className="story-foot">
+        <span className="story-counter label">
+          {index + 1} / {count}
+        </span>
       </div>
     </div>
   );

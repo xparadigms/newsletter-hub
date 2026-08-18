@@ -50,7 +50,7 @@ export function renderPinyin(words: PinyinWord[], i: number): React.ReactNode {
 // with ::before so the number stays in the text for the TOC and for search.
 const ORDINAL = /^(\d{1,2}\.)\s+/;
 
-function headingContent(text: string): React.ReactNode {
+export function headingContent(text: string): React.ReactNode {
   const m = text.match(ORDINAL);
   if (!m) return text;
   return (

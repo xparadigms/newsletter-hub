@@ -1700,13 +1700,16 @@ body:has(.story-root) main {
 }
 
 .story-progress__seg[data-state="active"] {
+  transform-origin: left center;
   animation: story-seg var(--dur-slow) var(--ease-out);
 }
 
+/* transform-origin is animatable. Declared only in `from`, it interpolated from
+   `left` to the 50% default across the animation, so the segment slid its own
+   anchor while growing — the visible wobble on every advance. */
 @keyframes story-seg {
   from {
     transform: scaleX(0.2);
-    transform-origin: left;
   }
 }
 
@@ -1739,14 +1742,14 @@ body:has(.story-root) main {
   background: none;
   color: #fff;
   cursor: pointer;
-  z-index: 3;
 }
 
 .story-stage {
+  position: relative;
   flex: 1;
   min-height: 0;
   display: flex;
-  padding: 4px 20px 16px;
+  padding: 4px 20px 8px;
 }
 
 .story-slide {
@@ -1816,6 +1819,7 @@ body:has(.story-root) main {
 
 .story-card--section {
   justify-content: center;
+  justify-content: safe center;
   text-align: center;
   align-items: center;
 }
@@ -1830,6 +1834,7 @@ body:has(.story-root) main {
 
 .story-card--content {
   justify-content: center;
+  justify-content: safe center;
   padding: 8px 0;
 }
 
@@ -1857,12 +1862,10 @@ body:has(.story-root) main {
   overscroll-behavior: contain;
   border-top: none;
   padding-top: 0;
-  font-size: 16px;
-  color: rgb(255 255 255 / 82%);
 }
 
 .story-card__body p {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
 }
 
 /* A visible hint that there is more to read, without covering the text. */
@@ -1876,33 +1879,14 @@ body:has(.story-root) main {
 }
 
 .story-card__body .has-ruby {
-  line-height: 2.2;
+  line-height: 2.05;
+  margin: 16px 0 6px;
 }
 
-.story-card__body rt {
-  color: rgb(255 255 255 / 60%);
-}
-
-.story-card__body .callout {
-  background: rgb(255 255 255 / 7%);
-  border-color: rgb(255 255 255 / 14%);
-  font-size: 15px;
-}
-
-.story-card__body .callout__label,
-.story-card__body .kicker {
-  color: var(--accent);
-}
-
-.story-card__body h2,
-.story-card__body h3,
-.story-card__body h4 {
-  color: #fff;
-  font-size: 19px;
-  margin: 12px 0 6px;
-}
-
-/* Tap zones sit under the content so links and the close button still work. */
+/* Zones are positioned against .story-stage, not the fixed root, so they cannot
+   reach the progress bar, the top bar or the counter. Previously they spanned
+   the whole viewport at z-index 1 and swallowed the language toggle, which is a
+   static flex item at z-index auto — tapping it advanced the card. */
 .story-zone {
   position: absolute;
   top: 0;
@@ -1924,12 +1908,17 @@ body:has(.story-root) main {
   width: 68%;
 }
 
+/* In flow, not an overlay. Absolutely positioned 10px above the safe area while
+   the stage reserved 16px, it sat on the last ~11px of the scrolling body and
+   collided outright with the cover card's foot. */
+.story-foot {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  padding: 6px 16px calc(var(--safe-bottom) + 10px);
+}
+
 .story-counter {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: calc(var(--safe-bottom) + 10px);
-  text-align: center;
   color: rgb(255 255 255 / 45%);
   pointer-events: none;
 }
@@ -2136,25 +2125,11 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
   flex-shrink: 0;
 }
 
-/* A card carries a full Japanese paragraph and its Korean translation. Larger
-   text means a long pair can outgrow the card; the body scrolls when it does. */
-.story-card__body {
-  font-size: 19px;
-}
-
-.story-card__body .has-ruby {
-  line-height: 2.05;
-  margin: 16px 0 6px;
-}
-
-.story-card__body p {
-  margin: 0 0 10px;
-}
-
+/* A card carries a full paragraph and its translation. Larger text means a long
+   pair can outgrow the card; the body scrolls when it does. */
 .story-card__body .callout {
   margin: 14px 0 6px;
   padding: 10px 14px;
-  font-size: 15.5px;
 }
 
 /* ---------- china: pinyin body ---------- */
@@ -2216,7 +2191,7 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
 /* ---------- china: numbered story heading ---------- */
 
 .article__body[data-section="china"] .heading__num,
-.story-card__body[data-section="china"] .heading__num {
+.story-root[data-section="china"] .heading__num {
   color: var(--gold);
 }
 
