@@ -47,8 +47,18 @@ KST = timezone(timedelta(hours=9))
 
 
 # ── Scraper ─────────────────────────────────────────────────────────────────
+# The Telegram web view returns a fixed window of about 20 posts, and TechCrunch
+# posts roughly three to five a day — so a single page spans nearly a week. Every
+# daily run was therefore handed almost the same items as the day before, and the
+# model quite reasonably led with the same biggest story several days running.
+# The other generators have always filtered on recency; this one never did,
+# despite already parsing each post's timestamp.
+RECENT_HOURS = 36
+MIN_ITEMS = 4
+
+
 def scrape_techcrunch_telegram() -> list[dict]:
-    """Fetch the latest posts from the TechCrunch Telegram public page."""
+    """Fetch TechCrunch's recent Telegram posts, newest window only."""
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -60,13 +70,19 @@ def scrape_techcrunch_telegram() -> list[dict]:
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
 
-    items = []
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=RECENT_HOURS)
+    items: list[dict] = []
+    seen_urls: set[str] = set()
+    stale = 0
+
     for widget in soup.select("div.tgme_widget_message_wrap"):
         text_el = widget.select_one("div.tgme_widget_message_text")
         if not text_el:
             continue
 
         text = text_el.get_text(separator=" ", strip=True)
+        if not text:
+            continue
 
         link_el = text_el.select_one('a[href*="techcrunch.com"]')
         url = link_el["href"] if link_el else ""
@@ -74,9 +90,30 @@ def scrape_techcrunch_telegram() -> list[dict]:
         date_el = widget.select_one("time[datetime]")
         date_str = date_el["datetime"] if date_el else ""
 
-        if text:
-            items.append({"text": text, "url": url, "date": date_str})
+        published = None
+        if date_str:
+            try:
+                published = datetime.fromisoformat(date_str)
+            except ValueError:
+                published = None
+        # An undated post is kept: the timestamp is Telegram's markup, not ours,
+        # and dropping a real story over a markup change would be worse.
+        if published and published < cutoff:
+            stale += 1
+            continue
 
+        if url and url in seen_urls:
+            continue
+        if url:
+            seen_urls.add(url)
+
+        items.append({"text": text, "url": url, "date": date_str})
+
+    print(f"  {len(items)} posts in the last {RECENT_HOURS}h ({stale} older, skipped).")
+    if len(items) < MIN_ITEMS:
+        # Not fatal: a quiet day is a real thing, and a short issue beats
+        # yesterday's issue published again under today's date.
+        print(f"  ⚠ Only {len(items)} recent posts — today's issue will be short.")
     return items
 
 
