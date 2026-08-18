@@ -218,9 +218,12 @@ Rules that matter:
 
 - The ### headline is written in KOREAN and is NOT numbered. Do not write "1.", \
 "2." or any ordinal — numbering is added afterwards.
-- Each line under a ### is one to three Chinese sentences and at most 60 \
-characters. Break longer thoughts across several lines. Four to six lines per \
-story — give the background and the consequence, not only the headline fact.
+- Each line under a ### is one or two Chinese sentences and at most 45 \
+characters. Two or three lines per story.
+- Keep each story to 85-95 Chinese characters in total, counting all its lines. \
+Count them; do not come in well under. This is a brief: give the fact and why it \
+matters, and stop. Do not add background the reader can infer, and do not \
+restate the headline.
 - Write ONLY Simplified Chinese in those lines. No Traditional characters.
 - NEVER write pinyin or romanisation anywhere, and never put a reading in \
 parentheses after a word. Readings are added afterwards by a separate tool, and \
