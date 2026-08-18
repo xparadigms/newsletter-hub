@@ -15,7 +15,10 @@
   /* China story ordinals and the pinyin rule. --gold carries text so it is
      darkened for contrast on white; --gold-rule carries none and stays bright. */
   --gold: #8a6d1f;
-  --gold-rule: #c9a227;
+  /* 2.42:1 on white failed WCAG 1.4.11 for a graphical object; #a8851b is 3.47:1. */
+  --gold-rule: #a8851b;
+  /* Annotations sit quieter than prose without a per-surface override. */
+  --text-ruby: #4a4a4a;
 
   --font-sans: var(--font-archivo), Arial, Helvetica, sans-serif;
   --font-mono: var(--font-plex-mono), monospace;
@@ -29,6 +32,9 @@
     "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
 
   --header-height: 52px;
+  /* The nav bar occupies both. Sticky offsets using --header-height alone slid
+     under it on an installed PWA with a top inset. */
+  --header-total: calc(var(--safe-top) + var(--header-height));
   --tabbar-height: 54px;
   --container-max: 1280px;
   --container-pad: 24px;
@@ -63,6 +69,7 @@
   --accent-tint: #0e2b21;
   --gold: #c8a951;
   --gold-rule: #7a6535;
+  --text-ruby: #a8a8a8;
 }
 
 /* No-JS fallback: follow the system when no explicit choice is set */
@@ -82,6 +89,7 @@
     --accent-tint: #0e2b21;
     --gold: #c8a951;
     --gold-rule: #7a6535;
+    --text-ruby: #a8a8a8;
   }
 }
 
@@ -996,8 +1004,8 @@ main {
 
 .toc__inner {
   position: sticky;
-  top: calc(var(--header-height) + 28px);
-  max-height: calc(100dvh - var(--header-height) - 64px);
+  top: calc(var(--header-total) + 28px);
+  max-height: calc(100dvh - var(--header-total) - 64px);
   overflow-y: auto;
   border-left: 1px solid var(--border);
   padding-left: 18px;
@@ -1250,7 +1258,7 @@ main {
   font-weight: 700;
   letter-spacing: 0;
   /* Clear the sticky header when jumped to from the contents. */
-  scroll-margin-top: calc(var(--header-height) + 20px);
+  scroll-margin-top: calc(var(--header-total) + 20px);
 }
 
 .article__body h2 {
@@ -1473,7 +1481,7 @@ main {
   font-weight: 400;
   line-height: 1.1;
   letter-spacing: 0;
-  color: var(--text-secondary);
+  color: var(--text-ruby);
   text-align: center;
 }
 
@@ -1665,12 +1673,33 @@ body:has(.story-root) main {
   padding-bottom: 0;
 }
 
+/* The story card is its own theme boundary. It shares the .article__body class
+   (StoryViewer.tsx), so every article rule reading a colour token applied here
+   with LIGHT values on a hardcoded dark surface: furigana resolved
+   --text-secondary #333 on #0b0b0c — 1.5:1, invisible — and so did the Korean
+   read-through. Rebinding the tokens fixes every such rule at once, including
+   any added later, which eight individual overrides could not. */
 .story-root {
+  color-scheme: dark;
+  --bg: #0b0b0c;
+  --bg-subtle: rgb(255 255 255 / 7%);
+  --border: rgb(255 255 255 / 18%);
+  --border-strong: rgb(255 255 255 / 30%);
+  --text-primary: #ffffff;
+  --text-secondary: rgb(255 255 255 / 82%);
+  --text-tertiary: rgb(255 255 255 / 58%);
+  --text-faint: rgb(255 255 255 / 38%);
+  --text-ruby: rgb(255 255 255 / 62%);
+  --accent: #34d399;
+  --accent-strong: #34d399;
+  --gold: #d9bb62;
+  --gold-rule: #c9a227;
+
   position: fixed;
   inset: 0;
   z-index: 100;
-  background: #0b0b0c;
-  color: #fff;
+  background: var(--bg);
+  color: var(--text-primary);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1731,7 +1760,7 @@ body:has(.story-root) main {
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  color: rgb(255 255 255 / 78%);
+  color: var(--text-secondary);
 }
 
 .story-topbar__close {
@@ -1798,7 +1827,7 @@ body:has(.story-root) main {
   margin: 16px 0 0;
   font-size: 17px;
   line-height: 1.5;
-  color: rgb(255 255 255 / 72%);
+  color: var(--text-secondary);
   display: -webkit-box;
   -webkit-line-clamp: 5;
   line-clamp: 5;
@@ -1814,7 +1843,7 @@ body:has(.story-root) main {
 }
 
 .story-card__foot .label {
-  color: rgb(255 255 255 / 55%);
+  color: var(--text-tertiary);
 }
 
 .story-card--section {
@@ -1874,7 +1903,7 @@ body:has(.story-root) main {
 }
 
 .story-card__body::-webkit-scrollbar-thumb {
-  background: rgb(255 255 255 / 26%);
+  background: var(--border-strong);
   border-radius: 3px;
 }
 
@@ -1919,7 +1948,7 @@ body:has(.story-root) main {
 }
 
 .story-counter {
-  color: rgb(255 255 255 / 45%);
+  color: var(--text-faint);
   pointer-events: none;
 }
 
@@ -1937,7 +1966,7 @@ body:has(.story-root) main {
   height: 14px;
   margin-bottom: 12px;
   border-radius: 3px;
-  background: rgb(255 255 255 / 11%);
+  background: var(--bg-subtle);
   animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
 
@@ -1970,13 +1999,13 @@ body:has(.story-root) main {
 .story-topbar .lang-toggle {
   margin-left: auto;
   margin-right: 12px;
-  border-color: rgb(255 255 255 / 22%);
+  border-color: var(--border);
   flex-shrink: 0;
 }
 
 .story-topbar .lang-toggle button {
-  border-right-color: rgb(255 255 255 / 22%);
-  color: rgb(255 255 255 / 62%);
+  border-right-color: var(--border);
+  color: var(--text-tertiary);
   padding: 4px 8px;
   font-size: 10.5px;
 }
@@ -1985,7 +2014,7 @@ html:not([data-langs]) .story-topbar .lang-toggle button[data-value="ja-ko"],
 html[data-langs="ja-ko"] .story-topbar .lang-toggle button[data-value="ja-ko"],
 html[data-langs="en"] .story-topbar .lang-toggle button[data-value="en"],
 html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
-  background: rgb(255 255 255 / 16%);
+  background: var(--bg-subtle);
   color: #fff;
 }
 
@@ -2121,7 +2150,7 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
   margin: 6px 0 0;
   font-size: 16px;
   line-height: 1.4;
-  color: rgb(255 255 255 / 55%);
+  color: var(--text-tertiary);
   flex-shrink: 0;
 }
 
@@ -2184,7 +2213,7 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
   font-weight: 400;
   line-height: 1.2;
   letter-spacing: 0.005em;
-  color: var(--text-tertiary);
+  color: var(--text-ruby);
   text-align: center;
 }
 
@@ -2214,12 +2243,12 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
 .story-card__body blockquote {
   margin: 12px 0;
   padding: 2px 0 2px 14px;
-  border-left: 2px solid rgb(255 255 255 / 26%);
+  border-left: 2px solid var(--border-strong);
   font-size: 16px;
   line-height: 1.6;
   font-weight: 400;
   font-style: normal;
-  color: rgb(255 255 255 / 82%);
+  color: var(--text-secondary);
 }
 
 /* ---------- china: story mode ---------- */
