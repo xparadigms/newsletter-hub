@@ -4,7 +4,7 @@ export const metadata = { title: "Not found" };
 
 export default function NotFound() {
   return (
-    <div className="page-head">
+    <div className="state">
       <div className="container">
         <span className="label">404</span>
         <h1 className="state__title">This page doesn&rsquo;t exist</h1>

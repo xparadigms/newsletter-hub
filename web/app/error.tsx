@@ -12,7 +12,7 @@ export default function Error({
   reset: () => void;
 }) {
   return (
-    <div className="page-head">
+    <div className="state">
       <div className="container">
         <span className="label">Something went wrong</span>
         <h1 className="state__title">This didn&rsquo;t load</h1>

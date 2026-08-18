@@ -59,7 +59,7 @@ export default async function SectionPage({
             <p className="section__desc">Nothing published here yet.</p>
           )}
           {groups.map((group) => (
-            <div key={group.month}>
+            <div key={group.month} className="month-group">
               <span className="label month-label">{group.month}</span>
               <PostList posts={group.posts} />
             </div>

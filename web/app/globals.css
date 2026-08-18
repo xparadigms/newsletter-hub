@@ -123,8 +123,8 @@ body {
 /* Reading content behaves like text, not like app chrome. */
 .article__body,
 .article h1,
-.article__summary,
-.page-head h1,
+.state__title,
+.page-head p,
 .lead__headline,
 .lead__deck {
   -webkit-user-select: text;
@@ -801,20 +801,15 @@ main {
 
 /* ---------- section pages ---------- */
 
+/* The section page stopped rendering an <h1> — the nav bar's large title carries
+   the name — so 64px of top padding plus the paragraph's 20px margin left 84px
+   of nothing between the title and the first line of text. */
 .page-head {
-  padding: 64px 0 40px;
-}
-
-.page-head h1 {
-  margin: 12px 0 0;
-  font-size: clamp(36px, 6vw, 64px);
-  line-height: 1.02;
-  font-weight: 450;
-  letter-spacing: -0.02em;
+  padding: 4px 0 28px;
 }
 
 .page-head p {
-  margin: 20px 0 0;
+  margin: 0;
   color: var(--text-secondary);
   font-size: 17px;
   max-width: 52ch;
@@ -840,13 +835,16 @@ main {
   line-height: 1.5;
 }
 
+/* The separation belongs between groups, not on the label: each group is its own
+   element and the label is always its first child, so :first-child matched every
+   one of them and no group was ever separated from the last. */
 .month-label {
   display: block;
-  margin: 44px 0 10px;
+  margin: 0 0 10px;
 }
 
-.month-label:first-child {
-  margin-top: 0;
+.month-group + .month-group {
+  margin-top: 44px;
 }
 
 /* ---------- post list ---------- */
@@ -1546,13 +1544,42 @@ html[data-langs="all"] .lang-toggle button[data-value="all"] {
 
 /* ---------- article prev/next ---------- */
 
+/* One column on a phone. Two 167px cells could not hold an issue title, and the
+   two sides never matched height because nothing clamped them. */
 .article__nav {
   margin-top: 56px;
   padding-top: 20px;
   border-top: 1px solid var(--border);
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
+  grid-template-columns: 1fr;
+}
+
+.article__nav > * {
+  min-width: 0;
+}
+
+/* The absent neighbour on a first or last issue renders as an empty div. */
+.article__nav > div:empty {
+  display: none;
+}
+
+.article__nav > * + * {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+@media (min-width: 640px) {
+  .article__nav {
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+
+  .article__nav > * + * {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
 }
 
 .article__nav-link {
@@ -1564,8 +1591,14 @@ html[data-langs="all"] .lang-toggle button[data-value="all"] {
   text-align: right;
 }
 
+/* The only title in the app that was not clamped; at 15px in a 167px cell a
+   typical issue title ran five to seven lines. */
 .article__nav-title {
-  display: block;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
   margin-top: 6px;
   font-size: 15px;
   line-height: 1.35;
@@ -2021,6 +2054,10 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
 
 /* ---------- error / empty states ---------- */
 
+.state {
+  padding: 40px 0 64px;
+}
+
 .state__title {
   margin: 12px 0 0;
   font-size: clamp(28px, 5vw, 38px);
@@ -2029,12 +2066,22 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
   letter-spacing: -0.02em;
 }
 
+/* .page-head p used to style these by proximity; the two objects are separate
+   now, which is also what removes the !important that existed only to beat it. */
+.state__text {
+  margin: 16px 0 0;
+  color: var(--text-secondary);
+  font-size: 17px;
+  max-width: 52ch;
+  line-height: 1.5;
+}
+
 .state__actions {
   display: flex;
   align-items: center;
   gap: 20px;
   flex-wrap: wrap;
-  margin-top: 28px !important;
+  margin-top: 28px;
 }
 
 .state__retry {
@@ -2284,4 +2331,26 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
     font-size: 9px;
     letter-spacing: 0;
   }
+}
+
+/* ---------- list titles clamp, like the table of contents already did ------ */
+
+/* An untruncated issue title in a narrow cell pushed the date out of line and
+   left neighbouring rows different heights. The clamp goes on an inner box, the
+   pattern .toc__text already uses. */
+.secondary__title,
+.latest__title,
+.section-module__item-title,
+.search-results__title,
+.post-row__title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.secondary__title {
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
 }
