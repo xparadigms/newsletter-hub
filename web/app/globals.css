@@ -1490,7 +1490,8 @@ main {
 }
 
 .lang-wrap[lang="ja"],
-.lang-wrap[lang="ko"] {
+.lang-wrap[lang="ko"],
+.lang-wrap[lang="zh"] {
   line-break: strict;
 }
 
@@ -2171,8 +2172,16 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
      The line-height reserves the pinyin row above every line so rows stay
      evenly spaced whether or not a given line carries readings. */
   font-size: 27px;
-  line-height: 2.5;
+  /* Reserves the pinyin row above every line. 2.5 was sized for the old
+     inline-block's own line box; with plain inlines only the annotation needs
+     headroom. */
+  line-height: 2.2;
   margin: 26px 0 12px;
+  /* .article__body sets overflow-wrap: anywhere as a safety valve for mixed
+     Japanese-in-Korean runs. Chinese breaks between ideographs on its own and
+     must not get emergency mid-word breaks. */
+  overflow-wrap: normal;
+  word-break: normal;
 }
 
 @media (max-width: 639px) {
@@ -2181,27 +2190,32 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
   }
 }
 
-/* inline-block so the rule spans exactly one word and a word never breaks
-   across lines. <ruby> widens the box when the reading is wider than the base,
-   which is what keeps 中国 centred under Zhōngguó. */
+/* `inline`, not `inline-block` — see renderPinyin. On an inline box the border
+   sits at the bottom of the CONTENT area, which comes from the font rather than
+   from line-height, so the rule sits against the glyphs instead of ~21px below
+   them where the old 2.5 line box put it. */
 .article__body .pinyin__w {
-  display: inline-block;
-  margin-right: 0.2em;
-  padding-bottom: 3px;
+  display: inline;
+  white-space: nowrap;
   border-bottom: 1.5px solid var(--gold-rule);
 }
 
-/* Punctuation and numerals carry no reading, so no rule, and they hug the
-   word before them instead of sitting on their own. */
-.article__body .pinyin__w--bare {
-  border-bottom: none;
-  margin-right: 0.06em;
+/* The gap belongs BEFORE a word, not after it: that way punctuation hugs the
+   word it follows — which is what the old --bare rule documented and never did,
+   since its margin-right controlled the gap after the punctuation. `+` skips
+   text nodes, so a word following 。 is still matched. A margin on an inline box
+   is advance width and carries no break opportunity with it. */
+.article__body .pinyin__w + .pinyin__w {
+  margin-left: 0.1em;
 }
 
 .article__body .pinyin ruby {
   ruby-position: over;
   -webkit-ruby-position: before;
-  ruby-align: space-around;
+  /* `center`, not `space-around`: when a reading is wider than its base,
+     space-around spreads the base characters apart, so the gap INSIDE a word
+     grows larger than the gap between words and the segmentation inverts. */
+  ruby-align: center;
 }
 
 .article__body .pinyin rt {
@@ -2258,10 +2272,6 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
   line-height: 2.3;
   margin: 14px 0 10px;
   color: #fff;
-}
-
-.story-card__body .pinyin__w {
-  border-bottom-color: rgb(200 169 81 / 55%);
 }
 
 /* ---------- five sections ---------- */

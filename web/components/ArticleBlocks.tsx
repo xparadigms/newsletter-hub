@@ -18,30 +18,55 @@ export function renderRuby(segments: RubySegment[]): React.ReactNode {
   );
 }
 
-// A Chinese sentence as word units: pinyin over the base via native <ruby>,
-// which widens a narrow base to fit a wider reading so 中国 stays centred under
-// Zhōngguó, and the rule under each unit via border-bottom on the wrapper.
+// A Chinese sentence as word units: pinyin over the base via native <ruby>, and
+// the rule under each unit via border-bottom on the wrapper.
+//
+// The wrappers are `display: inline`, not `inline-block`. An inline-block is an
+// atomic inline, which CSS Text substitutes with U+FFFC — line-break class CB,
+// which permits a break on BOTH sides unconditionally. Because the real
+// characters are then hidden from the algorithm, the rule forbidding a line to
+// start with 。 and the rule binding a number to what follows both stop applying.
+// That is what orphaned 。 onto its own line and split 诞辰100 from 周年. As
+// plain inlines the browser sees one character stream again, and `white-space:
+// nowrap` is what keeps a word from splitting inside itself.
 //
 // border-bottom, not text-decoration: underline — decoration propagates into
 // descendants and would draw a line through the <rt> as well. Borders do not
-// inherit. Units without a reading (punctuation, numerals) get no rule.
+// inherit.
 export function renderPinyin(words: PinyinWord[], i: number): React.ReactNode {
+  const out: React.ReactNode[] = [];
+  let bare = "";
+  const flush = () => {
+    if (bare) {
+      out.push(bare);
+      bare = "";
+    }
+  };
+
+  words.forEach((w, j) => {
+    if (!w.pinyin) {
+      // Punctuation and bare numerals become text nodes, not spans: they need no
+      // rule and no wrapper, and leaving them as real characters is what lets
+      // the browser apply its own rules to them. Consecutive ones concatenate so
+      // React never emits two adjacent text children.
+      bare += w.text;
+      return;
+    }
+    flush();
+    out.push(
+      <span key={j} className="pinyin__w">
+        <ruby>
+          {w.text}
+          <rt>{w.pinyin}</rt>
+        </ruby>
+      </span>
+    );
+  });
+  flush();
+
   return (
     <p key={i} className="pinyin" lang="zh-Hans">
-      {words.map((w, j) =>
-        w.pinyin ? (
-          <span key={j} className="pinyin__w">
-            <ruby>
-              {w.text}
-              <rt>{w.pinyin}</rt>
-            </ruby>
-          </span>
-        ) : (
-          <span key={j} className="pinyin__w pinyin__w--bare">
-            {w.text}
-          </span>
-        )
-      )}
+      {out}
     </p>
   );
 }
