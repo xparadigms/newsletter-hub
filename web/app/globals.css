@@ -2272,16 +2272,15 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
 .article__body .pinyin__w {
   display: inline;
   white-space: nowrap;
-  border-bottom: 1.5px solid var(--gold-rule);
-}
-
-/* The gap belongs BEFORE a word, not after it: that way punctuation hugs the
-   word it follows — which is what the old --bare rule documented and never did,
-   since its margin-right controlled the gap after the punctuation. `+` skips
-   text nodes, so a word following 。 is still matched. A margin on an inline box
-   is advance width and carries no break opportunity with it. */
-.article__body .pinyin__w + .pinyin__w {
-  margin-left: 0.1em;
+  /* The rule is inset INSIDE each word, not a border on its edge. Borders on
+     touching inline boxes butt together into one continuous line under the whole
+     sentence, which stops the rule doing the one job it has — showing where each
+     word begins and ends. Insetting separates them without putting a gap in the
+     text itself, so the sentence still reads as prose. */
+  background-image: linear-gradient(var(--gold-rule), var(--gold-rule));
+  background-repeat: no-repeat;
+  background-size: calc(100% - 0.18em) 1.5px;
+  background-position: 0.09em 100%;
 }
 
 .article__body .pinyin ruby {
