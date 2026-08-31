@@ -85,7 +85,10 @@ export default function StoryViewer({
   const start = useRef<{ x: number; y: number } | null>(null);
   const bodyAtTop = useRef(true);
   const scrollAtDown = useRef(0);
-  const swiped = useRef(false);
+  // Set whenever pointerup itself navigates. The click that follows arrives
+  // after React has swapped the card, so it can land on a tap zone that was
+  // underneath the old body and navigate a second time.
+  const handledByPointer = useRef(false);
 
   const goNext = useCallback(() => {
     setIndex((i) => {
@@ -140,9 +143,9 @@ export default function StoryViewer({
       return;
     }
     if (Math.abs(dx) > SWIPE_X && Math.abs(dx) > Math.abs(dy)) {
-      swiped.current = true;
+      handledByPointer.current = true;
       window.setTimeout(() => {
-        swiped.current = false;
+        handledByPointer.current = false;
       }, 300);
       if (dx < 0) goNext();
       else goPrev();
@@ -157,14 +160,21 @@ export default function StoryViewer({
     const body = document.querySelector(".story-card__body");
     const scrolled = (body?.scrollTop ?? 0) !== scrollAtDown.current;
     if (!scrolled && Math.abs(dx) < 8 && Math.abs(dy) < 8) {
+      // Same guard the swipe path uses: without it, a tap on the card body
+      // advanced here and then the trailing click hit a zone and advanced
+      // again, skipping a story.
+      handledByPointer.current = true;
+      window.setTimeout(() => {
+        handledByPointer.current = false;
+      }, 300);
       if (e.clientX < window.innerWidth * 0.32) goPrev();
       else goNext();
     }
   };
 
   const zone = (dir: "prev" | "next") => () => {
-    if (swiped.current) {
-      swiped.current = false;
+    if (handledByPointer.current) {
+      handledByPointer.current = false;
       return;
     }
     if (dir === "next") goNext();
