@@ -25,8 +25,7 @@ from bs4 import BeautifulSoup
 # is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-import blocks as china_blocks  # noqa: E402
-from shared import issue as issue_row, store  # noqa: E402
+from shared import issue as issue_row, markers as china_blocks, store  # noqa: E402
 from shared.http import request_with_retry  # noqa: E402
 
 # ── Config ──────────────────────────────────────────────────────────────────

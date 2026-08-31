@@ -99,7 +99,7 @@ export default async function PostPage({
   if (!post) notFound();
 
   const annotated = annotateBlocks(post.blocks, {
-    hanLang: section.key === "china" ? "zh" : "ja",
+    hanLang: section.sourceLang === "zh" ? "zh" : "ja",
   });
   const hasJa = annotated.some((a) => a.lang === "ja");
   const hasKo = annotated.some((a) => a.lang === "ko");
@@ -121,7 +121,7 @@ export default async function PostPage({
                   .filter(Boolean)
                   .join(" · ")}
               </span>
-              {(hasJa || hasKo || hasZh) && <LangToggle source={section.key === "china" ? "中文" : "日本語"} />}
+              {(hasJa || hasKo || hasZh) && <LangToggle source={section.sourceLang === "zh" ? "中文" : "日本語"} />}
             </div>
             <h1>{post.title}</h1>
             {/* data-multi gates the default "hide English" rule so English-only
@@ -129,6 +129,7 @@ export default async function PostPage({
             <div
               className="article__body"
               data-section={section.key}
+              data-source-lang={section.sourceLang ?? "ja"}
               data-multi={hasJa || hasKo || hasZh ? "" : undefined}
             >
               {annotated.length > 0 ? (

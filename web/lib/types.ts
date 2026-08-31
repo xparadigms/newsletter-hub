@@ -1,4 +1,10 @@
-export type SectionKey = "startup" | "fintech" | "japan" | "watch" | "china";
+export type SectionKey =
+  | "startup"
+  | "fintech"
+  | "japan"
+  | "watch"
+  | "china"
+  | "mandarin";
 
 // Compile-time proof that a hand-maintained list covers every section. Several
 // of them are ordinary arrays that would happily compile with one missing —
@@ -19,6 +25,9 @@ export interface Section {
   // Optional: china is Supabase-only and has no Notion database. Goes away
   // entirely once the Notion mirrors are retired.
   notionId?: string;
+  // Which language a kana-free Han run belongs to, and which label the reading
+  // toggle shows. Defaults to Japanese; the Chinese sections say so.
+  sourceLang?: "ja" | "zh";
 }
 
 export interface Post {

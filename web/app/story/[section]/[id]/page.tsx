@@ -58,7 +58,7 @@ export default async function StoryPage({
   if (!post) notFound();
 
   const annotated = annotateBlocks(post.blocks, {
-    hanLang: section.key === "china" ? "zh" : "ja",
+    hanLang: section.sourceLang === "zh" ? "zh" : "ja",
   });
   const deck = buildDeck(annotated, post, section, readingTime(annotated));
   const { prev, next } = findAdjacent(sectionPosts, post.id);
@@ -67,6 +67,7 @@ export default async function StoryPage({
     <StoryViewer
       cards={deck}
       sectionKey={section.key}
+      sourceLang={section.sourceLang ?? "ja"}
       title={section.label}
       nav={{
         // "next" in a story feed means the next issue chronologically, which is

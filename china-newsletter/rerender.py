@@ -21,8 +21,8 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-import blocks as china_blocks  # noqa: E402
 from shared import blocks as blocks_mod  # noqa: E402
+from shared import markers as china_blocks  # noqa: E402
 from shared import store  # noqa: E402
 from shared.http import request_with_retry  # noqa: E402
 

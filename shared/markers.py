@@ -1,4 +1,8 @@
-"""Claude's marker-delimited issue → the website's Block[].
+"""A marker-delimited issue → the website's Block[].
+
+Shared by every Chinese-language newsletter: China Daily writes news in
+this format and Mandarin Basics writes lessons in it. The parser does not
+care which — a heading, some Chinese lines, one Korean line.
 
 The contract is three line prefixes and nothing else:
 
@@ -19,12 +23,8 @@ the number is what renders in gold.
 from __future__ import annotations
 
 import re
-import sys
-import pathlib
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
-
-from shared import pinyin  # noqa: E402
+from . import pinyin
 
 # Tolerates a leading ordinal in case the model adds one anyway.
 _HEADING = re.compile(r"^###\s+(?:\d{1,2}[.)]\s*)?(.*)$")

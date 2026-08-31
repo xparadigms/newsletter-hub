@@ -1,0 +1,44 @@
+name: Mandarin Basics — Daily Lesson
+
+# ISSUE_NUMBER: no prior repository, so github.run_number starts at 1 and needs
+# no offset — unlike japan (45), watch (6) and startup (163).
+
+on:
+  schedule:
+    # 21:30 UTC = 06:30 KST, ahead of china at 22:00 and the 23:00 group.
+    - cron: "30 21 * * *"
+  workflow_dispatch:
+
+jobs:
+  generate-issue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    defaults:
+      run:
+        working-directory: mandarin-newsletter
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r ../requirements.txt
+
+      - name: Run daily lesson
+        # Supabase only: no Notion mirror and no calendar event. There is no news
+        # to scrape either, so no feed credentials.
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SITE_URL: ${{ secrets.SITE_URL }}
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
+          TIMEZONE: Asia/Seoul
+          ISSUE_NUMBER: ${{ github.run_number }}
+        run: python main.py

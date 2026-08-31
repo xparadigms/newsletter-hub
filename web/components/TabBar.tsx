@@ -25,6 +25,8 @@ const GLYPHS: Record<SectionKey | "home", React.ReactNode> = {
   ),
   // A gate: reads at 22px both as an outline and filled.
   china: <path d="M4 20.5h16M6 20.5v-8h12v8M4 12.5l8-5 8 5M9.75 20.5v-4.5h4.5v4.5" />,
+  // An open book: this one is a lesson, not a news desk.
+  mandarin: <path d="M12 6.5v13M12 6.5C10.5 5 8 4.5 4 4.8v12.6c4-.3 6.5.2 8 1.6M12 6.5c1.5-1.5 4-2 8-1.7v12.6c-4-.3-6.5.2-8 1.6" />,
 };
 
 function Glyph({ name, active }: { name: SectionKey | "home"; active: boolean }) {

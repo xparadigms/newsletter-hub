@@ -7,8 +7,8 @@
 -- Safe to re-run: it drops and recreates the table. Do NOT re-run once the
 -- 318-issue backfill has landed.
 --
--- Superseded in part by 0002_china.sql, which widens the `section` and
--- `source_format` checks. Do not derive the current schema from this file alone.
+-- Superseded in part by 0002_china.sql and 0003_mandarin.sql, which widen the
+-- `section` and `source_format` checks. Do not derive the current schema from this file alone.
 
 drop table if exists public.newsletter cascade;
 

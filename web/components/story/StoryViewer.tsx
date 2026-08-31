@@ -16,7 +16,15 @@ export interface StoryNav {
 const SWIPE_X = 48;
 const SWIPE_DOWN = 90;
 
-function Card({ card, sectionKey }: { card: StoryCard; sectionKey: SectionKey }) {
+function Card({
+  card,
+  sectionKey,
+  sourceLang,
+}: {
+  card: StoryCard;
+  sectionKey: SectionKey;
+  sourceLang: "ja" | "zh";
+}) {
   if (card.kind === "cover") {
     return (
       <div className="story-card story-card--cover">
@@ -60,6 +68,7 @@ function Card({ card, sectionKey }: { card: StoryCard; sectionKey: SectionKey })
       <div
         className="story-card__body article__body"
         data-section={sectionKey}
+        data-source-lang={sourceLang}
         data-multi=""
       >
         {card.blocks.map(renderAnnotated)}
@@ -73,11 +82,13 @@ export default function StoryViewer({
   nav,
   title,
   sectionKey,
+  sourceLang,
 }: {
   cards: StoryCard[];
   nav: StoryNav;
   title: string;
   sectionKey: SectionKey;
+  sourceLang: "ja" | "zh";
 }) {
   const router = useRouter();
   const [index, setIndex] = useState(0);
@@ -195,7 +206,7 @@ export default function StoryViewer({
 
       <div className="story-topbar">
         <span className="story-topbar__title">{title}</span>
-        <LangToggle />
+        <LangToggle source={sourceLang === "zh" ? "中文" : "日本語"} />
         <button
           type="button"
           className="story-topbar__close"
@@ -210,7 +221,7 @@ export default function StoryViewer({
 
       <div className="story-stage">
         <div className="story-slide" key={index}>
-          <Card card={cards[index]} sectionKey={sectionKey} />
+          <Card card={cards[index]} sectionKey={sectionKey} sourceLang={sourceLang} />
         </div>
 
         {/* Inside the stage, not the root: as siblings of the fixed root these

@@ -2307,8 +2307,8 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
 
 /* ---------- china: numbered story heading ---------- */
 
-.article__body[data-section="china"] .heading__num,
-.story-root[data-section="china"] .heading__num {
+.article__body[data-source-lang="zh"] .heading__num,
+.story-card__body[data-source-lang="zh"] .heading__num {
   color: var(--gold);
 }
 

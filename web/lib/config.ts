@@ -56,7 +56,17 @@ export const SECTIONS: Section[] = [
     title: "China Daily",
     description:
       "Politics, technology, and what China is actually talking about — short Chinese paragraphs with pinyin and a Korean read-through.",
+    sourceLang: "zh",
     // No notionId: china is Supabase-only and has no Notion database.
+  },
+  {
+    key: "mandarin",
+    number: "06",
+    label: "Mandarin",
+    title: "Mandarin Basics",
+    description:
+      "A daily Chinese lesson from beginner to intermediate — one grammar point, new words in context, and a short dialogue, all with pinyin and Korean.",
+    sourceLang: "zh",
   },
 ];
 
@@ -67,6 +77,7 @@ const SECTION_KEYS = SECTIONS.map((s) => s.key) as [
   "japan",
   "watch",
   "china",
+  "mandarin",
 ];
 const _sectionsCover: Covers<typeof SECTION_KEYS> = true;
 void _sectionsCover;
