@@ -104,42 +104,58 @@ SUMMARY: <one Korean sentence naming today's grammar point, at most 60 character
 Line 2 must be:
 MAIN_TITLE: <English title naming the grammar point, 8 words or fewer>
 
-Then exactly these five sections, in this order:
+Then exactly these five sections, in this order. EVERY Chinese line is \
+immediately followed by its own "> " line giving that one sentence in Korean — \
+never group several translations together, and never leave a Chinese line \
+without the Korean directly beneath it.
 
 ### 오늘의 문법: {grammar}
 <Chinese example sentence>
+> <Korean translation of that sentence, and nothing else>
 <Chinese example sentence>
+> <Korean translation of that sentence, and nothing else>
 <Chinese example sentence>
-> <Korean: explain the pattern in two or three sentences — what it does, where \
-the pieces go, and one thing Korean speakers get wrong. Then translate each \
-example above, in order.>
+> <Korean translation of that sentence, and nothing else>
+> 설명: <Korean, two or three sentences — what the pattern does, where the \
+pieces go, and one thing Korean speakers get wrong.>
 
 ### 새 단어
 <Chinese sentence using new word 1>
+> <Korean: 단어 — 뜻. then the sentence in Korean.>
 <Chinese sentence using new word 2>
+> <Korean: 단어 — 뜻. then the sentence in Korean.>
 <Chinese sentence using new word 3>
+> <Korean: 단어 — 뜻. then the sentence in Korean.>
 <Chinese sentence using new word 4>
-> <Korean: for each sentence in order, give the new word, its meaning, and the \
-sentence's translation. Format each as: 단어 — 뜻. 번역>
+> <Korean: 단어 — 뜻. then the sentence in Korean.>
 
 ### 대화: {setting}
 <Chinese dialogue line>
+> <Korean translation of that line>
 <Chinese dialogue line>
+> <Korean translation of that line>
 <Chinese dialogue line>
+> <Korean translation of that line>
 <Chinese dialogue line>
+> <Korean translation of that line>
 <Chinese dialogue line>
+> <Korean translation of that line>
 <Chinese dialogue line>
-> <Korean: translate the whole dialogue, line by line in order.>
+> <Korean translation of that line>
 
 ### 오늘의 표현
 <Chinese sentence using a set phrase or common collocation>
+> <Korean translation of that sentence>
 <Chinese sentence using the same phrase in a different situation>
-> <Korean: what the phrase means, when you would use it, and both translations.>
+> <Korean translation of that sentence>
+> 설명: <Korean — what the phrase means and when you would use it.>
 
 ### 연습
 <Chinese practice sentence with the grammar point>
+> <Korean translation of that sentence>
 <Chinese practice sentence with the grammar point>
-> <Korean: translate both, and add one short line on what to notice.>
+> <Korean translation of that sentence>
+> 포인트: <Korean, one short line on what to notice.>
 
 Rules that matter:
 
@@ -150,10 +166,11 @@ parentheses after a word. Readings are added afterwards by a separate tool, and 
 anything you write there corrupts it.
 - Each Chinese line is one sentence and at most 30 characters. These are study \
 sentences; a learner should be able to hold the whole line in their head.
+- A "> " line translates ONLY the single Chinese line directly above it. Do not \
+write "번역:" and list several at once.
 - Use today's grammar point in the 문법, 연습 and at least twice in the 대화.
 - The four 새 단어 sentences must introduce four DIFFERENT new words, and each \
 must be a word a learner at this level would plausibly not know yet.
-- Exactly one > line per section, always last in that section.
 """
 
 
