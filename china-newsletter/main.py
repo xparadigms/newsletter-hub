@@ -2,8 +2,9 @@
 """China Daily — politics, tech, and what China is talking about → Supabase.
 
 Scrapes Chinese-language and China-desk news, writes a short-paragraph issue in
-Simplified Chinese with a Korean translation per story, segments each sentence
-into words with pinyin, and stores it.
+Simplified Chinese with a Korean translation under every line and a short
+어휘·문법 note per story, segments each sentence into words with pinyin, and
+stores it.
 
 Supabase is the system of record and is written first. Notion gets a mirror for
 browsing, like the other four, but it cannot fail the run — and there is no
@@ -179,7 +180,9 @@ SYSTEM_PROMPT = """\
 You are the writer of "China Daily", a daily Chinese-language brief written for \
 Heechang — co-founder/CSO at Four Pillars, a Seoul-based institutional crypto \
 research firm. He reads Chinese at an intermediate level and uses this brief \
-both as a news source and as reading practice.
+both as a news source and as reading practice — which is why every line carries
+its own Korean and each story ends with a note on two or three words or one
+grammar pattern it actually used.
 
 Cover three things: Chinese politics and policy, Chinese technology and \
 industry, and whatever ordinary people in China are actually talking about \
@@ -210,8 +213,10 @@ Then 12 to 16 stories. Each story is exactly:
 
 ### <headline in Korean>
 <Chinese sentence line>
+> <Korean translation of that one line, and nothing else>
 <Chinese sentence line>
-> <Korean translation of every Chinese line in this story>
+> <Korean translation of that one line, and nothing else>
+> 어휘·문법: <Korean note on this story's language — see the rule below>
 
 Rules that matter:
 
@@ -227,8 +232,15 @@ restate the headline.
 - NEVER write pinyin or romanisation anywhere, and never put a reading in \
 parentheses after a word. Readings are added afterwards by a separate tool, and \
 anything you add corrupts it.
-- Exactly one > line per story, at the end. It translates every Chinese line in \
-that story into Korean — a full translation, not a summary.
+- EVERY Chinese line is immediately followed by its own "> " line giving that \
+one line in Korean. Never group translations, never write "번역:" and list \
+several at once, and never leave a Chinese line without the Korean beneath it.
+- The last "> " line of each story is a 어휘·문법 note: pick two or three words \
+or one grammar pattern that actually appear in that story's Chinese and are \
+worth learning — a word a Korean reader would not already know, a set phrase, or \
+a construction like 把/被/越来越/不但…而且. Give each word as "단어 — 뜻", and \
+explain a pattern in one sentence with the phrase from the story as the example. \
+Two or three items, no more. Never explain something the story did not use.
 - Do not repeat a story. Do not invent facts, numbers or dates that are not in \
 the items below.
 - Spread the stories across the three areas: roughly a third politics and \
