@@ -342,7 +342,7 @@ def generate_issue(news_items: list[dict]) -> tuple[str, str]:
 
     now_kst = datetime.now(KST)
     date_line = now_kst.strftime("%B %d, %Y")
-    next_issue = now_kst + timedelta(days=14)
+    next_issue = now_kst + timedelta(days=1)
     next_issue_date = next_issue.strftime("%B %d, %Y")
 
     formatted = "\n\n".join(

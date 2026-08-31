@@ -1,19 +1,13 @@
 name: Japan Briefing — Daily Newsletter
 
-# NOTE: this newsletter is intentionally PAUSED.
-# The schedule trigger below is commented out on purpose so that adding this
-# workflow to the monorepo does not silently resume daily posting. Use the
-# manual trigger to run it on demand. To resume the daily schedule, uncomment
-# the two `schedule` lines.
-#
 # ISSUE_NUMBER continuity: this workflow file is new, so github.run_number
-# restarts at 1. The old japan-newsletter repo reached run 45, so the offset
-# below keeps issue numbering continuous.
+# restarts at 1. The last issue published before the migration was #11
+# (2026-08-17), so the offset below makes the first run here #12.
 
 on:
-  # schedule:
-  #   - cron: "10 23 * * *" # 23:10 UTC = 08:10 KST, staggered after Rails
-  workflow_dispatch: # Manual trigger only while paused
+  schedule:
+    - cron: "10 23 * * *" # 23:10 UTC = 08:10 KST, staggered after Rails
+  workflow_dispatch:
 
 jobs:
   generate-issue:
@@ -49,5 +43,5 @@ jobs:
           CALENDAR_ID: ad3a712618285ba2a011179683b92bdc10718051482df8d950ccfb95a1f0aa19@group.calendar.google.com
           NOTION_DATABASE_ID: 36a5bc953df38036acb4d2b6553e582c
           TIMEZONE: Asia/Seoul
-          ISSUE_NUMBER_OFFSET: "45"
+          ISSUE_NUMBER_OFFSET: "11"
         run: ISSUE_NUMBER=$((GITHUB_RUN_NUMBER + ISSUE_NUMBER_OFFSET)) python main.py
