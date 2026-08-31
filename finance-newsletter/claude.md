@@ -40,17 +40,17 @@ For **each** of the three, use this template strictly:
 
 **[N. Headline as a single declarative sentence]**
 
-**What happened.** 2–3 sentences. Just the facts. Cite sources.
+**What happened.** 2 sentences. Just the facts. Cite sources.
 
-**What it means.** My read, not the consensus take. This is the whole point of the issue. Push toward the non-obvious angle. 3–4 sentences.
+**What it means.** My read, not the consensus take. This is the whole point of the issue. Push toward the non-obvious angle. 2–3 sentences.
 
-**Infra implication.** Specifically: which layer of the stack does this affect (issuance / settlement / custody / distribution / compliance), and does it accelerate or delay the trajectory I'm betting on? Tie back to my ongoing work where relevant. 2–4 sentences.
+**Infra implication.** Specifically: which layer of the stack does this affect (issuance / settlement / custody / distribution / compliance), and does it accelerate or delay the trajectory I'm betting on? Tie back to my ongoing work where relevant. 2 sentences.
 
 **Open question.** What I don't yet know but want to track. One sentence.
 
 ### Section 2: The Sweep
 
-8–12 headlines, one line each, grouped by region/theme. Pure headlines, no analysis. The point is peripheral vision. Standard groupings:
+7–9 headlines, one line each, grouped by region/theme. Pure headlines, no analysis. The point is peripheral vision. Standard groupings:
 
 - **Americas**
 - **Asia**
@@ -61,13 +61,13 @@ Mix crypto and pure fintech within each group — aim for roughly half the headl
 
 ### Section 3: Food for Thought (rotating by weekday, KST)
 
-- **Monday — Thesis Monday:** State or sharpen a current conviction. Format: bold the thesis as the first line, then 4–6 sentences arguing it, split into paragraphs of 4 sentences max.
-- **Tuesday — Counter-Take Tuesday:** Steelman a position I'd disagree with. Pick something I'd actually push back on, not a strawman. 5–7 sentences, split into paragraphs of 4 sentences max.
-- **Wednesday — Data Point Wednesday:** One number or chart-worthy stat + why it matters. Lead with the number in bold. 3–5 sentences of context, split into paragraphs of 4 sentences max.
-- **Thursday — Throwback Thursday:** A piece of financial history that rhymes with today (Eurodollar markets, Bretton Woods, MMF reform, post-1933 Glass-Steagall, etc.). Name the historical event, draw the parallel, name the lesson. 5–8 sentences, split into paragraphs of 4 sentences max.
-- **Friday — Founder Friday:** A question I'd ask a founder building in the space right now. Lead with the question in italics, then 2–3 sentences of follow-up framing.
-- **Saturday — Long Read:** A quote from a paper, book, or essay (≤15 words, paraphrase the rest) + my reaction. 5–8 sentences, split into paragraphs of 4 sentences max.
-- **Sunday — Week in Review:** Pull the thread across the week. What story compounded? What question from earlier in the week resolved? 6–10 sentences, split into paragraphs of 4 sentences max.
+- **Monday — Thesis Monday:** State or sharpen a current conviction. Format: bold the thesis as the first line, then 3–4 sentences arguing it, split into paragraphs of 4 sentences max.
+- **Tuesday — Counter-Take Tuesday:** Steelman a position I'd disagree with. Pick something I'd actually push back on, not a strawman. 4–5 sentences, split into paragraphs of 4 sentences max.
+- **Wednesday — Data Point Wednesday:** One number or chart-worthy stat + why it matters. Lead with the number in bold. 3 sentences of context, split into paragraphs of 4 sentences max.
+- **Thursday — Throwback Thursday:** A piece of financial history that rhymes with today (Eurodollar markets, Bretton Woods, MMF reform, post-1933 Glass-Steagall, etc.). Name the historical event, draw the parallel, name the lesson. 4–5 sentences, split into paragraphs of 4 sentences max.
+- **Friday — Founder Friday:** A question I'd ask a founder building in the space right now. Lead with the question in italics, then 2 sentences of follow-up framing.
+- **Saturday — Long Read:** A quote from a paper, book, or essay (≤15 words, paraphrase the rest) + my reaction. 4–5 sentences, split into paragraphs of 4 sentences max.
+- **Sunday — Week in Review:** Pull the thread across the week. What story compounded? What question from earlier in the week resolved? 5–6 sentences, split into paragraphs of 4 sentences max.
 
 ### Closing line
 
@@ -95,10 +95,10 @@ Single italicized line at the bottom: issue number, time elapsed (estimated), on
 ## Length targets (sustainable for daily)
 
 - Header: 2 lines
-- Each Deep Read: ~150–220 words
-- Sweep: ~10 lines
-- Food for Thought: ~100–200 words depending on day
-- **Total target: 900–1,300 words.** If it's pushing past 1,400, cut.
+- Each Deep Read: ~150–175 words
+- Sweep: 7–9 headlines
+- Food for Thought: ~90–140 words depending on day
+- **Total target: 1,050–1,250 words.** If it's pushing past 1,300, cut.
 
 ---
 

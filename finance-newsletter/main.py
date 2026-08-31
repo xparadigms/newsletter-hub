@@ -290,24 +290,28 @@ one of the three Deep Reads should be a fintech story with no crypto angle. \
 Maintain global balance — do not over-weight any single region. \
 De-prioritize token price action, retail narratives, NFT/meme.
 
+Keep each Deep Read to 150-175 English words across its four subsections. \
+Count them. This is a brief: make the point and stop. Do not restate the \
+headline in the analysis, and do not add background the reader can infer.
+
 For EACH of the three, translate PARAGRAPH BY PARAGRAPH — output each \
 subsection in EN → JP → KR before moving to the next subsection:
 
 N. [Headline as single declarative sentence]
 
-What happened. [English, 2-3 sentences]
+What happened. [English, 2 sentences]
 🇯🇵 日本語:
 [Japanese translation of What happened]
 📝 한국어 번역:
 [Korean translation of What happened]
 
-What it means. [English, 3-4 sentences]
+What it means. [English, 2-3 sentences]
 🇯🇵 日本語:
 [Japanese translation of What it means]
 📝 한국어 번역:
 [Korean translation of What it means]
 
-Infra implication. [English, 2-4 sentences]
+Infra implication. [English, 2 sentences]
 🇯🇵 日本語:
 [Japanese translation of Infra implication]
 📝 한국어 번역:
@@ -320,7 +324,7 @@ Open question. [English, 1 sentence]
 [Korean translation. Then add: 왜 중요한가: 1-2 sentences if relevant.]
 
 SECTION 2 — THE SWEEP:
-8-12 headlines grouped by region:
+7-9 headlines grouped by region:
 Americas / Asia / Europe / Infra & markets
 Mix crypto and pure fintech within each group — aim for roughly half the \
 headlines to be non-crypto fintech (payments, banking tech, open banking, \
@@ -330,8 +334,8 @@ For EACH headline, output all three languages together before moving to \
 the next headline:
 
 [English headline]
-▸ Explanation: What happened in 1 sentence.
-▸ Implication: Why it matters for financial infra in 1 sentence.
+▸ Explanation: What happened, in one sentence of 20 words or fewer.
+▸ Implication: Why it matters for financial infra, same limit.
 
 🇯🇵 日本語:
 [Japanese translation of the headline + both bullet points above]
@@ -355,8 +359,9 @@ CLOSING:
 Single italicized line: issue number, estimated minutes elapsed, \
 one-line teaser for tomorrow's rotation ({tomorrow_slot}).
 
-LENGTH: English content should be 900-1,300 words. Japanese and Korean \
-translations will add to the total — that is expected.
+LENGTH: 1,050-1,250 English words in total. The per-section budgets above \
+are how you get there — a single global count has not held on its own. \
+Japanese and Korean translations add to the total; that is expected.
 
 PARAGRAPHS: No paragraph may exceed 4 sentences. If a section calls for \
 more sentences, split them into multiple short paragraphs. This applies \
@@ -378,13 +383,13 @@ two stories warrant it.
 """
 
 ROTATION_INSTRUCTIONS = {
-    0: "Thesis Monday: State or sharpen a current conviction. Bold the thesis as the first line, then 4-6 sentences arguing it, split into paragraphs of 4 sentences max.",
-    1: "Counter-Take Tuesday: Steelman a position Heechang would disagree with. Not a strawman. 5-7 sentences, split into paragraphs of 4 sentences max.",
-    2: "Data Point Wednesday: One number or chart-worthy stat + why it matters. Lead with the number in bold. 3-5 sentences, split into paragraphs of 4 sentences max.",
-    3: "Throwback Thursday: A piece of financial history that rhymes with today (Eurodollar markets, Bretton Woods, MMF reform, etc.). Name the event, draw the parallel, name the lesson. 5-8 sentences, split into paragraphs of 4 sentences max.",
-    4: "Founder Friday: A question you'd ask a founder building in the space. Lead with the question in italics, then 2-3 sentences of framing.",
-    5: "Long Read Saturday: A quote from a paper, book, or essay (15 words max, paraphrase the rest) + reaction. 5-8 sentences, split into paragraphs of 4 sentences max.",
-    6: "Week in Review Sunday: Pull the thread across the week. What story compounded? What question resolved? 6-10 sentences, split into paragraphs of 4 sentences max.",
+    0: "Thesis Monday: State or sharpen a current conviction. Bold the thesis as the first line, then 3-4 sentences arguing it, split into paragraphs of 4 sentences max.",
+    1: "Counter-Take Tuesday: Steelman a position Heechang would disagree with. Not a strawman. 4-5 sentences, split into paragraphs of 4 sentences max.",
+    2: "Data Point Wednesday: One number or chart-worthy stat + why it matters. Lead with the number in bold. 3 sentences, split into paragraphs of 4 sentences max.",
+    3: "Throwback Thursday: A piece of financial history that rhymes with today (Eurodollar markets, Bretton Woods, MMF reform, etc.). Name the event, draw the parallel, name the lesson. 4-5 sentences, split into paragraphs of 4 sentences max.",
+    4: "Founder Friday: A question you'd ask a founder building in the space. Lead with the question in italics, then 2 sentences of framing.",
+    5: "Long Read Saturday: A quote from a paper, book, or essay (15 words max, paraphrase the rest) + reaction. 4-5 sentences, split into paragraphs of 4 sentences max.",
+    6: "Week in Review Sunday: Pull the thread across the week. What story compounded? What question resolved? 5-6 sentences, split into paragraphs of 4 sentences max.",
 }
 
 
