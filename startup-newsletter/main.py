@@ -66,7 +66,9 @@ def scrape_techcrunch_telegram() -> list[dict]:
             "Chrome/120.0.0.0 Safari/537.36"
         )
     }
-    resp = requests.get(TELEGRAM_URL, headers=headers, timeout=30)
+    resp = request_with_retry(
+        "GET", TELEGRAM_URL, label="Telegram", headers=headers, timeout=30
+    )
     resp.raise_for_status()
     soup = BeautifulSoup(resp.text, "html.parser")
 
