@@ -147,6 +147,14 @@ export function blockText(block: Block): string {
   }
 }
 
+// Typed accessor so callers need no cast, and so adding `audio` to a third
+// variant later is one edit here rather than a grep.
+export function blockAudio(block: Block): string | undefined {
+  return block.type === "paragraph" || block.type === "pinyin"
+    ? block.audio
+    : undefined;
+}
+
 // Characters of shared opening that identify two renderings of one sentence.
 const PREFIX_MATCH = 12;
 

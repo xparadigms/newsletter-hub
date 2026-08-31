@@ -21,6 +21,7 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
+from shared import audio  # noqa: E402
 from shared import blocks as blocks_mod  # noqa: E402
 from shared import markers as china_blocks  # noqa: E402
 from shared import store  # noqa: E402
@@ -64,6 +65,13 @@ def main() -> int:
             continue
 
         blocks, stories, unsegmented = china_blocks.build_blocks(row["source_text"])
+        # Stored blocks carry `audio`; freshly built ones do not, so without
+        # this every row reads as "changed" and --commit would PATCH the audio
+        # away. Every sentence already exists in Storage, so this is HEADs only.
+        try:
+            audio.attach_audio(blocks, "zh")
+        except Exception as e:  # noqa: BLE001
+            print(f"    ⚠ audio lookup failed (non-fatal): {e}")
         plain = blocks_mod.plain_text(blocks)
 
         same_blocks = blocks == row["blocks"]

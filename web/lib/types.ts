@@ -53,7 +53,11 @@ export interface PinyinWord {
 }
 
 export type Block =
-  | { type: "paragraph"; text: string }
+  // `audio`: pre-generated speech for this sentence, in Supabase Storage,
+  // attached by shared/audio.py after the blocks are built. Present only where
+  // there was something worth reading aloud — Japanese and Chinese body text,
+  // never Korean — so its absence is normal rather than an error.
+  | { type: "paragraph"; text: string; audio?: string }
   | { type: "heading"; level: 1 | 2 | 3; text: string }
   | { type: "list"; ordered: boolean; items: string[] }
   | { type: "quote"; text: string }
@@ -64,7 +68,7 @@ export type Block =
   // Chinese body text, pre-segmented into word units with their readings. The
   // only Block variant Notion cannot produce: china writes Block[] natively
   // rather than through the Notion mapper.
-  | { type: "pinyin"; words: PinyinWord[] }
+  | { type: "pinyin"; words: PinyinWord[]; audio?: string }
   | { type: "divider" };
 
 export interface PostDetail extends Post {

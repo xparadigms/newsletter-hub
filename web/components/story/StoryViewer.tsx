@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { headingContent, renderAnnotated } from "@/components/ArticleBlocks";
+import { blockAudio } from "@/lib/text";
 import type { SectionKey } from "@/lib/types";
 import LangToggle from "@/components/LangToggle";
 import type { StoryCard } from "@/lib/story";
@@ -16,14 +17,36 @@ export interface StoryNav {
 const SWIPE_X = 48;
 const SWIPE_DOWN = 90;
 
+function SpeakerIcon({ playing }: { playing: boolean }) {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+         strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      {playing ? (
+        <rect x="6" y="6" width="12" height="12" rx="1.5" />
+      ) : (
+        <>
+          <path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z" />
+          <path d="M16 9.2a4 4 0 0 1 0 5.6M18.6 6.6a7.5 7.5 0 0 1 0 10.8" />
+        </>
+      )}
+    </svg>
+  );
+}
+
 function Card({
   card,
   sectionKey,
   sourceLang,
+  playing,
+  onPlay,
+  onStop,
 }: {
   card: StoryCard;
   sectionKey: SectionKey;
   sourceLang: "ja" | "zh";
+  playing: boolean;
+  onPlay: (urls: string[]) => void;
+  onStop: () => void;
 }) {
   if (card.kind === "cover") {
     return (
@@ -56,6 +79,14 @@ function Card({
     );
   }
 
+  // By presence of `audio`, not by a.lang: the generator already decided what is
+  // speakable and never gave Korean a URL, so re-deciding here would only add a
+  // way for the two to disagree. Card order is buildDeck's order, so the queue
+  // matches what is on screen.
+  const audioUrls = card.blocks
+    .map((a) => blockAudio(a.block))
+    .filter((u): u is string => !!u);
+
   return (
     <div className="story-card story-card--content">
       {card.kicker && <span className="label story-card__eyebrow">{card.kicker}</span>}
@@ -64,6 +95,21 @@ function Card({
         <p className="story-card__subtitle" lang="ko">
           {card.subtitle}
         </p>
+      )}
+      {audioUrls.length > 0 && (
+        <button
+          type="button"
+          className="story-audio"
+          // A literal <button> with no data-zone: the pointerup escape hatch in
+          // onPointerUp matches `button:not([data-zone])` and bails, so this
+          // neutralises the swipe/tap layer over itself for free.
+          aria-pressed={playing}
+          aria-label={playing ? "Stop reading" : "Read this card aloud"}
+          onClick={() => (playing ? onStop() : onPlay(audioUrls))}
+        >
+          <SpeakerIcon playing={playing} />
+          <span className="label">{playing ? "Stop" : "Listen"}</span>
+        </button>
       )}
       <div
         className="story-card__body article__body"
@@ -101,6 +147,62 @@ export default function StoryViewer({
   // underneath the old body and navigate a second time.
   const handledByPointer = useRef(false);
 
+  // One <audio> for the whole viewer, deliberately outside .story-slide so
+  // key={index} cannot remount it. iOS grants playback permission to the
+  // *element* that first played inside a user gesture; chaining the queue onto
+  // this same element is what lets tracks after the first play at all. A fresh
+  // Audio() per track would be blocked from the second one on.
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const queue = useRef<string[]>([]);
+  const cursor = useRef(0);
+  const [playing, setPlaying] = useState(false);
+
+  const stopAudio = useCallback(() => {
+    queue.current = [];
+    cursor.current = 0;
+    audioRef.current?.pause();
+    setPlaying(false);
+  }, []);
+
+  const startTrack = useCallback(
+    (url: string) => {
+      const el = audioRef.current;
+      if (!el) return;
+      el.src = url;
+      // Nothing may be awaited before this: on iOS the user gesture is consumed
+      // at the play() call itself.
+      el.play().catch((err: DOMException) => {
+        // Assigning src aborts the pending play(). That is us starting the next
+        // track, not a failure — treating it as one stopped the card mid-queue.
+        if (err?.name !== "AbortError") stopAudio();
+      });
+    },
+    [stopAudio]
+  );
+
+  const playCard = useCallback(
+    (urls: string[]) => {
+      if (!urls.length) return;
+      queue.current = urls;
+      cursor.current = 0;
+      setPlaying(true);
+      startTrack(urls[0]);
+    },
+    [startTrack]
+  );
+
+  // Shared by ended and error, so a 404 on one sentence skips to the next
+  // rather than stranding the card halfway through. Terminates either way.
+  const advanceTrack = useCallback(() => {
+    const next = cursor.current + 1;
+    if (next >= queue.current.length) {
+      stopAudio();
+      return;
+    }
+    cursor.current = next;
+    startTrack(queue.current[next]);
+  }, [startTrack, stopAudio]);
+
   const goNext = useCallback(() => {
     setIndex((i) => {
       if (i < count - 1) return i + 1;
@@ -120,13 +222,31 @@ export default function StoryViewer({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "ArrowRight" || e.key === " ") goNext();
+      if (e.key === " ") {
+        // Space activates whatever control has focus. Without this the focused
+        // control fired AND the card advanced — and nothing called
+        // preventDefault, so the page scrolled too. instanceof Element matters:
+        // the target is document.body when nothing is focused.
+        const t = e.target;
+        if (t instanceof Element && t.closest("a, button")) return;
+        e.preventDefault();
+        goNext();
+        return;
+      }
+      if (e.key === "ArrowRight") goNext();
       else if (e.key === "ArrowLeft") goPrev();
       else if (e.key === "Escape") router.push(nav.closeHref);
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [goNext, goPrev, router, nav.closeHref]);
+
+  // Advancing remounts the card, so the button's own state goes with it — the
+  // element that is playing does not.
+  useEffect(() => {
+    stopAudio();
+    return stopAudio;
+  }, [index, stopAudio]);
 
   // Deliberately no prefetch of the neighbouring issues: assembling one costs
   // ~45 Notion calls, so prefetching both on every open triples the load.
@@ -221,7 +341,14 @@ export default function StoryViewer({
 
       <div className="story-stage">
         <div className="story-slide" key={index}>
-          <Card card={cards[index]} sectionKey={sectionKey} sourceLang={sourceLang} />
+          <Card
+            card={cards[index]}
+            sectionKey={sectionKey}
+            sourceLang={sourceLang}
+            playing={playing}
+            onPlay={playCard}
+            onStop={stopAudio}
+          />
         </div>
 
         {/* Inside the stage, not the root: as siblings of the fixed root these
@@ -232,6 +359,13 @@ export default function StoryViewer({
         <button type="button" data-zone className="story-zone story-zone--prev" onClick={zone("prev")} aria-label="Previous card" />
         <button type="button" data-zone className="story-zone story-zone--next" onClick={zone("next")} aria-label="Next card" />
       </div>
+
+      <audio
+        ref={audioRef}
+        preload="none"
+        onEnded={advanceTrack}
+        onError={advanceTrack}
+      />
 
       <div className="story-foot">
         <span className="story-counter label">

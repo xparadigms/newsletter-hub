@@ -24,7 +24,7 @@ from googleapiclient.discovery import build
 # is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import furigana, issue as issue_row, store  # noqa: E402
+from shared import audio, furigana, issue as issue_row, store  # noqa: E402
 from shared.http import request_with_retry  # noqa: E402
 
 # ── Config ──────────────────────────────────────────────────────────────────
@@ -620,6 +620,12 @@ def run():
         source_text=issue_text,
         source_format="plain",
     )
+    try:
+        n = audio.attach_audio(row["blocks"], "ja")
+        print(f"  ✓ Audio: {n} block(s)")
+    except Exception as e:
+        print(f"  ⚠ Audio failed (non-fatal): {e}")
+
     stored = store.upsert_issue(row)
     if stored.get("slug"):
         print(f"✓ Stored: japan/{stored['slug']}")

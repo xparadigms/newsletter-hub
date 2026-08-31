@@ -10,15 +10,20 @@ import type { Block, PinyinWord } from "./types";
 // turns it into a check the Python side can run over real output.
 
 const isString = (v: unknown): v is string => typeof v === "string";
+const isAudio = (v: unknown): boolean => v === undefined || typeof v === "string";
 
 export function isBlock(value: unknown): value is Block {
   if (!value || typeof value !== "object") return false;
   const block = value as { type?: unknown };
 
   switch (block.type as Block["type"]) {
-    case "paragraph":
     case "quote":
       return isString((block as { text: unknown }).text);
+
+    case "paragraph": {
+      const p = block as { text: unknown; audio: unknown };
+      return isString(p.text) && isAudio(p.audio);
+    }
 
     case "heading": {
       const h = block as { level: unknown; text: unknown };
@@ -53,8 +58,9 @@ export function isBlock(value: unknown): value is Block {
     }
 
     case "pinyin": {
-      const p = block as { words: unknown };
+      const p = block as { words: unknown; audio: unknown };
       return (
+        isAudio(p.audio) &&
         Array.isArray(p.words) &&
         p.words.every(
           (w: PinyinWord) =>

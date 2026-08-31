@@ -2373,3 +2373,38 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
   -webkit-line-clamp: 3;
   line-clamp: 3;
 }
+
+/* ---------- story mode: read aloud ---------- */
+
+/* z-index 3 is load-bearing. .story-slide is a static flex item, so everything
+   in a card paints below .story-zone (absolute, z-index 1 in .story-stage) —
+   .story-card__body escapes only because it lifts itself to 2. Without this the
+   button is covered and the tap lands on "next card" instead. */
+.story-audio {
+  position: relative;
+  z-index: 3;
+  align-self: flex-start;
+  flex-shrink: 0;
+  margin-top: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.story-audio[aria-pressed="true"] {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* The reading toggle hides the source language in EN mode, and a button that
+   reads text you cannot see is a puzzle. CSS rather than React: the toggle's
+   state lives on html[data-langs] and never enters the tree. */
+html[data-langs="en"] .story-audio {
+  display: none;
+}

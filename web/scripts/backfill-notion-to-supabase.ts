@@ -352,6 +352,10 @@ function canonical(value: unknown): unknown {
   if (value && typeof value === "object") {
     return Object.fromEntries(
       Object.keys(value as Record<string, unknown>)
+        // Attached after the mapping by shared/audio.py, so a stored block
+        // carries it and a freshly mapped one never will. Comparing it would
+        // report every audio-bearing issue as a mapping divergence.
+        .filter((k) => k !== "audio")
         .sort()
         .map((k) => [k, canonical((value as Record<string, unknown>)[k])])
     );

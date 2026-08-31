@@ -26,7 +26,7 @@ from bs4 import BeautifulSoup
 # is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import issue as issue_row, markers as china_blocks, store  # noqa: E402
+from shared import audio, issue as issue_row, markers as china_blocks, store  # noqa: E402
 from shared.http import request_with_retry  # noqa: E402
 
 # ── Config ──────────────────────────────────────────────────────────────────
@@ -361,6 +361,12 @@ def run():
         # model emitted something other than plain Simplified Chinese.
         print(f"✗ {unsegmented} lines failed segmentation — refusing to publish.")
         sys.exit(1)
+
+    print("▸ Synthesising audio...")
+    try:
+        audio.attach_audio(blocks, "zh")
+    except Exception as e:  # noqa: BLE001 — a silent issue still publishes
+        print(f"  ⚠ Audio failed (non-fatal): {e}")
 
     date_str = now_kst.strftime("%Y-%m-%d")
     row = issue_row.build_row_from_blocks(

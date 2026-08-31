@@ -21,7 +21,7 @@ import anthropic
 # is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import issue as issue_row, markers, store  # noqa: E402
+from shared import audio, issue as issue_row, markers, store  # noqa: E402
 
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 TIMEZONE = os.environ.get("TIMEZONE", "Asia/Seoul")
@@ -238,6 +238,12 @@ def run() -> None:
         print(issue_text)
         print("=" * 60)
         return
+
+    print("▸ Synthesising audio...")
+    try:
+        audio.attach_audio(blocks, "zh")
+    except Exception as e:  # noqa: BLE001 — a silent issue still publishes
+        print(f"  ⚠ Audio failed (non-fatal): {e}")
 
     print("▸ Saving to Supabase...")
     stored = store.upsert_issue(row)
