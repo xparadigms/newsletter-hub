@@ -2,7 +2,10 @@ name: Japan Daily Talk — Daily Newsletter
 
 # ISSUE_NUMBER continuity: this workflow file is new, so github.run_number
 # restarts at 1. The last issue published before the migration was #11
-# (2026-08-17), so the offset below makes the first run here #12.
+# (2026-08-17). The offset started at 11 to make the first run #12; run 4 was a
+# dry run that published nothing but still consumed a number, so the offset
+# drops by one to keep the published sequence contiguous. Any future dry run
+# needs the same adjustment.
 
 on:
   schedule:
@@ -48,7 +51,7 @@ jobs:
           CALENDAR_ID: ad3a712618285ba2a011179683b92bdc10718051482df8d950ccfb95a1f0aa19@group.calendar.google.com
           NOTION_DATABASE_ID: 36a5bc953df38036acb4d2b6553e582c
           TIMEZONE: Asia/Seoul
-          ISSUE_NUMBER_OFFSET: "11"
+          ISSUE_NUMBER_OFFSET: "10"
         run: |
           ARGS=""
           if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="--dry-run"; fi
