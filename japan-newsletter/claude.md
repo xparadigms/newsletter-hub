@@ -1,175 +1,99 @@
-# Japan Briefing — Project Instructions
+# Japan Daily Talk — Project Instructions
 
-A bi-weekly bilingual briefing on Japan's crypto regulation, stablecoin infrastructure, and urban development. Written for Heechang (one reader). Primary body in Japanese, Korean translation immediately below each section. The newsletter doubles as a Japanese language learning tool and a business intelligence feed.
+A daily Japanese newsletter written as a conversation, for Heechang (one reader). General
+Japan news — politics, the economy, technology, daily life, and whatever is trending. It
+doubles as Japanese reading practice, which is why every Japanese line carries its own Korean
+line and every story ends with a furigana toggle.
+
+> Note: `main.py` does not read this file. `load_claude_prompt()` exists but is never called —
+> the live prompt is `SYSTEM_PROMPT` / `ISSUE_PROMPT` inside `main.py`. Change both together.
 
 ---
 
 ## How to run an issue
 
-When I say **"run today's issue"** (or anything similar), produce a complete issue using the format below. No clarifying questions, no preamble. Just write the issue.
+When I say **"run today's issue"**, produce a complete issue using the format below. No
+clarifying questions, no preamble.
+
+`python3 main.py --dry-run` prints the issue and writes nothing — use it while iterating on
+format. Without the flag it publishes to Supabase, Notion and Calendar.
 
 ---
 
 ## Voice & stance
 
-- **Audience: me, alone.** Not published. The bar is "would I want to re-read this when prepping for the next ASC panel or ASA meeting?"
-- **Bilingual format — this is non-negotiable:**
-  - Every substantive section is written FIRST in Japanese (日本語), then immediately followed by a Korean translation (한국어 번역) below it.
-  - Japanese: natural, native-level business Japanese. NOT textbook-simplified. Use real industry terminology (資金決済法, 金商法, ステーブルコイン, 再開発 etc.)
-  - Korean: casual-professional (반말 OK). Like explaining to a colleague over coffee. Not a formal report.
-  - The reader reads Japanese first for language practice, checks Korean if stuck.
-- **Have a take.** Don't just summarize — say what it means for Asia stablecoin corridors, for institutional adoption, for the KR-JP regulatory gap.
-- **Tight, not academic.** Short sentences. Active voice. No hedge filler.
-- **Connect to my actual work.** Tie back to: ASA News, ASC 2026, Four Pillars institutional report, Japan stablecoin infra research, KR-JP corridor analysis.
+- **Audience: me, alone.** Not published.
+- **It is a dialogue, not a report.** Two people:
+  - **ハル** — a journalist living in Tokyo. Gives the fact, the number, the source.
+  - **ミン** — from Seoul, learning Japanese. Asks what a foreigner would ask.
+- **Every Japanese line is immediately followed by its own Korean line.** Never group the
+  Korean, never summarise it. One Japanese line, then that line in Korean, then the next.
+- **Japanese:** natural spoken register, current vocabulary from the news. Not written-report
+  Japanese, not textbook Japanese.
+- **Korean:** casual-professional (반말 OK), the way you'd explain it to a friend.
+- **Concrete.** Name the ministry, the company, the number, the date. Cite the outlet inside
+  ハル's line, like （NHK, 2026-09-02）.
+- **No crypto.** Rails covers stablecoins and regulation daily. A crypto story belongs here
+  only when it is genuinely one of the biggest news items in Japan that day.
 
 ---
 
 ## Issue structure
 
-### Header
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-JAPAN BRIEFING — Issue #[NNN]
-[Month DD, YYYY] · 日本クリプト・不動産ブリーフィング
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
+Header: `JAPAN DAILY TALK — Issue #N`, the date line, a 2–3 sentence 今号のハイライト in
+Japanese followed by the same in Korean, then `📖 登場人物:`.
 
-### Section 1: 日本クリプト・規制ウォッチ (JAPAN CRYPTO & REGULATION WATCH)
+**Four sections**, chosen by the day's news from this pool, **always including
+テクノロジートーク**:
 
-Pick 3–4 of the most consequential Japan crypto/stablecoin/regulation stories from the last 2 weeks. Bias toward: stablecoin issuance & infra (JPYC, Progmat, megabank pilots), FIEA/JVCEA/FSA regulatory developments, Japan exchange consolidation, institutional adoption signals, cross-border payment corridors (KR-JP-HK-SG).
+- `政治トーク (POLITICS TALK)`
+- `経済トーク (ECONOMY TALK)`
+- `テクノロジートーク (TECHNOLOGY TALK)` — AI, semiconductors, robotics, gadgets, platforms,
+  telecoms, and the Japanese companies behind them. Same depth as politics, not an afterthought.
+- `くらし・防災トーク (LIFESTYLE & SAFETY TALK)`
+- `今日の話題 (TODAY'S BUZZ)` — may carry two stories
 
-For **each** story, use this template:
-
-```
-【見出し】 [Headline in Japanese — one declarative sentence]
-
-[Japanese body: 3–4 sentences. What happened + what it means. Use real Japanese business/regulatory terminology. Cite sources.]
-
-<toggle>
-ふりがな（ひらがな）
-	[Same paragraph with furigana: keep all kanji in place, add reading in parentheses immediately after each kanji word — e.g. 規制（きせい）, 発表（はっぴょう）, 求（もと）める. Leave katakana, numbers, Latin letters, and punctuation unchanged. Handle okurigana correctly — e.g. 円建（えんだ）て, 基（もと）づく. Indent this text one tab.]
-</toggle>
-
-📝 한국어 번역:
-[Korean translation of the above. Casual-professional tone. Add a 1-sentence「왜 중요한가」connecting to ASA/ASC/Four Pillars work if relevant.]
-```
-
-### Section 2: 建築・都市デザイン (ARCHITECTURE & URBAN DESIGN)
-
-2–3 stories on Tokyo/Japan architectural design and urban development. Bias toward: landmark buildings and their design philosophy (麻布台ヒルズ, 虎ノ門ヒルズ, TOKYO TORCH), architect profiles (隈研吾, 安藤忠雄, 妹島和世), interior/exterior design details, materials and structural innovation, public space design, comparisons to Seoul developments. The angle is "what makes Tokyo's built environment world-class."
-
-Same bilingual template as Section 1.
-
-### Section 3: 東京グルメ・発見 (TOKYO FOOD & FINDS)
-
-2 food or dining recommendations. Could be: a trending restaurant, a seasonal dish, a hidden spot, a new opening in a redevelopment area, or a food trend. 3–4 sentences each in Japanese + Korean translation. Include neighborhood (エリア) and price range if relevant. Practical — something to actually visit on the next Tokyo trip.
-
-Same bilingual format (JP first, then 📝 한국어 번역).
-
-### Section 4: 今週の話題 (THIS WEEK'S BUZZ)
-
-2 things Japanese people are actually talking about this week. Could be: a viral topic on X/Twitter Japan, a trending TV show or movie, a lifestyle trend, a seasonal event, a product launch, or a cultural moment. 3–4 sentences each in Japanese + Korean translation. The point is "what's the vibe in Japan right now" — not analysis, just a snapshot.
-
-Same bilingual format.
-
-### Section 5: 今週の日本語表現 (JAPANESE EXPRESSION OF THE WEEK)
-
-One business/economic/lifestyle Japanese expression pulled from the actual articles used in Sections 1–4. Format:
+Each story:
 
 ```
-📖 今週の表現: [expression in kanji]
-読み方: [furigana/reading]
-意味: [Korean meaning]
-例文: [Example sentence in Japanese]
-<toggle>
-ふりがな（ひらがな）
-	[Same example sentence with furigana]
-</toggle>
-→ [Korean translation of the example]
+【Japanese headline】(Korean translation of the headline)
+ミン: [question]
+민: [same line in Korean]
+ハル: [the fact, the number, the source]
+하루: [same line in Korean]
+… six to eight dialogue lines, three or four turns each …
+왜 중요한가: [1-2 Korean sentences on why it matters]
 ```
 
-Prioritize terms useful for: crypto/finance panels, professional meetings, dining, architecture, daily life in Tokyo.
+Then `SECTION 5 · 今日の日本語表現` — 📖 今日の表現 / 読み方 / 意味 / 例文 → Korean / 補足.
+Pull the expression from a word that actually appeared earlier in the issue.
 
-### Closing
-
-```
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-Issue #[NNN] · 次号: [next issue date]
-[One-line teaser in Japanese]
-<toggle>
-ふりがな（ひらがな）
-	[Same teaser with furigana]
-</toggle>
-[Same teaser in Korean]
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-```
+Closing: `Issue #N · 次号: <date>`, a one-line teaser in Japanese, then the same in Korean.
 
 ---
 
-## Sourcing rules
+## Sources
 
-- **Search the web every issue.** The news must be current, not from training data.
-- **Source diet, in priority order:**
-  1. Japanese primary: FSA (金融庁) press releases, CoinPost, CoinDesk Japan, Nikkei, JVCEA announcements, JPYC/Progmat official blogs
-  2. English trade press on Japan: The Block, DL News, CoinDesk (Japan-specific), Bloomberg Asia
-  3. Architecture & real estate: Nikkei 不動産, ArchDaily Japan, 新建築, Suumo Journal, Tokyo Metropolitan Government releases
-  4. Food & lifestyle: Tabelog magazine, Time Out Tokyo, NHK News Web, ITmedia
-  5. Skip: generic crypto news, token price articles, memecoin coverage
-- **Cite sources inline** (e.g., "CoinPostによると…" / "日経新聞が報じた…")
-- **If signal is thin**, say so. Don't pad. A 2-story crypto section beats 3 stories where one is filler.
+`GOOGLE_NEWS_QUERIES` is the floor — 日本 政府 / 日本 経済 / 日本 AI / 日本 話題. The RSS feeds
+(Yahoo トピックス ×5, 朝日新聞, ITmedia, GIGAZINE) are a bonus. There is **no keyword filter**:
+every source is a Japanese domestic outlet, so filtering could only subtract.
+
+NHK and Time Out Tokyo were removed — NHK's feed has been frozen since 2026-08-08 and
+timeout.jp returns an HTTP error, so both were sitting in the list looking like coverage.
 
 ---
 
-## Length targets
+## Length
 
-- Header: 4 lines
-- Each crypto story (JP + KR): ~200–300 words combined (3–4 stories)
-- Each architecture story (JP + KR): ~150–250 words combined (2–3 stories)
-- Food & Finds (JP + KR): ~100–150 words each (2 items)
-- This Week's Buzz (JP + KR): ~100–150 words each (2 items)
-- Expression of the week: ~80 words
-- **Total target: 2,200–3,300 words.** If pushing past 3,500, cut.
+1,600–2,200 words total across both languages.
 
 ---
 
-## What NOT to do
+## Formatting rules (Calendar/Notion display)
 
-- **No mixing languages within a paragraph.** Japanese section is pure Japanese. Korean section is pure Korean. Don't code-switch mid-sentence.
-- **No simplified/textbook Japanese.** Write like Nikkei or CoinPost would write, not like a JLPT N4 reading passage.
-- **No emoji overload.** The 📝 and 📖 markers for Korean translation and expression sections are the only emoji.
-- **No "in conclusion" / "まとめると" / "정리하자면."** End cleanly.
-- **No price commentary** unless structurally relevant to infra/regulation.
-- **No hedge language.** "〜と考えられる" is fine (it's natural Japanese); "it could perhaps be argued that…" is not.
-
----
-
-## Context Claude should hold about me
-
-- I'm Heechang, co-founder/CSO at Four Pillars (포필러스), Seoul-based institutional crypto research firm, backed by Pantera/Kakao Ventures/Hashed.
-- Active research: Asia stablecoin corridors, KRW stablecoin legislation (DABA), Japan stablecoin infra (JPYC, Progmat, megabank pilots), FIEA regulatory analysis.
-- Active orgs: ASA (Asia Stablecoin Alliance), HRC, FPAP, FP Validated.
-- Personal: studying Japanese (N3–N2 level), interested in Tokyo real estate/urban development, getting married (wedding prep contexts for polite Japanese expressions).
-- Editorial priors:
-  - Japan's FIEA reclassification is the most consequential crypto regulatory event in Asia since Korea's DABA
-  - The KR-JP stablecoin corridor is undercovered relative to its real volume potential
-  - Megabank-led stablecoin frameworks may be structurally slow but have distribution advantages crypto-native issuers can't match
-  - Tokyo's private-led redevelopment model is 10 years ahead of Seoul's public-led 정비사업
-
----
-
-## Formatting rules (for Calendar/Notion display)
-
-- Do NOT use Markdown (#, ##, **, etc.)
-- Use ━━━━━━━━━━━━━━━━━━━━ as section dividers
-- Use ALL CAPS for section headers (English parts)
-- Use 【】 for Japanese sub-headers
-- Use 📝 to mark Korean translation blocks
-- Use 📖 for the expression section
-- Use blank lines between sections
-- **Furigana toggles:** After every Japanese body paragraph in Sections 1–4, and after the 例文 line in Section 5, and after the Japanese teaser in the Closing — insert a `<toggle>` block. Place it DIRECTLY BELOW the paragraph and ABOVE the 📝 한국어 번역 line. Toggle label: `ふりがな（ひらがな）`. Furigana style: keep all kanji in place, add reading in parentheses after each kanji word. Indent the furigana text one tab inside the toggle. Do NOT add toggles to 【...】 headings, section titles, or any Korean text.
-
----
-
-## Run command
-
-When ready, just say: **"run today's issue"** — and I'll produce a complete issue.
+- No Markdown at all
+- `━━━━━━━━━━━━━━━━━━━━` as section dividers, before and after each SECTION line
+- `【】` for story headlines, with the Korean translation in parentheses after
+- `📖` only for the 登場人物 line and the expression of the day. No other emoji.
+- Furigana toggles are added afterwards by `shared/furigana.py` — do **not** write readings in
+  parentheses yourself, or they will be added twice.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Japan Briefing — Bi-weekly bilingual newsletter → Google Calendar + Notion.
+"""Japan Daily Talk — Daily Japanese newsletter → Supabase, Notion, Calendar.
 
 Scrapes Japan crypto/regulation/real-estate news from Japanese and English
 sources, generates a bilingual (JP body + KR translation) issue via Claude,
@@ -12,6 +12,7 @@ import pathlib
 import sys
 import time
 from datetime import datetime, timedelta, timezone
+from urllib.parse import quote
 
 import anthropic
 import feedparser
@@ -46,65 +47,33 @@ JST = timezone(timedelta(hours=9))  # Same offset as KST
 
 ISSUE_NUMBER = int(os.environ.get("ISSUE_NUMBER", "1"))
 
-# ── News Sources (Japan-focused) ────────────────────────────────────────────
+# ── News Sources (general Japan) ────────────────────────────────────────────
+_GNEWS = "https://news.google.com/rss/search?q={q}&hl=ja&gl=JP&ceid=JP:ja"
+
+# The floor, as in china-newsletter: the RSS feeds below are a bonus, these
+# carry the issue when one of them is down. Picked by measured freshness —
+# "日本 政治" returns evergreen analysis and "日本 テクノロジー" matches company
+# names, so neither is here.
+GOOGLE_NEWS_QUERIES = ["日本 政府", "日本 経済", "日本 AI", "日本 話題"]
+
 RSS_FEEDS = {
-    # Japanese crypto / regulation
-    "CoinPost": "https://coinpost.jp/?feed=rss2",
-    "CoinDesk Japan": "https://www.coindeskjapan.com/feed/",
-    # English crypto (Japan-relevant stories)
-    "CoinDesk": "https://www.coindesk.com/arc/outboundfeeds/rss/",
-    "The Block": "https://www.theblock.co/rss.xml",
-    "DL News": "https://www.dlnews.com/arc/outboundfeeds/rss/",
-    "Cointelegraph": "https://cointelegraph.com/rss",
-    # Japanese general / finance / real estate / architecture
-    "NHK News": "https://www3.nhk.or.jp/rss/news/cat0.xml",
+    # Yahoo トピックス — eight items each, but all of them today's.
+    "Yahoo 主要": "https://news.yahoo.co.jp/rss/topics/top-picks.xml",
+    "Yahoo 国内": "https://news.yahoo.co.jp/rss/topics/domestic.xml",
+    "Yahoo 経済": "https://news.yahoo.co.jp/rss/topics/business.xml",
+    "Yahoo IT": "https://news.yahoo.co.jp/rss/topics/it.xml",
+    "Yahoo エンタメ": "https://news.yahoo.co.jp/rss/topics/entertainment.xml",
+    # General desk.
+    "朝日新聞": "https://www.asahi.com/rss/asahi/newsheadlines.rdf",
+    # Tech.
     "ITmedia": "https://rss.itmedia.co.jp/rss/2.0/itmedia_all.xml",
-    "ArchDaily": "https://www.archdaily.com/feed",
-    "Dezeen": "https://www.dezeen.com/feed/",
-    "Timeout Tokyo": "https://www.timeout.jp/tokyo/ja/rss",
-    # Asia finance
-    "Nikkei Asia": "https://asia.nikkei.com/rss",
+    "GIGAZINE": "https://gigazine.net/news/rss_2.0/",
 }
 
-TELEGRAM_CHANNELS = [
-    "https://t.me/s/TheBlock__",
-    "https://t.me/s/CoinDesk",
-]
-
-# Keywords to filter for Japan crypto/regulation/real-estate relevance
-JAPAN_KEYWORDS = [
-    # Japan-specific
-    "Japan", "Japanese", "日本", "東京", "Tokyo",
-    "FSA", "金融庁", "JVCEA", "FIEA", "金商法", "資金決済法",
-    "stablecoin", "ステーブルコイン", "JPYC", "Progmat", "Project Pax",
-    "MUFG", "三菱UFJ", "SMBC", "三井住友", "Mizuho", "みずほ",
-    "SBI", "Startale", "Strium", "Metaplanet",
-    "bitFlyer", "Coincheck", "bitbank", "GMO", "Rakuten",
-    "Nomura", "野村", "Daiwa", "大和",
-    # Crypto infra (Japan-relevant)
-    "USDC", "Circle", "stablecoin", "tokeniz", "RWA",
-    "custody", "settlement", "CBDC", "digital yen", "デジタル円",
-    "insider trading", "disclosure", "regulation", "regulatory",
-    # Architecture / urban design / real estate
-    "再開発", "redevelopment", "不動産", "real estate",
-    "容積率", "FAR", "都市計画", "urban planning",
-    "マンション", "タワー", "tower", "ヒルズ", "Hills",
-    "渋谷", "Shibuya", "六本木", "Roppongi", "麻布", "Azabudai",
-    "虎ノ門", "Toranomon", "品川", "Shinagawa",
-    "建築", "architect", "設計", "design",
-    "隈研吾", "Kengo Kuma", "安藤忠雄", "Tadao Ando",
-    "妹島和世", "SANAA", "丹下健三", "Kenzo Tange",
-    "TOKYO TORCH", "新建築", "ArchDaily", "Dezeen",
-    "ファサード", "facade", "インテリア", "interior",
-    # Food / lifestyle
-    "グルメ", "レストラン", "restaurant", "食べログ",
-    "ラーメン", "寿司", "sushi", "居酒屋", "izakaya",
-    "カフェ", "café", "ミシュラン", "Michelin",
-    "食ベログ", "Tabelog", "Timeout",
-    # Korea-Japan cross-border
-    "Korea", "韓国", "KRW", "won",
-    "Asia", "アジア", "Hong Kong", "Singapore",
-]
+# NHK is deliberately absent. Its feed carries valid pubDates but has been
+# frozen since 2026-08-08, so every item falls outside the 36-hour window and
+# it contributed nothing. timeout.jp is gone as well — it answers with an HTTP
+# error. Both sat in this list looking like coverage.
 
 HEADERS = {
     "User-Agent": (
@@ -153,64 +122,60 @@ def scrape_rss_feeds() -> list[dict]:
     return items
 
 
-# ── Scraper: Telegram ───────────────────────────────────────────────────────
-def scrape_telegram_channels() -> list[dict]:
-    """Fetch latest posts from Telegram public channels."""
-    items = []
-    for channel_url in TELEGRAM_CHANNELS:
+# ── Scraper: Google News ────────────────────────────────────────────────────
+def scrape_google_news() -> list[dict]:
+    """The floor. Failure here is worth stopping for; the rest is optional."""
+    cutoff = datetime.now(KST) - timedelta(hours=36)
+    items: list[dict] = []
+    for query in GOOGLE_NEWS_QUERIES:
         try:
-            resp = requests.get(channel_url, headers=HEADERS, timeout=30)
-            resp.raise_for_status()
-            soup = BeautifulSoup(resp.text, "html.parser")
-
-            for widget in soup.select("div.tgme_widget_message_wrap"):
-                text_el = widget.select_one("div.tgme_widget_message_text")
-                if not text_el:
+            feed = feedparser.parse(_GNEWS.format(q=quote(query)))
+            for entry in feed.entries[:25]:
+                published = None
+                for attr in ("published_parsed", "updated_parsed"):
+                    parsed = getattr(entry, attr, None)
+                    if parsed:
+                        published = datetime(*parsed[:6], tzinfo=KST)
+                        break
+                if published and published < cutoff:
                     continue
-
-                text = text_el.get_text(separator=" ", strip=True)
-                link_el = text_el.select_one("a[href]")
-                url = link_el["href"] if link_el else ""
-                date_el = widget.select_one("time[datetime]")
-                date_str = date_el["datetime"] if date_el else ""
-
-                if text:
-                    source = channel_url.split("/s/")[-1] if "/s/" in channel_url else "Telegram"
-                    items.append({
-                        "source": f"Telegram/{source}",
-                        "text": text,
-                        "url": url,
-                        "date": date_str,
-                    })
-        except Exception as e:
-            print(f"  ⚠ Failed to scrape {channel_url}: {e}")
-
+                title = getattr(entry, "title", "")
+                if not title:
+                    continue
+                summary = getattr(entry, "summary", "")
+                items.append({
+                    "source": f"Google News/{query}",
+                    "text": f"{title}. {summary}" if summary else title,
+                    "url": getattr(entry, "link", ""),
+                    "date": published.isoformat() if published else "",
+                })
+        except Exception as e:  # noqa: BLE001
+            print(f"  ⚠ Google News '{query}' failed: {e}")
     return items
 
 
-# ── Filter & Deduplicate ────────────────────────────────────────────────────
-def filter_japan_relevant(items: list[dict]) -> list[dict]:
-    """Keep items matching Japan crypto/regulation/real-estate keywords."""
-    keywords_lower = [k.lower() for k in JAPAN_KEYWORDS]
-    filtered = []
-    seen_urls = set()
+# ── Deduplicate ─────────────────────────────────────────────────────────────
+def dedupe(items: list[dict]) -> list[dict]:
+    """Drop repeats by URL.
 
+    There is no keyword whitelist any more. Every source above is a Japanese
+    domestic outlet, so a whitelist could only subtract — the old one was built
+    around stablecoin issuers, architects and ramen, and it was throwing away
+    two thirds of the day's news before the model ever saw it.
+    """
+    out: list[dict] = []
+    seen: set[str] = set()
     for item in items:
-        text_lower = item["text"].lower()
         url = item.get("url", "")
-
-        if url and url in seen_urls:
+        if url and url in seen:
             continue
         if url:
-            seen_urls.add(url)
-
-        if any(kw in text_lower for kw in keywords_lower):
-            filtered.append(item)
-
-    return filtered
+            seen.add(url)
+        out.append(item)
+    return out
 
 
-# ── LLM: Generate Japan Briefing Issue ──────────────────────────────────────
+# ── LLM: Generate the Japan Daily Talk issue ──────────────────────────────────────
 def load_claude_prompt() -> str:
     """Load claude.md from the same directory."""
     prompt_path = os.path.join(os.path.dirname(__file__), "claude.md")
@@ -221,122 +186,128 @@ def load_claude_prompt() -> str:
 
 
 SYSTEM_PROMPT = """\
-You are the writer of "Japan Briefing," a bi-weekly bilingual newsletter on \
-Japan's crypto regulation, stablecoin infrastructure, architecture & urban \
-design, food, and lifestyle, written for Heechang — co-founder/CSO at \
-Four Pillars, Seoul-based institutional crypto research firm backed by \
-Pantera/Kakao Ventures/Hashed.
+You are the writer of "Japan Daily Talk," a daily Japanese newsletter written \
+as a conversation, for Heechang — a Korean reader who studies Japanese at \
+roughly N3-N2 and wants to know what Japan is actually talking about today.
 
-CRITICAL FORMAT RULE: Every substantive section must be written FIRST in \
-Japanese (日本語), then immediately followed by a COMPLETE Korean translation \
-(한국어 번역) marked with 📝. The Korean translation must translate EVERY \
-sentence from the Japanese — do NOT summarize, do NOT omit, do NOT \
-paraphrase into a shorter version. Translate the full Japanese text \
-sentence-by-sentence into Korean, then add the "왜 중요한가" line.
+It is general news: politics, the economy, technology, daily life and whatever \
+is trending. It is NOT a crypto newsletter — his Rails journal already covers \
+stablecoins and regulation every day, so do not write about them here unless a \
+crypto story is genuinely one of the biggest news items in Japan that day.
 
-Japanese: natural, native-level business Japanese. Use real industry \
-terminology (資金決済法, 金商法, ステーブルコイン, 再開発).
-Korean: casual-professional (반말 OK). Like explaining to a colleague. \
-But translate EVERYTHING — no omissions.
+THE FORMAT IS A DIALOGUE between two people:
+- ハル — a journalist living in Tokyo. Explains what happened, cites the source.
+- ミン — from Seoul, learning Japanese. Asks the questions a foreigner would ask.
 
-Active research: Asia stablecoin corridors, KRW stablecoin legislation, \
-Japan stablecoin infra (JPYC, Progmat, megabank pilots), FIEA analysis.
-Active orgs: ASA (Asia Stablecoin Alliance), HRC, FPAP, FP Validated.
+They talk like colleagues who know each other. Short turns, natural spoken \
+Japanese, not written-report Japanese. ミン asks; ハル answers with the fact, \
+the number and the source; ミン reacts or asks the obvious follow-up.
 
-Editorial priors:
-- Japan's FIEA reclassification is the most consequential crypto event in Asia
-- The KR-JP stablecoin corridor is undercovered
-- Megabank stablecoin frameworks are slow but have unmatched distribution
-- Tokyo's architecture and private-led redevelopment is 10 years ahead of Seoul
+CRITICAL LINE RULE: every Japanese line is IMMEDIATELY followed by its own \
+Korean line. Never group the Korean, never summarise it, never write a block \
+of Japanese and then a block of Korean. One Japanese line, then that same line \
+in Korean, then the next Japanese line.
 
-Voice: tight, analytical, bilingual. Have a take. No filler.
+Japanese: natural, current, spoken register. Real vocabulary from the news, but \
+this is a conversation — no 資料調 stiffness.
+Korean: casual-professional (반말 OK), the way you would explain it to a friend.
 
-PARAGRAPH RULE: Keep every paragraph to 3 sentences MAX. If a block of \
-text would be 4+ sentences, break it into multiple paragraphs with a \
-blank line between them. This applies to BOTH Japanese and Korean sections. \
-Short paragraphs are easier to read on mobile and in Notion.
+Voice: concrete. Name the ministry, the company, the number, the date. No \
+editorialising, no filler.
 
-HEADING TRANSLATION RULE: All Japanese headings (【見出し】, section titles, \
-etc.) must also include a Korean translation in parentheses right after. \
-Example: 【改正資金決済法の政令が公布】(개정 자금결제법 정령 공포) \
-This way the reader can understand the headline even if the kanji is hard.\
+HEADING TRANSLATION RULE: every Japanese heading (【…】) is followed by its \
+Korean translation in parentheses, so the reader can get the gist even when the \
+kanji is hard. Example: 【物価高への対策を発表】(물가 상승 대책 발표)
 """
 
 ISSUE_PROMPT = """\
-Produce a complete Japan Briefing issue from the news items below.
+Produce today's Japan Daily Talk issue from the news items below.
 
 First line MUST be:
 MAIN_TITLE: [concise English title of the single most important story, ≤8 words]
 
 HEADER:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
-JAPAN BRIEFING — Issue #{issue_number}
-{date_line} · 日本クリプト・不動産ブリーフィング
+JAPAN DAILY TALK — Issue #{issue_number}
+{date_line} · 日本デイリーニュース、会話で読む今日のホットトピック
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
+今号のハイライト: [2-3 sentences in Japanese on what today's issue covers]
+[the same highlight in Korean, starting with 이번 호 하이라이트:]
+📖 登場人物: ハル（東京在住の記者）と ミン（ソウル出身、日本語学習中）
 
-SECTION 1 — 日本クリプト・規制ウォッチ (JAPAN CRYPTO & REGULATION WATCH):
-Pick 3-4 most consequential Japan crypto/stablecoin/regulation stories.
-For EACH story:
-【見出し】 Headline in Japanese
-Japanese body (3-4 sentences, cite sources, use real terminology)
-📝 한국어 번역:
-Full Korean translation of EVERY sentence above (do NOT summarize or shorten).
-Then add: 왜 중요한가: [1-2 sentences connecting to ASA/ASC/FP work]
+Then FOUR sections. Choose the four that fit today's news from this pool, and \
+ALWAYS include テクノロジートーク:
 
-SECTION 2 — 建築・都市デザイン (ARCHITECTURE & URBAN DESIGN):
-2-3 stories on Tokyo/Japan architecture and urban design. Focus on: \
-landmark buildings and design philosophy (麻布台ヒルズ, 虎ノ門ヒルズ, TOKYO TORCH), \
-architect profiles (隈研吾, 安藤忠雄, 妹島和世), design details, materials, \
-structural innovation, public space design. Same bilingual format.
-"What makes Tokyo's built environment world-class" angle.
+  SECTION N · 政治トーク (POLITICS TALK)
+  SECTION N · 経済トーク (ECONOMY TALK)
+  SECTION N · テクノロジートーク (TECHNOLOGY TALK)
+  SECTION N · くらし・防災トーク (LIFESTYLE & SAFETY TALK)
+  SECTION N · 今日の話題 (TODAY'S BUZZ)
 
-SECTION 3 — 東京グルメ・発見 (TOKYO FOOD & FINDS):
-Two food or dining recommendations: trending restaurant, seasonal dish, \
-hidden spot, new opening, or food trend. 3-4 sentences each JP + KR. \
-Include neighborhood and price range if relevant.
+Number them 1 to 4 in the order you present them. Put a ━━━ divider line \
+before and after every SECTION line.
 
-SECTION 4 — 今週の話題 (THIS WEEK'S BUZZ):
-Two things Japanese people are actually talking about this week: viral topic \
-on X/Twitter Japan, trending show, lifestyle trend, seasonal event, \
-or cultural moment. 3-4 sentences each JP + KR. Snapshot, not analysis.
+Each section carries ONE story, except 今日の話題 which may carry two. Write \
+each story exactly like this:
 
-SECTION 5 — 今週の日本語表現 (JAPANESE EXPRESSION OF THE WEEK):
-📖 今週の表現: [expression]
-読み方: [reading]
-意味: [Korean meaning]
-例文: [Japanese example]
-→ [Korean translation]
+【Japanese headline】(Korean translation of the headline)
+ミン: [question, 1-2 sentences of spoken Japanese]
+민: [that same line in Korean]
+ハル: [answer with the fact, the number and the source, 1-2 sentences]
+하루: [that same line in Korean]
+ミン: [reaction or follow-up]
+민: [same line in Korean]
+ハル: [the part that makes it matter]
+하루: [same line in Korean]
+왜 중요한가: [1-2 Korean sentences on why this matters to the reader]
+
+Six to eight dialogue lines per story — three or four turns each. Cite the \
+outlet and date inside ハル's line, like （NHK, 2026-09-02）.
+
+TECHNOLOGY TALK covers AI, semiconductors, robotics, consumer gadgets, \
+platforms, telecoms and the Japanese companies behind them. It is a real \
+section, not an afterthought — give it the same depth as politics.
+
+Then the last section:
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+SECTION 5 · 今日の日本語表現 (JAPANESE EXPRESSION OF THE DAY)
+━━━━━━━━━━━━━━━━━━━━━━━━━━
+📖 今日の表現: [expression, taken from a word that actually appeared above]
+読み方: [reading in hiragana]
+意味: [meaning, in Korean]
+例文:
+[one Japanese example sentence]
+→ [that sentence in Korean]
+補足 (보충): [1-2 Korean sentences on nuance or when to use it]
 
 CLOSING:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 Issue #{issue_number} · 次号: {next_issue_date}
-[One-line teaser JP + KR]
+[one-line teaser in Japanese]
+[the same teaser in Korean]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-LENGTH: 2,200-3,300 words total.
+LENGTH: 1,600-2,200 words in total across both languages.
 
-PARAGRAPH RULE: Every paragraph must be 3 sentences or fewer. \
-If a thought needs 4+ sentences, split into separate paragraphs \
-with a blank line. This applies to both JP and KR sections.
+⚠️ FORMATTING: this displays in Google Calendar and Notion as PLAIN TEXT.
+- No Markdown at all (no #, ##, **, *, ```)
+- ━━━━━━━━━━━━━━━━━━━━ as section dividers
+- 【】for story headlines
+- 📖 only for the 登場人物 line and the expression of the day
+- No other emoji
+- A blank line between sections
 
-⚠️ FORMATTING: Display in Calendar/Notion (PLAIN TEXT).
-- No Markdown
-- Use ━━━ as section dividers
-- ALL CAPS for English section headers
-- 【】for Japanese sub-headers
-- 📝 for Korean translations
-- 📖 for expression section
-
---- NEWS ITEMS FROM LAST 2 WEEKS ---
+--- TODAY'S NEWS ITEMS ---
 {news_items}
 """
 
 
 def generate_issue(news_items: list[dict]) -> tuple[str, str]:
-    """Call Anthropic Claude to produce the Japan Briefing issue.
+    """Call Anthropic Claude to produce the Japan Daily Talk issue.
 
     Returns (main_title, issue_text) where main_title is the extracted
-    headline for use in the [Japan Brief #NN] (main_title) format.
+    headline for use in the [Japan Daily Talk #NN] (main_title) format.
     """
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
@@ -366,7 +337,7 @@ def generate_issue(news_items: list[dict]) -> tuple[str, str]:
     raw = response.content[0].text
 
     # Extract the MAIN_TITLE line from the top of the response
-    main_title = "Japan Brief"
+    main_title = "Japan Daily Talk"
     lines = raw.splitlines()
     body_start = 0
     for i, line in enumerate(lines):
@@ -393,11 +364,11 @@ def get_calendar_service():
 
 
 def _issue_title(main_title: str) -> str:
-    """Format the standard [Japan Brief #NN] (main_title) title string."""
-    return f"[Japan Brief #{ISSUE_NUMBER}] ({main_title})"
+    """Format the standard [Japan Daily Talk #NN] (main_title) title string."""
+    return f"[Japan Daily Talk #{ISSUE_NUMBER}] ({main_title})"
 
 
-def create_calendar_event(issue_text: str, main_title: str = "Japan Brief") -> str:
+def create_calendar_event(issue_text: str, main_title: str = "Japan Daily Talk") -> str:
     if not CALENDAR_ID:
         print("  ⚠ CALENDAR_ID not set, skipping Calendar.")
         return ""
@@ -565,39 +536,45 @@ def create_notion_page(
 # ── Main ─────────────────────────────────────────────────────────────────────
 def run():
     now_kst = datetime.now(KST)
-    print(f"▸ Japan Briefing — Issue #{ISSUE_NUMBER}")
+    print(f"▸ Japan Daily Talk — Issue #{ISSUE_NUMBER}")
     print(f"  {now_kst.strftime('%A, %B %d, %Y')}")
+
+    print("▸ Scraping Google News (ja-JP)...")
+    gnews_items = scrape_google_news()
+    print(f"  Found {len(gnews_items)} items.")
 
     print("▸ Scraping RSS feeds...")
     rss_items = scrape_rss_feeds()
     print(f"  Found {len(rss_items)} RSS items.")
 
-    print("▸ Scraping Telegram channels...")
-    tg_items = scrape_telegram_channels()
-    print(f"  Found {len(tg_items)} Telegram items.")
-
-    all_items = rss_items + tg_items
+    all_items = dedupe(gnews_items + rss_items)
     if not all_items:
         print("✗ No news items found from any source.")
         sys.exit(1)
+    print(f"  {len(all_items)} items after dedupe.")
 
-    print("▸ Filtering for Japan relevance...")
-    filtered = filter_japan_relevant(all_items)
-    print(f"  {len(filtered)} relevant items (from {len(all_items)} total).")
+    items_for_llm = all_items[:60]
 
-    items_for_llm = filtered if len(filtered) >= 5 else all_items
-    items_for_llm = items_for_llm[:50]
-
-    print(f"▸ Generating Japan Briefing via Claude ({len(items_for_llm)} items)...")
+    print(f"▸ Generating Japan Daily Talk via Claude ({len(items_for_llm)} items)...")
     main_title, issue_text = generate_issue(items_for_llm)
-    print(f"  Title: [Japan Brief #{ISSUE_NUMBER}] ({main_title})")
+    print(f"  Title: [Japan Daily Talk #{ISSUE_NUMBER}] ({main_title})")
+
+    if "--dry-run" in sys.argv:
+        print("\n" + "=" * 60)
+        print(issue_text)
+        print("=" * 60)
+        print("\n(dry run — nothing written to Supabase, Notion or Calendar)")
+        return
 
     # Build the blocks once. They feed the furigana pass, Supabase and Notion,
     # so the three can never disagree about what the issue contains.
     all_blocks = _text_to_notion_blocks(issue_text)
     try:
         all_blocks = furigana.augment(
-            all_blocks, variant="sections", api_key=ANTHROPIC_API_KEY
+            all_blocks,
+            variant="sections",
+            api_key=ANTHROPIC_API_KEY,
+            group_by_story=True,
         )
     except furigana.NoFuriganaTargets as e:
         # Loud, because silently publishing without furigana is the failure this

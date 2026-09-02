@@ -1,4 +1,4 @@
-name: Japan Briefing — Daily Newsletter
+name: Japan Daily Talk — Daily Newsletter
 
 # ISSUE_NUMBER continuity: this workflow file is new, so github.run_number
 # restarts at 1. The last issue published before the migration was #11
@@ -8,6 +8,11 @@ on:
   schedule:
     - cron: "10 23 * * *" # 23:10 UTC = 08:10 KST, staggered after Rails
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Print the issue and publish nothing"
+        type: boolean
+        default: false
 
 jobs:
   generate-issue:
@@ -44,4 +49,7 @@ jobs:
           NOTION_DATABASE_ID: 36a5bc953df38036acb4d2b6553e582c
           TIMEZONE: Asia/Seoul
           ISSUE_NUMBER_OFFSET: "11"
-        run: ISSUE_NUMBER=$((GITHUB_RUN_NUMBER + ISSUE_NUMBER_OFFSET)) python main.py
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="--dry-run"; fi
+          ISSUE_NUMBER=$((GITHUB_RUN_NUMBER + ISSUE_NUMBER_OFFSET)) python main.py $ARGS

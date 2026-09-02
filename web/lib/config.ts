@@ -5,7 +5,7 @@ export const SITE = {
   url: "https://heechang-newsletter.vercel.app",
   tagline: "Daily newsletters by Heechang",
   description:
-    "Daily briefs on startups, financial infrastructure, Japan's crypto market, China, and the watch world — written for people who want the signal without the feed.",
+    "Daily briefs on startups, financial infrastructure, Japan, China, and the watch world — written for people who want the signal without the feed.",
 };
 
 // Each section is backed by one Notion database. IDs come from the shared
@@ -35,9 +35,9 @@ export const SECTIONS: Section[] = [
     key: "japan",
     number: "03",
     label: "Japan",
-    title: "Japan Brief",
+    title: "Japan Daily Talk",
     description:
-      "Regulation, institutions, and market structure in Japan's digital asset market.",
+      "Politics, tech, and what Japan is actually talking about today \u2014 written as a conversation, in Japanese and Korean.",
     notionId: process.env.NOTION_DB_JAPAN ?? "36a5bc953df38036acb4d2b6553e582c",
   },
   {

@@ -216,10 +216,12 @@ def generate_batch(targets: list[Target], api_key: str, prompt: str) -> dict[int
     return results
 
 
-def _toggle_block(furigana: str) -> dict:
+def _toggle_block(furigana: str | list[str]) -> dict:
+    lines = [furigana] if isinstance(furigana, str) else furigana
     chunks = [
-        furigana[i : i + RICH_TEXT_LIMIT]
-        for i in range(0, max(len(furigana), 1), RICH_TEXT_LIMIT)
+        line[i : i + RICH_TEXT_LIMIT]
+        for line in lines
+        for i in range(0, max(len(line), 1), RICH_TEXT_LIMIT)
     ]
     return {
         "type": "toggle",
@@ -238,8 +240,42 @@ def _toggle_block(furigana: str) -> dict:
     }
 
 
-def augment(blocks: list[dict], *, variant: str, api_key: str) -> list[dict]:
+def _story_runs(targets: list[Target], blocks: list[dict]) -> list[list[int]]:
+    """Group target indices into runs belonging to the same story.
+
+    A heading, divider or callout between two targets ends the run. Used by the
+    dialogue format, where every Japanese line is its own paragraph: without
+    this, a toggle lands between each Japanese line and the Korean line that
+    translates it, and the pairing the format depends on is broken.
+    """
+    runs: list[list[int]] = []
+    for idx, (position, _) in enumerate(targets):
+        if runs:
+            prev = targets[runs[-1][-1]][0]
+            between = blocks[prev + 1 : position]
+            if not any(
+                b.get("type", "").startswith("heading")
+                or b.get("type") in ("divider", "callout")
+                for b in between
+            ):
+                runs[-1].append(idx)
+                continue
+        runs.append([idx])
+    return runs
+
+
+def augment(
+    blocks: list[dict],
+    *,
+    variant: str,
+    api_key: str,
+    group_by_story: bool = False,
+) -> list[dict]:
     """Return a copy of `blocks` with a furigana toggle after each JP paragraph.
+
+    With group_by_story, one toggle per story instead, placed after its last
+    Japanese paragraph and holding every line of it. Targets and batching are
+    unchanged either way — only where the toggles land.
 
     Raises NoFuriganaTargets when the variant matches nothing — that is the
     signature of a broken port, and it must not pass silently.
@@ -256,13 +292,18 @@ def augment(blocks: list[dict], *, variant: str, api_key: str) -> list[dict]:
     furigana_map = generate_batch(targets, api_key, prompt)
     print(f"  generated for {len(furigana_map)}/{len(targets)} paragraphs.")
 
+    groups = (
+        _story_runs(targets, blocks)
+        if group_by_story
+        else [[i] for i in range(len(targets))]
+    )
+
     out = list(blocks)
     # Reverse order so earlier indices stay valid as we splice.
-    for idx in reversed(range(len(targets))):
-        position, _ = targets[idx]
-        furigana = furigana_map.get(idx)
-        if not furigana:
+    for run in reversed(groups):
+        lines = [furigana_map[i] for i in run if furigana_map.get(i)]
+        if not lines:
             continue
-        out.insert(position + 1, _toggle_block(furigana))
+        out.insert(targets[run[-1]][0] + 1, _toggle_block(lines))
     print(f"  ✓ {len(out) - len(blocks)} furigana toggles inserted.")
     return out

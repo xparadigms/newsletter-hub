@@ -51,7 +51,13 @@ MAX_TOKENS = 24000  # roughly twice the issue length
 # overseas Chinese media and answers reliably, so it is the floor: if every
 # other feed 403s, these four alone still carry an issue.
 _GNEWS = "https://news.google.com/rss/search?q={q}&hl=zh-CN&gl=CN&ceid=CN:zh-Hans"
-GOOGLE_NEWS_QUERIES = ["中国 政策", "中国 经济", "中国 科技", "中国 社会 热点"]
+GOOGLE_NEWS_QUERIES = [
+    "中国 政策",
+    "中国 经济",
+    "中国 科技",
+    "中国 人工智能",
+    "中国 社会 热点",
+]
 
 RSS_FEEDS = {
     # Chinese-language, hosted outside the mainland, reliably reachable.
@@ -61,9 +67,12 @@ RSS_FEEDS = {
     # English China desks — facts the model then writes up in Chinese.
     "SCMP China": "https://www.scmp.com/rss/4/feed",
     "Nikkei Asia": "https://asia.nikkei.com/rss",
-    # Mainland-hosted. These 403 or return empty to datacentre IPs often enough
-    # that they must never be load-bearing; the per-feed try/except covers it.
-    "36氪": "https://36kr.com/feed",
+    # Mainland-hosted tech desks. These can 403 or return empty to datacentre
+    # IPs, so they must never be load-bearing; the per-feed try/except covers
+    # it. Note the www on 36氪 — the bare host answers 200 with an EMPTY feed,
+    # which is why this silently contributed nothing for months.
+    "36氪": "https://www.36kr.com/feed",
+    "虎嗅": "https://rss.huxiu.com/",
     "少数派": "https://sspai.com/feed",
 }
 
@@ -184,9 +193,10 @@ both as a news source and as reading practice — which is why every line carrie
 its own Korean and each story ends with a note on two or three words or one
 grammar pattern it actually used.
 
-Cover three things: Chinese politics and policy, Chinese technology and \
-industry, and whatever ordinary people in China are actually talking about \
-this week. Balance them; do not let policy crowd out the rest.
+Cover three things, led by technology: Chinese technology and industry, \
+Chinese politics and policy, and whatever ordinary people in China are \
+actually talking about this week. Technology carries the most weight; do not \
+let policy crowd it out.
 
 Voice: plain, factual, concrete. Name the institution, the number, the date. \
 No editorialising, no filler, no hedging. This is a brief, not an essay.
@@ -243,9 +253,11 @@ explain a pattern in one sentence with the phrase from the story as the example.
 Two or three items, no more. Never explain something the story did not use.
 - Do not repeat a story. Do not invent facts, numbers or dates that are not in \
 the items below.
-- Spread the stories across the three areas: roughly a third politics and \
-policy, a third technology and industry, a third society and what people are \
-talking about. Do not let any one area take more than half the issue.
+- Technology and industry is the largest area: five or six of the stories must \
+be technology — AI, semiconductors, electric vehicles, platforms, telecoms, \
+startups, and the companies behind them. Count them. Split the rest between \
+politics and policy on one side, society and what people are talking about on \
+the other. Do not let any one area take more than half the issue.
 
 --- NEWS ITEMS ---
 {news_items}
