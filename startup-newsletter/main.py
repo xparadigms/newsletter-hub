@@ -657,6 +657,8 @@ def run():
         print("✗ No news items found.")
         sys.exit(1)
     print(f"  Found {len(news_items)} items.")
+    if EDITION > 1:
+        news_items = sources.drop_used(news_items, store.recent_issues("startup", 3))
 
     print("▸ Generating English summary...")
     main_title, summary = generate_summary(news_items)

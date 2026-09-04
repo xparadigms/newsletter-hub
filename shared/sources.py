@@ -134,3 +134,27 @@ def already_covered(rows: list[dict[str, Any]]) -> str:
         parts += ["", "URLs already used:"]
         parts += [f"- {u}" for u in unique[:60]]
     return "\n".join(parts) + "\n"
+
+
+def drop_used(
+    items: list[dict[str, Any]], rows: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Remove items the recent issues already cited.
+
+    Telling a model not to reuse a story gets most of the way and no further —
+    an extra edition still came back with a previous one reworded. Taking the
+    article out of the material is the part that does not depend on the model
+    reading its instructions. It cannot stop the same EVENT arriving through a
+    second outlet, which is what the prompt block is still for; between them the
+    overlap is small rather than absent.
+    """
+    used = {
+        _normalise(u)
+        for r in rows
+        for u in URL_RE.findall(r.get("source_text") or "")
+    }
+    if not used:
+        return items
+    kept = [i for i in items if _normalise(i.get("url") or "") not in used]
+    print(f"  excluded {len(items) - len(kept)} item(s) used by recent issues")
+    return kept

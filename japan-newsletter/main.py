@@ -480,6 +480,8 @@ def run():
         sys.exit(1)
     print(f"  {len(all_items)} items after dedupe.")
 
+    if EDITION > 1:
+        all_items = sources.drop_used(all_items, store.recent_issues("japan", 3))
     items_for_llm = all_items[:60]
 
     print(f"▸ Generating Japan Daily Talk via Claude ({len(items_for_llm)} items)...")

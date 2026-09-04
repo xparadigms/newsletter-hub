@@ -360,6 +360,8 @@ def run():
         # the slug for the day and a rerun would keep the sparse URL.
         print(f"✗ Only {len(items)} usable items — too thin for a full issue.")
         sys.exit(1)
+    if EDITION > 1:
+        items = sources.drop_used(items, store.recent_issues("china", 3))
     items = items[:90]
     print(f"  {len(items)} items after dedupe.")
 

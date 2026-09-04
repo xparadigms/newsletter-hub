@@ -359,6 +359,8 @@ def run():
     if recent:
         print(f"  Excluding {len(recent)} recent issue(s).")
 
+    if EDITION > 1:
+        all_items = sources.drop_used(all_items, store.recent_issues("business", 3))
     print(f"▸ Generating via Claude ({len(all_items[:60])} items)...")
     main_title, issue_text = generate_issue(all_items[:60], recent)
     issue_text = sources.attach(issue_text, all_items[:60])

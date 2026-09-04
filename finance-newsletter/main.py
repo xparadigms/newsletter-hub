@@ -720,6 +720,10 @@ def run():
     # If filtering is too aggressive, fall back to all items
     items_for_llm = filtered if len(filtered) >= 5 else all_items
     # Cap at 50 items to stay within token limits
+    if EDITION > 1:
+        items_for_llm = sources.drop_used(
+            items_for_llm, store.recent_issues("fintech", 3)
+        )
     items_for_llm = items_for_llm[:50]
 
     print(f"▸ Generating Rails issue via Claude ({len(items_for_llm)} items)...")
