@@ -10,7 +10,12 @@ on:
     # 23:20 UTC = 08:20 KST, staggered after the Rails daily job so the two
     # API-heavy jobs do not hit Anthropic and Notion at the same moment.
     - cron: "20 23 * * *"
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Reuse a number when re-running a day (blank = next)"
+        type: string
+        default: ""
 
 jobs:
   generate-summary:
@@ -48,4 +53,7 @@ jobs:
           NOTION_DATABASE_ID: 3555bc953df380e2ae70df4401216aee
           TIMEZONE: Asia/Seoul
           ISSUE_NUMBER_OFFSET: "163"
-        run: ISSUE_NUMBER=$((GITHUB_RUN_NUMBER + ISSUE_NUMBER_OFFSET)) python main.py
+        run: |
+          NUM="${{ inputs.issue_number }}"
+          if [ -z "$NUM" ]; then NUM=$((GITHUB_RUN_NUMBER + ISSUE_NUMBER_OFFSET)); fi
+          ISSUE_NUMBER=$NUM python main.py
