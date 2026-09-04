@@ -225,8 +225,8 @@ produced it. 2-3 sentences, 180-210 Japanese characters. Count them.]
 [full Korean translation, sentence for sentence]
 
 [Japanese: 自分ならどう使うか — how a founder running a small research firm in \
-Seoul would apply this on Monday. Concrete. 1-2 sentences, 150-175 Japanese \
-characters.]
+Seoul would apply this on Monday. Concrete. 2 sentences, 150-175 Japanese \
+characters — one or two sentences cannot carry that budget, so write two.]
 📝 한국어 번역:
 [full Korean translation, sentence for sentence]
 
