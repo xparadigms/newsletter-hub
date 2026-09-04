@@ -12,6 +12,10 @@ on:
     - cron: "10 23 * * *" # 23:10 UTC = 08:10 KST, staggered after Rails
   workflow_dispatch:
     inputs:
+      edition:
+        description: "2+ makes an extra issue for the day instead of replacing it"
+        type: string
+        default: ""
       dry_run:
         description: "Print the issue and publish nothing"
         type: boolean
@@ -55,6 +59,7 @@ jobs:
           CALENDAR_ID: ad3a712618285ba2a011179683b92bdc10718051482df8d950ccfb95a1f0aa19@group.calendar.google.com
           NOTION_DATABASE_ID: 36a5bc953df38036acb4d2b6553e582c
           TIMEZONE: Asia/Seoul
+          EDITION: ${{ inputs.edition || '1' }}
           ISSUE_NUMBER_OFFSET: "10"
         run: |
           ARGS=""

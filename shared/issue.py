@@ -51,6 +51,7 @@ def build_row_from_blocks(
     source_text: str,
     source_format: str,
     summary: str | None = None,
+    edition: int = 1,
 ) -> dict[str, Any]:
     """The row to upsert, given the website's Block[] directly.
 
@@ -73,9 +74,16 @@ def build_row_from_blocks(
         "plain_text": blocks_mod.plain_text(blocks),
         "source_text": source_text,
         "source_format": source_format,
-        # One issue per section per day. A rerun replaces its own row rather
-        # than adding a duplicate, independent of github.run_number.
-        "run_key": f"{section}:{issue_date}",
+        # One issue per section per day, plus any on-demand editions. A rerun
+        # of the same edition replaces its own row rather than adding a
+        # duplicate, independent of github.run_number — which is why the suffix
+        # is the edition and not the run.
+        "run_key": (
+            f"{section}:{issue_date}"
+            if edition <= 1
+            else f"{section}:{issue_date}:e{edition}"
+        ),
+        "edition": edition,
         "published": True,
     }
 
@@ -89,6 +97,7 @@ def build_row(
     source_text: str,
     source_format: str,
     summary: str | None = None,
+    edition: int = 1,
 ) -> dict[str, Any]:
     """The Notion-shaped path: the four mirroring generators hand over the
     blocks they are about to send Notion, and this maps them. China builds
@@ -103,4 +112,5 @@ def build_row(
         source_text=source_text,
         source_format=source_format,
         summary=summary,
+        edition=edition,
     )

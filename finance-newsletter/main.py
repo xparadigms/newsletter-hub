@@ -45,6 +45,11 @@ KST = timezone(timedelta(hours=9))
 
 # Issue counter file (persisted via git or env)
 ISSUE_NUMBER = int(os.environ.get("ISSUE_NUMBER", "1"))
+# An extra issue for a day that already has one, requested from the site. The
+# scheduled run is edition 1 and its run_key is unchanged, so nothing about the
+# daily path moves.
+EDITION = int(os.environ.get("EDITION", "1"))
+
 
 # ── News Sources ────────────────────────────────────────────────────────────
 RSS_FEEDS = {
@@ -441,6 +446,8 @@ def generate_issue(news_items: list[dict]) -> tuple[str, str]:
         tomorrow_slot=TOMORROW_ROTATION[weekday],
         news_items=formatted,
     )
+    prompt += sources.already_covered(store.recent_issues("fintech", 3)) if EDITION > 1 else ""
+
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
@@ -750,6 +757,7 @@ def run():
         notion_blocks=all_blocks,
         source_text=issue_text,
         source_format="plain",
+        edition=EDITION,
     )
     try:
         n = audio.attach_audio(row["blocks"], "ja")

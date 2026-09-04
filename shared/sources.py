@@ -68,3 +68,37 @@ def attach(text: str, items: Iterable[dict[str, Any]], label: str = "links") -> 
         note += f", {dropped} dropped (not in the scraped material)"
     print(note)
     return text
+
+
+def already_covered(rows: list[dict[str, Any]]) -> str:
+    """A prompt block naming what the recent issues already used.
+
+    Returns "" when there is nothing to exclude, so callers can append it
+    unconditionally.
+    """
+    if not rows:
+        return ""
+    titles = [r["title"] for r in rows if r.get("title")]
+    urls: list[str] = []
+    for r in rows:
+        urls.extend(URL_RE.findall(r.get("source_text") or ""))
+
+    seen: set[str] = set()
+    unique = [u for u in urls if not (u in seen or seen.add(u))]
+
+    parts = [
+        "",
+        "--- ALREADY COVERED — do not use any of these again ---",
+        "This is an EXTRA issue for a day that already has one. Every story must "
+        "be one the issues below did not cover. Same-topic follow-ups are fine "
+        "only if the specific development is new; a rewrite of the same story is "
+        "not. If the material cannot support a full issue of genuinely new "
+        "stories, write a shorter one rather than repeating.",
+        "",
+        "Recent issue titles:",
+    ]
+    parts += [f"- {t}" for t in titles]
+    if unique:
+        parts += ["", "URLs already used:"]
+        parts += [f"- {u}" for u in unique[:60]]
+    return "\n".join(parts) + "\n"

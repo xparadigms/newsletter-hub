@@ -122,6 +122,11 @@ def scrape_techcrunch_telegram() -> list[dict]:
 
 # ── LLM Summary ─────────────────────────────────────────────────────────────
 ISSUE_NUMBER = int(os.environ.get("ISSUE_NUMBER", "1"))
+# An extra issue for a day that already has one, requested from the site. The
+# scheduled run is edition 1 and its run_key is unchanged, so nothing about the
+# daily path moves.
+EDITION = int(os.environ.get("EDITION", "1"))
+
 
 SUMMARY_PROMPT = """\
 You are a startup industry analyst. Based on the following news items from \
@@ -201,6 +206,11 @@ def generate_summary(news_items: list[dict]) -> tuple[str, str]:
                 "role": "user",
                 "content": SUMMARY_PROMPT.format(
                     today=today_str, news_items=formatted
+                )
+                + (
+                    sources.already_covered(store.recent_issues("startup", 3))
+                    if EDITION > 1
+                    else ""
                 ),
             },
         ],
@@ -684,6 +694,7 @@ def run():
         notion_blocks=all_blocks,
         source_text=trilingual_md,
         source_format="trilingual_md",
+        edition=EDITION,
     )
     stored = store.upsert_issue(row)
     if stored.get("slug"):

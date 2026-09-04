@@ -84,6 +84,30 @@ def patch_issue(run_key: str, fields: dict[str, Any]) -> None:
     resp.raise_for_status()
 
 
+def recent_issues(section: str, limit: int = 3) -> list[dict[str, Any]]:
+    """The last `limit` issues, newest first, with their source text.
+
+    Feeds the on-demand editions: an extra issue is only worth reading if it
+    covers stories the recent ones did not, and the source text carries both
+    the headlines and the 🔗 links that identify them.
+    """
+    try:
+        base, key = _config()
+        resp = http.request_with_retry(
+            "GET",
+            f"{base}/rest/v1/{TABLE}"
+            f"?section=eq.{section}&select=title,source_text"
+            f"&order=issue_date.desc,edition.desc&limit={limit}",
+            label="Supabase",
+            headers=_headers(key),
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:  # noqa: BLE001 — no exclusions is worse, not fatal
+        print(f"  ⚠ could not read recent issues (non-fatal): {e}")
+        return []
+
+
 def recent_titles(section: str, limit: int = 10) -> list[str]:
     """Titles of the last `limit` issues, newest first. Empty on any failure.
 

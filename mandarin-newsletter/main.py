@@ -27,6 +27,11 @@ ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 TIMEZONE = os.environ.get("TIMEZONE", "Asia/Seoul")
 KST = timezone(timedelta(hours=9))
 ISSUE_NUMBER = int(os.environ.get("ISSUE_NUMBER", "1"))
+# An extra issue for a day that already has one, requested from the site. The
+# scheduled run is edition 1 and its run_key is unchanged, so nothing about the
+# daily path moves.
+EDITION = int(os.environ.get("EDITION", "1"))
+
 
 MODEL = "claude-sonnet-4-6"
 MAX_TOKENS = 16000
@@ -230,6 +235,7 @@ def run() -> None:
         source_text=issue_text,
         source_format="lesson_md",
         summary=summary,
+        edition=EDITION,
     )
 
     if "--dry-run" in sys.argv:

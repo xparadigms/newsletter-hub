@@ -39,6 +39,11 @@ ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 TIMEZONE = os.environ.get("TIMEZONE", "Asia/Seoul")
 KST = timezone(timedelta(hours=9))
 ISSUE_NUMBER = int(os.environ.get("ISSUE_NUMBER", "1"))
+# An extra issue for a day that already has one, requested from the site. The
+# scheduled run is edition 1 and its run_key is unchanged, so nothing about the
+# daily path moves.
+EDITION = int(os.environ.get("EDITION", "1"))
+
 
 MODEL = "claude-sonnet-4-6"
 MAX_TOKENS = 16000
@@ -308,6 +313,11 @@ def generate_issue(items: list[dict], recent: list[str]) -> tuple[str, str]:
                 lookback=LOOKBACK_DAYS,
                 recent="\n".join(f"- {t}" for t in recent) or "(none yet)",
                 news_items=formatted,
+            )
+            + (
+                sources.already_covered(store.recent_issues("business", 3))
+                if EDITION > 1
+                else ""
             ),
         }],
     )
@@ -381,6 +391,7 @@ def run():
         notion_blocks=blocks,
         source_text=issue_text,
         source_format="plain",
+        edition=EDITION,
     )
 
     try:

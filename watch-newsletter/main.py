@@ -53,6 +53,11 @@ TIMEZONE = os.environ.get("TIMEZONE", "Asia/Seoul")
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
 KST = timezone(timedelta(hours=9))
 ISSUE_NUMBER = int(os.environ.get("ISSUE_NUMBER", "1"))
+# An extra issue for a day that already has one, requested from the site. The
+# scheduled run is edition 1 and its run_key is unchanged, so nothing about the
+# daily path moves.
+EDITION = int(os.environ.get("EDITION", "1"))
+
 
 # Watch-media RSS feeds (luxury / mechanical horology).
 RSS_FEEDS = {
@@ -550,6 +555,7 @@ def run():
         notion_blocks=all_blocks,
         source_text=trilingual_md,
         source_format="trilingual_md",
+        edition=EDITION,
     )
     stored = store.upsert_issue(row)
     if stored.get("slug"):

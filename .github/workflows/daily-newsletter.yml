@@ -6,6 +6,10 @@ on:
     - cron: "0 23 * * *"
   workflow_dispatch:
     inputs:
+      edition:
+        description: "2+ makes an extra issue for the day instead of replacing it"
+        type: string
+        default: ""
       issue_number:
         description: "Reuse a number when re-running a day (blank = next)"
         type: string
@@ -45,5 +49,6 @@ jobs:
           CALENDAR_ID: ad3a712618285ba2a011179683b92bdc10718051482df8d950ccfb95a1f0aa19@group.calendar.google.com
           NOTION_DATABASE_ID: 3535bc953df3807b83c9dc5be40b72e6
           TIMEZONE: Asia/Seoul
+          EDITION: ${{ inputs.edition || '1' }}
           ISSUE_NUMBER: ${{ inputs.issue_number || github.run_number }}
         run: python main.py

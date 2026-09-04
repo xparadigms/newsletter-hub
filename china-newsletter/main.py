@@ -26,7 +26,7 @@ from bs4 import BeautifulSoup
 # is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import audio, issue as issue_row, markers as china_blocks, store  # noqa: E402
+from shared import audio, issue as issue_row, markers as china_blocks, sources, store  # noqa: E402
 from shared.http import request_with_retry  # noqa: E402
 
 # ── Config ──────────────────────────────────────────────────────────────────
@@ -40,6 +40,11 @@ NOTION_VERSION = "2022-06-28"
 TIMEZONE = os.environ.get("TIMEZONE", "Asia/Seoul")
 KST = timezone(timedelta(hours=9))
 ISSUE_NUMBER = int(os.environ.get("ISSUE_NUMBER", "1"))
+# An extra issue for a day that already has one, requested from the site. The
+# scheduled run is edition 1 and its run_key is unchanged, so nothing about the
+# daily path moves.
+EDITION = int(os.environ.get("EDITION", "1"))
+
 
 MODEL = "claude-sonnet-4-6"
 MAX_TOKENS = 24000  # roughly twice the issue length
@@ -274,6 +279,8 @@ def generate_issue(items: list[dict]) -> str:
     prompt = ISSUE_PROMPT.format(
         date_line=now.strftime("%A, %B %d, %Y"), news_items=news
     )
+    prompt += sources.already_covered(store.recent_issues("china", 3)) if EDITION > 1 else ""
+
     # Streamed, not a plain create: at this max_tokens the SDK refuses a
     # non-streaming request outright, because the response could take longer
     # than ten minutes. A full-length issue is what needs the budget, so stream
@@ -389,6 +396,7 @@ def run():
         source_text=issue_text,
         source_format="china_md",
         summary=summary,
+        edition=EDITION,
     )
 
     print("▸ Saving to Supabase...")
