@@ -149,6 +149,12 @@ def find_targets_sections(blocks: list[dict]) -> list[Target]:
                 nxt = block_text(blocks[i])
                 if nxt.startswith("(") and has_korean_chars(nxt):
                     i += 1
+            # A callout directly under the headline is attribution, not the end
+            # of the story — Business Insight puts 語り手 and 出典 there. The
+            # loop below still stops at any later callout, which is where the
+            # next section genuinely begins.
+            while i < n and blocks[i].get("type") == "callout":
+                i += 1
             while i < n:
                 bb = blocks[i]
                 bt = bb.get("type", "")
