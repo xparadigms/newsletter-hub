@@ -1,4 +1,5 @@
 import { Fragment } from "react";
+import { isSourceLine } from "@/lib/text";
 import type { AnnotatedBlock, RubySegment } from "@/lib/text";
 import type { Block, PinyinWord } from "@/lib/types";
 
@@ -209,6 +210,13 @@ export function renderAnnotated(a: AnnotatedBlock, i: number): React.ReactNode {
       <Tag key={i} id={a.headingId}>
         {headingContent(a.block.text)}
       </Tag>
+    );
+  }
+  if (a.block.type === "paragraph" && isSourceLine(a.block.text)) {
+    return (
+      <p key={i} className="source-link">
+        {linkify(a.block.text.replace(/^\s*\u{1F517}\s*/u, ""))}
+      </p>
     );
   }
   // Structural blocks (lang null) render bare and are never filtered.

@@ -406,6 +406,26 @@ img {
   white-space: nowrap;
 }
 
+/* The verified source link under a story. Language-neutral, so it survives the
+   reading-mode filter that hides the English layer. */
+.source-link {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  color: var(--text-tertiary);
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+.source-link a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  border-bottom: 1px solid var(--border-strong);
+}
+
+.source-link a:active {
+  color: var(--accent);
+}
+
 /* On desktop the bar floats as a centred pill rather than spanning the window. */
 @media (min-width: 1024px) {
   .tabbar {

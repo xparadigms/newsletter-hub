@@ -74,8 +74,13 @@ export const viewport: Viewport = {
   // Lets the app run under the status bar and home indicator; every fixed
   // element then pays that back with env(safe-area-inset-*).
   viewportFit: "cover",
-  // Zoom stays available — user-scalable=no is an accessibility anti-pattern.
-  maximumScale: 5,
+  // Pinch-zoom is off. It is normally an accessibility anti-pattern to disable
+  // it, but this is an installed PWA with no browser chrome to zoom back out
+  // with: a stray pinch left the app panned sideways with the header and tab
+  // bar cut off and no obvious way back. Text size still follows the system
+  // setting, which is the accessibility need that actually matters here.
+  maximumScale: 1,
+  userScalable: false,
 };
 
 // Runs before first paint: applies the persisted (or system) theme and the

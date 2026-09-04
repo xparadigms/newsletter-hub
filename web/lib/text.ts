@@ -116,6 +116,11 @@ function scriptCounts(text: string) {
 // Han runs globally would stop furigana attaching across the whole archive — and
 // the unmatched-toggle fallback would then re-emit each reading as a duplicate
 // paragraph. Only the china routes pass "zh".
+/** A generator-emitted source link: "\u{1F517} https://…" on its own line. */
+export function isSourceLine(text: string): boolean {
+  return text.trimStart().startsWith("\u{1F517}");
+}
+
 export function classifyLang(text: string, hanLang: "ja" | "zh" = "ja"): Lang {
   const { hangul, kana, han, latin } = scriptCounts(text);
   // Floor of 3 keeps single quoted foreign words inside English prose "en";
@@ -326,6 +331,15 @@ export function annotateBlocks(
         kicker: false,
         headingId: slugify(block.text, out.length),
       });
+      continue;
+    }
+
+    // A source link carries no language of its own. Classified as English it
+    // inherited English's fate — hidden in the default reading mode — so every
+    // link the generators had verified was invisible to the reader. null makes
+    // it structural, like a divider, and it renders in every mode.
+    if (block.type === "paragraph" && isSourceLine(block.text)) {
+      out.push({ block, lang: null, kicker: false });
       continue;
     }
 
