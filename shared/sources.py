@@ -70,6 +70,29 @@ def attach(text: str, items: Iterable[dict[str, Any]], label: str = "links") -> 
     return text
 
 
+def _headlines(text: str) -> list[str]:
+    """Per-story headlines, however the newsletter happens to write them.
+
+    The issue-level title names one story out of four or five, so excluding on
+    titles alone let the rest through — and URL matching misses a story reached
+    from a different outlet. These are the shapes the generators actually emit:
+    【…】 for the Japanese newsletters, ### for startup's Markdown, and a
+    numbered line for a Rails deep read.
+    """
+    found: list[str] = []
+    for raw in text.split("\n"):
+        line = raw.strip()
+        if not line:
+            continue
+        if line.startswith("【") and "】" in line:
+            found.append(line[1 : line.index("】")])
+        elif line.startswith("###"):
+            found.append(line.lstrip("#").strip().strip("【】"))
+        elif re.match(r"^\d+\.\s+\S", line) and len(line) < 140:
+            found.append(line.split(". ", 1)[1])
+    return found
+
+
 def already_covered(rows: list[dict[str, Any]]) -> str:
     """A prompt block naming what the recent issues already used.
 
@@ -80,8 +103,11 @@ def already_covered(rows: list[dict[str, Any]]) -> str:
         return ""
     titles = [r["title"] for r in rows if r.get("title")]
     urls: list[str] = []
+    stories: list[str] = []
     for r in rows:
-        urls.extend(URL_RE.findall(r.get("source_text") or ""))
+        text = r.get("source_text") or ""
+        urls.extend(URL_RE.findall(text))
+        stories.extend(_headlines(text))
 
     seen: set[str] = set()
     unique = [u for u in urls if not (u in seen or seen.add(u))]
@@ -90,14 +116,20 @@ def already_covered(rows: list[dict[str, Any]]) -> str:
         "",
         "--- ALREADY COVERED — do not use any of these again ---",
         "This is an EXTRA issue for a day that already has one. Every story must "
-        "be one the issues below did not cover. Same-topic follow-ups are fine "
-        "only if the specific development is new; a rewrite of the same story is "
-        "not. If the material cannot support a full issue of genuinely new "
-        "stories, write a shorter one rather than repeating.",
+        "be one the issues below did not cover. Match on the EVENT, not on the "
+        "wording or the URL: the same rainfall, the same earnings release or the "
+        "same product launch is a repeat even when it is phrased differently or "
+        "reached through a different outlet. Same-topic follow-ups are fine only "
+        "if the specific development is new. If the material cannot support a "
+        "full issue of genuinely new stories, write a shorter one rather than "
+        "repeating.",
         "",
         "Recent issue titles:",
     ]
     parts += [f"- {t}" for t in titles]
+    if stories:
+        parts += ["", "Stories already covered — skip the EVENT, not just the wording:"]
+        parts += [f"- {t}" for t in stories[:60]]
     if unique:
         parts += ["", "URLs already used:"]
         parts += [f"- {u}" for u in unique[:60]]
