@@ -58,6 +58,10 @@ GOOGLE_NEWS_QUERIES = [
     '"Sam Altman"',
     '"Brian Chesky"',
     '"Satya Nadella"',
+    # Finance and fintech, so the required finance insight has material.
+    '"Brian Armstrong"',
+    '"Max Levchin"',
+    '"Jamie Dimon"',
 ]
 
 # Where the thinking actually lives: long-form interviews and essays, where
@@ -72,6 +76,9 @@ RSS_FEEDS = {
     "Invest Like the Best": "https://feeds.megaphone.fm/investlikethebest",
     "My First Million": "https://feeds.megaphone.fm/HS2300184645",
     "TechCrunch": "https://techcrunch.com/feed/",
+    # Fintech desk. Headlines rather than long-form, but it is the only feed
+    # here that is reliably fresh on payments, banking and capital markets.
+    "Finextra": "https://www.finextra.com/rss/headlines.aspx",
 }
 
 HEADERS = {
@@ -234,7 +241,13 @@ two.]
 📝 한국어 번역:
 [full Korean translation, sentence for sentence]
 
-THREE of the four come from the material below. The FOURTH is a CLASSIC: an \
+THREE of the four come from the material below, and ONE OF THOSE THREE must be \
+about finance — fintech, payments, banking, capital markets, investing or \
+financial infrastructure. It still has to be an insight rather than an \
+announcement: how someone in finance decides, prices, underwrites or builds \
+distribution, not that a company raised a round.
+
+The FOURTH is a CLASSIC: an \
 idea from the past that is not in today's material at all — Bezos on \
 minimising regret, Buffett on the circle of competence, Grove on strategic \
 inflection points, Christensen on disruption, Drucker on decisions. Use only \
