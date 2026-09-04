@@ -25,7 +25,7 @@ from googleapiclient.discovery import build
 # is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import audio, furigana, issue as issue_row, plaintext, store  # noqa: E402
+from shared import audio, furigana, issue as issue_row, plaintext, sources, store  # noqa: E402
 from shared.http import request_with_retry  # noqa: E402
 
 # ── Config ──────────────────────────────────────────────────────────────────
@@ -267,6 +267,11 @@ each story exactly like this:
 ハル: [the part that makes it matter]
 하루: [same line in Korean]
 왜 중요한가: [1-2 Korean sentences on why this matters to the reader]
+🔗 [the URL of the source item you used, copied exactly from the material]
+
+Copy the URL character for character from the item ハル actually cited. Never \
+shorten it, never reconstruct one from the outlet's name, and never invent \
+one. A link that was not in the material is removed before publishing.
 
 Six to eight dialogue lines per story — three or four turns each. Cite the \
 outlet and date inside ハル's line, like （NHK, 2026-09-02）.
@@ -472,6 +477,7 @@ def run():
 
     print(f"▸ Generating Japan Daily Talk via Claude ({len(items_for_llm)} items)...")
     main_title, issue_text = generate_issue(items_for_llm)
+    issue_text = sources.attach(issue_text, items_for_llm)
     print(f"  Title: [Japan Daily Talk #{ISSUE_NUMBER}] ({main_title})")
 
     if "--dry-run" in sys.argv:

@@ -24,7 +24,7 @@ from googleapiclient.discovery import build
 # is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import audio, furigana, issue as issue_row, store  # noqa: E402
+from shared import audio, furigana, issue as issue_row, sources, store  # noqa: E402
 from shared.http import request_with_retry  # noqa: E402
 
 # ── Config ──────────────────────────────────────────────────────────────────
@@ -333,6 +333,8 @@ Open question. [English, 1 sentence]
 📝 한국어 번역:
 [Korean translation. Then add: 왜 중요한가: 1-2 sentences if relevant.]
 
+🔗 [the URL of the source item you used, copied exactly from the material]
+
 SECTION 2 — THE SWEEP:
 7-9 headlines grouped by region:
 Americas / Asia / Europe / Infra & markets
@@ -353,7 +355,14 @@ the next headline:
 📝 한국어 번역:
 [Korean translation of the headline + both bullet points above]
 
+🔗 [the URL of the source item you used, copied exactly from the material]
+
 Then move to the next headline and repeat the same EN → JP → KR pattern.
+
+Copy every URL character for character from the item you actually used. Never \
+shorten it, never tidy it, never reconstruct one from the outlet's name, and \
+never invent one. A link that was not in the material is removed before the \
+issue is published, so a guessed URL only loses the story its link.
 
 SECTION 3 — FOOD FOR THOUGHT:
 Today is {weekday}. Today's rotation: {rotation_slot}.
@@ -708,6 +717,7 @@ def run():
 
     print(f"▸ Generating Rails issue via Claude ({len(items_for_llm)} items)...")
     main_title, issue_text = generate_issue(items_for_llm)
+    issue_text = sources.attach(issue_text, items_for_llm)
     print(f"  Title: [Finance Infra #{ISSUE_NUMBER}] ({main_title})")
 
     # Build the blocks once. They feed the furigana pass, Supabase and Notion,

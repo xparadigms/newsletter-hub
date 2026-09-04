@@ -33,7 +33,7 @@ import feedparser
 # is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import audio, furigana, issue as issue_row, plaintext, store  # noqa: E402
+from shared import audio, furigana, issue as issue_row, plaintext, sources, store  # noqa: E402
 
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 TIMEZONE = os.environ.get("TIMEZONE", "Asia/Seoul")
@@ -233,6 +233,11 @@ produced it. 2-3 sentences, 180-210 Japanese characters. Count them.]
 📝 한국어 번역:
 [full Korean translation, sentence for sentence]
 
+[After the 出典 line, and ONLY for the three insights taken from the material \
+below, add a line: 🔗 <the URL of the item you used, copied exactly>. The \
+classic has no link — it is not in the material. Copy the URL character for \
+character; a link that was not in the material is removed before publishing.]
+
 [Japanese: どう使うか — how someone running a company would apply this in the \
 week ahead. Concrete, but general: address the reader as あなた or write it \
 impersonally. Never name a company, and never assume an industry. 2 sentences, \
@@ -346,6 +351,7 @@ def run():
 
     print(f"▸ Generating via Claude ({len(all_items[:60])} items)...")
     main_title, issue_text = generate_issue(all_items[:60], recent)
+    issue_text = sources.attach(issue_text, all_items[:60])
     print(f"  Title: [Business Insight #{ISSUE_NUMBER}] ({main_title})")
 
     if "--dry-run" in sys.argv:

@@ -96,10 +96,31 @@ export function headingContent(text: string): React.ReactNode {
   );
 }
 
+// A source link arrives as plain text — neither the plain-text issues nor the
+// trilingual Markdown carries link markup, and Notion rich-text links would not
+// survive the round trip through blocks anyway. So the renderer is what makes a
+// URL clickable. The generators verify every link against what they actually
+// scraped (shared/sources.py), so what reaches here has been checked.
+const URL_RE = /(https?:\/\/[^\s<>"'\u3001\u3002\u300d\uff09\]]+)/g;
+
+export function linkify(text: string): React.ReactNode {
+  if (!text.includes("http")) return text;
+  const parts = text.split(URL_RE);
+  return parts.map((part, i) =>
+    i % 2 === 1 ? (
+      <a key={i} href={part} target="_blank" rel="noopener noreferrer">
+        {part.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
+      </a>
+    ) : (
+      part
+    )
+  );
+}
+
 export function renderBlock(block: Block, i: number): React.ReactNode {
   switch (block.type) {
     case "paragraph":
-      return <p key={i}>{block.text}</p>;
+      return <p key={i}>{linkify(block.text)}</p>;
     case "heading": {
       const Tag = (`h${block.level + 1}`) as "h2" | "h3" | "h4";
       return <Tag key={i}>{headingContent(block.text)}</Tag>;
@@ -109,7 +130,7 @@ export function renderBlock(block: Block, i: number): React.ReactNode {
       return (
         <Tag key={i}>
           {block.items.map((item, j) => (
-            <li key={j}>{item}</li>
+            <li key={j}>{linkify(item)}</li>
           ))}
         </Tag>
       );

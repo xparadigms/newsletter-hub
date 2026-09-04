@@ -29,6 +29,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 from shared import issue as issue_row, store  # noqa: E402
 from shared.http import request_with_retry  # noqa: E402
+from shared import sources  # noqa: E402
 from shared.trilingual import md_to_blocks as trilingual_to_blocks  # noqa: E402
 
 # ── Config ──────────────────────────────────────────────────────────────────
@@ -259,6 +260,12 @@ Then for each sub-section (▸ What happened / ▸ Industry status / ▸ Why thi
 
 After each story add:
 왜 중요한가: [1-2 sentences in Korean on why this matters for startup/tech/investor readers]
+🔗 [the URL of the source item you used, copied exactly from the material]
+
+Copy the URL character for character from the item you actually used. Never \
+shorten it, never tidy it, never reconstruct one from the outlet's name, and \
+never invent one. A link that was not in the material is removed before the \
+issue is published, so a guessed URL only loses the story its link.
 
 Then add --- divider between stories.
 
@@ -638,6 +645,7 @@ def run():
     print("▸ Converting to trilingual (EN/JP/KR)...")
     try:
         trilingual_md = generate_trilingual(summary)
+        trilingual_md = sources.attach(trilingual_md, news_items)
         print("  ✓ Trilingual conversion complete.")
     except Exception as e:
         print(f"  ⚠ Trilingual conversion failed (non-fatal): {e}")
