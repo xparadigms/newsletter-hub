@@ -214,32 +214,23 @@ SECTION {{N}} · 今日のインサイト{{N}} (INSIGHT {{N}})
 【Japanese headline naming the idea】(Korean translation of the headline)
 📖 語り手: [Name]（[role, company]）· 出典: [where they said it, with the date]
 
-[Japanese: what they actually said or argued. 3-4 sentences.]
+[Japanese: what they actually said or argued. 2-3 sentences, 180-210 \
+Japanese characters. Count them.]
 📝 한국어 번역:
 [full Korean translation, sentence for sentence]
 
 [Japanese: なぜそう言えるのか — the reasoning behind it, or the situation that \
-produced it. 3-4 sentences.]
+produced it. 2-3 sentences, 180-210 Japanese characters. Count them.]
 📝 한국어 번역:
 [full Korean translation, sentence for sentence]
 
 [Japanese: 自分ならどう使うか — how a founder running a small research firm in \
-Seoul would apply this on Monday. Concrete. 2-3 sentences.]
+Seoul would apply this on Monday. Concrete. 1-2 sentences, 150-175 Japanese \
+characters.]
 📝 한국어 번역:
 [full Korean translation, sentence for sentence]
 
-After the three, the closing section:
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 4 · 今日のビジネス表現 (BUSINESS EXPRESSION OF THE DAY)
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-📖 今日の表現: [a Japanese business expression that appeared above]
-読み方: [reading in hiragana]
-意味: [meaning, in Korean]
-例文:
-[one Japanese example sentence using it]
-→ [that sentence in Korean]
-補足 (보충): [1-2 Korean sentences on when it is used]
+After the three, close the issue:
 
 CLOSING:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -248,14 +239,15 @@ Issue #{issue_number} · 明日もまた3つ。
 [the same teaser in Korean]
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-LENGTH: 1,400-1,900 words across both languages. The Korean is a full \
-translation and is never trimmed to hit this.
+LENGTH: 900-1,300 words across both languages. The per-paragraph character \
+budgets above are how you get there. The Korean is a full translation and is \
+never trimmed to hit this — shorten the Japanese instead.
 
 ⚠️ FORMATTING: this displays in Notion as PLAIN TEXT.
 - No Markdown at all (no #, ##, **, *, ```)
 - ━━━━━━━━━━━━━━━━━━━━ as dividers, before and after each SECTION line
 - 【】for the insight headline
-- 📖 only for the 語り手 line and the expression of the day
+- 📖 only for the 語り手 line
 - 📝 한국어 번역: before every Korean paragraph
 - No other emoji
 
