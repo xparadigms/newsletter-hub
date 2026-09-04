@@ -22,8 +22,16 @@ export const SECTIONS: Section[] = [
       process.env.NOTION_DB_STARTUP ?? "3555bc953df380e2ae70df4401216aee",
   },
   {
-    key: "fintech",
+    key: "business",
     number: "02",
+    label: "Business",
+    title: "Business Insight",
+    description:
+      "Four pieces of business thinking a day from named founders, investors and operators \u2014 in Japanese, with a full Korean translation.",
+  },
+  {
+    key: "fintech",
+    number: "03",
     label: "Fintech",
     title: "Finance Infra",
     description:
@@ -33,7 +41,7 @@ export const SECTIONS: Section[] = [
   },
   {
     key: "japan",
-    number: "03",
+    number: "04",
     label: "Japan",
     title: "Japan Daily Talk",
     description:
@@ -42,7 +50,7 @@ export const SECTIONS: Section[] = [
   },
   {
     key: "watch",
-    number: "04",
+    number: "05",
     label: "Watch",
     title: "Watch Weekly",
     description:
@@ -51,7 +59,7 @@ export const SECTIONS: Section[] = [
   },
   {
     key: "china",
-    number: "05",
+    number: "06",
     label: "China",
     title: "China Daily",
     description:
@@ -61,20 +69,12 @@ export const SECTIONS: Section[] = [
   },
   {
     key: "mandarin",
-    number: "06",
+    number: "07",
     label: "Mandarin",
     title: "Mandarin Basics",
     description:
       "A daily Chinese lesson from beginner to intermediate — one grammar point, new words in context, and a short dialogue, all with pinyin and Korean.",
     sourceLang: "zh",
-  },
-  {
-    key: "insight",
-    number: "07",
-    label: "Insight",
-    title: "Business Insight",
-    description:
-      "Three pieces of business thinking a day from named founders, investors and operators \u2014 in Japanese, with a full Korean translation.",
   },
 ];
 
@@ -86,7 +86,7 @@ const SECTION_KEYS = SECTIONS.map((s) => s.key) as [
   "watch",
   "china",
   "mandarin",
-  "insight",
+  "business",
 ];
 const _sectionsCover: Covers<typeof SECTION_KEYS> = true;
 void _sectionsCover;

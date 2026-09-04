@@ -275,18 +275,7 @@ TECHNOLOGY TALK covers AI, semiconductors, robotics, consumer gadgets, \
 platforms, telecoms and the Japanese companies behind them. It is a real \
 section, not an afterthought — give it the same depth as politics.
 
-Then the last section:
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-SECTION 5 · 今日の日本語表現 (JAPANESE EXPRESSION OF THE DAY)
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-📖 今日の表現: [expression, taken from a word that actually appeared above]
-読み方: [reading in hiragana]
-意味: [meaning, in Korean]
-例文:
-[one Japanese example sentence]
-→ [that sentence in Korean]
-補足 (보충): [1-2 Korean sentences on nuance or when to use it]
+Then close the issue:
 
 CLOSING:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━

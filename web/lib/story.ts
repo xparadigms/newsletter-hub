@@ -133,6 +133,13 @@ export function buildDeck(
 
     // Issues separate their translation units with dividers, so those are the
     // natural card boundaries.
+    //
+    // The Sweep has none: under one region heading it runs headline, bullets,
+    // Japanese, Korean, then straight into the next headline. Everything landed
+    // in a single chunk and was paired by position ACROSS stories, so a card
+    // showed one story's Japanese beside another's Korean. An English paragraph
+    // arriving after Korean can only be the next unit starting, so it opens a
+    // chunk too.
     const chunks: AnnotatedBlock[][] = [[]];
     for (const a of g.blocks) {
       if (a.block.type === "divider") {
@@ -140,7 +147,20 @@ export function buildDeck(
         continue;
       }
       if (isLabelCallout(a)) continue; // the language is self-evident on a card
-      chunks[chunks.length - 1].push(a);
+      const chunk = chunks[chunks.length - 1];
+      // Paragraph or list: the Sweep leads each unit with an English headline
+      // paragraph, while startup's "Other Notable Headlines" leads with an
+      // English list. Both are the same signal.
+      const isEnglishLead =
+        (a.block.type === "paragraph" || a.block.type === "list") &&
+        a.lang !== "ja" &&
+        a.lang !== "zh" &&
+        a.lang !== "ko";
+      if (isEnglishLead && chunk.some((b) => b.lang === "ko")) {
+        chunks.push([a]);
+        continue;
+      }
+      chunk.push(a);
     }
 
     for (const chunk of chunks) {
@@ -154,6 +174,23 @@ export function buildDeck(
       const en = chunk.filter(
         (a) => a.lang !== "ja" && a.lang !== "zh" && a.lang !== "ko"
       );
+
+      // A bulleted unit is a headline plus the bullets belonging to it, and
+      // notion_blocks_to_web has already merged each run of bullets into ONE
+      // list block. The counts per language therefore do not line up — three
+      // Japanese blocks against two Korean ones — and pairing split the
+      // headline away from its own bullets, dropping whichever had no
+      // counterpart. Keep the unit whole.
+      if (chunk.some((a) => a.block.type === "list")) {
+        cards.push({
+          kind: "content",
+          heading: g.heading,
+          subtitle: g.subtitle,
+          kicker: g.kicker,
+          blocks: [...chunk],
+        });
+        continue;
+      }
 
       // China writes one Korean read-through per story rather than one per
       // sentence, so there is nothing to pair positionally: pairing put the

@@ -150,11 +150,13 @@ def dedupe(items: list[dict]) -> list[dict]:
 
 # ── LLM ─────────────────────────────────────────────────────────────────────
 SYSTEM_PROMPT = """\
-You are the writer of "Business Insight", a daily Japanese newsletter for \
-Heechang — co-founder/CSO at Four Pillars, a Seoul-based institutional crypto \
-research firm. He runs a company, and he reads Japanese at roughly N3-N2.
+You are the writer of "Business Insight", a daily Japanese newsletter for a \
+reader who runs a company and reads Japanese at roughly N3-N2.
 
-Each issue explains three pieces of business thinking from named global \
+Never name his company or write about his industry specifically. The insights \
+are general business thinking, useful to anyone running or building something.
+
+Each issue explains four pieces of business thinking from named global \
 operators: founders, investors, VCs, executives. Jeff Bezos, Marc Andreessen, \
 Garry Tan, Sam Altman, Brian Chesky, Sarah Guo — whoever actually said \
 something worth repeating this week.
@@ -163,7 +165,7 @@ WHAT AN INSIGHT IS: a way of deciding, judging or building that transfers. \
 "Amazon's revenue grew 12%" is news, not an insight. "Bezos decides by asking \
 which choice he would regret least at 80" is an insight — it names a mechanism \
 someone else can use. If a story gives you only a number or an announcement, \
-skip it. Three real insights beat five summaries.
+skip it. Four real insights beat six summaries.
 
 ATTRIBUTION IS NOT OPTIONAL. Every insight names the person, their role, and \
 where they said it. Never attribute an idea to someone the source does not \
@@ -205,7 +207,7 @@ BUSINESS INSIGHT — Issue #{issue_number}
 今日の3つの視点: [2-3 Japanese sentences previewing the three insights]
 [the same preview in Korean, starting with 오늘의 세 가지 관점:]
 
-Then THREE insights, each from a DIFFERENT person. Format each exactly:
+Then FOUR insights, each from a DIFFERENT person. Format each exactly:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 SECTION {{N}} · 今日のインサイト{{N}} (INSIGHT {{N}})
@@ -224,13 +226,23 @@ produced it. 2-3 sentences, 180-210 Japanese characters. Count them.]
 📝 한국어 번역:
 [full Korean translation, sentence for sentence]
 
-[Japanese: 自分ならどう使うか — how a founder running a small research firm in \
-Seoul would apply this on Monday. Concrete. 2 sentences, 150-175 Japanese \
-characters — one or two sentences cannot carry that budget, so write two.]
+[Japanese: どう使うか — how someone running a company would apply this in the \
+week ahead. Concrete, but general: address the reader as あなた or write it \
+impersonally. Never name a company, and never assume an industry. 2 sentences, \
+150-175 Japanese characters — one sentence cannot carry that budget, so write \
+two.]
 📝 한국어 번역:
 [full Korean translation, sentence for sentence]
 
-After the three, close the issue:
+THREE of the four come from the material below. The FOURTH is a CLASSIC: an \
+idea from the past that is not in today's material at all — Bezos on \
+minimising regret, Buffett on the circle of competence, Grove on strategic \
+inflection points, Christensen on disruption, Drucker on decisions. Use only \
+ideas that are genuinely well documented and attributed correctly; if you are \
+not certain someone said it, choose a different one. Put it anywhere among the \
+four, and mark its 出典 with the original book, talk or letter and its year.
+
+After the four, close the issue:
 
 CLOSING:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -315,7 +327,7 @@ def run():
         sys.exit(1)
     print(f"  {len(all_items)} items after dedupe.")
 
-    recent = store.recent_titles("insight", limit=10) if store.configured() else []
+    recent = store.recent_titles("business", limit=10) if store.configured() else []
     if recent:
         print(f"  Excluding {len(recent)} recent issue(s).")
 
@@ -344,7 +356,7 @@ def run():
         print(f"  ⚠ Furigana failed (non-fatal): {e}")
 
     row = issue_row.build_row(
-        section="insight",
+        section="business",
         issue_date=now_kst.strftime("%Y-%m-%d"),
         raw_title=_issue_title(main_title),
         notion_blocks=blocks,
@@ -361,8 +373,8 @@ def run():
     print("▸ Saving to Supabase...")
     stored = store.upsert_issue(row)
     if stored.get("slug"):
-        print(f"✓ Stored: insight/{stored['slug']}")
-        store.ping_revalidate("insight", stored["slug"])
+        print(f"✓ Stored: business/{stored['slug']}")
+        store.ping_revalidate("business", stored["slug"])
 
     print("\n" + "=" * 60)
     print(issue_text)

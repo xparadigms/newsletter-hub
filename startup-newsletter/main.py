@@ -273,10 +273,17 @@ FURIGANA RULES:
 FOR BULLET-LIST SECTIONS ("Other Notable Headlines" etc.):
 Each bullet as:
 - **English headline**
-Japanese（with inline furigana）
+Japanese — written PLAINLY, with no readings in parentheses
+<details>
+<summary>ふりがな（ひらがな）</summary>
+\t[the same Japanese line with the reading after each kanji word]
+</details>
 Korean
 
-No toggle needed for single-line headlines.
+NEVER put readings inline in the Japanese itself. 身分証明書（みぶんしょうめいしょ）\
+確認（かくにん）… is unreadable at a glance, and the toggle is the reading aid \
+everywhere else in this newsletter. One toggle per headline, so each card \
+carries its own.
 
 CLOSING SECTION — add at the very end:
 ## 今週の表現 / 이번 주 표현

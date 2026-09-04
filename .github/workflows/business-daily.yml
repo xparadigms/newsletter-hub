@@ -25,7 +25,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: insight-newsletter
+        working-directory: business-newsletter
 
     steps:
       - name: Checkout

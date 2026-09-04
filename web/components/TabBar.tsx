@@ -28,7 +28,7 @@ const GLYPHS: Record<SectionKey | "home", React.ReactNode> = {
   // An open book: this one is a lesson, not a news desk.
   mandarin: <path d="M12 6.5v13M12 6.5C10.5 5 8 4.5 4 4.8v12.6c4-.3 6.5.2 8 1.6M12 6.5c1.5-1.5 4-2 8-1.7v12.6c-4-.3-6.5.2-8 1.6" />,
   // A lamp: this section carries ideas rather than a day's events.
-  insight: <path d="M9.5 18.5h5M10 21h4M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3Z" />,
+  business: <path d="M9.5 18.5h5M10 21h4M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3Z" />,
 };
 
 function Glyph({ name, active }: { name: SectionKey | "home"; active: boolean }) {

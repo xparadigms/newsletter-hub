@@ -5,7 +5,7 @@ export type SectionKey =
   | "watch"
   | "china"
   | "mandarin"
-  | "insight";
+  | "business";
 
 // Compile-time proof that a hand-maintained list covers every section. Several
 // of them are ordinary arrays that would happily compile with one missing —
