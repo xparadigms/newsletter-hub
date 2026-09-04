@@ -68,6 +68,14 @@ export const SECTIONS: Section[] = [
       "A daily Chinese lesson from beginner to intermediate — one grammar point, new words in context, and a short dialogue, all with pinyin and Korean.",
     sourceLang: "zh",
   },
+  {
+    key: "insight",
+    number: "07",
+    label: "Insight",
+    title: "Business Insight",
+    description:
+      "Three pieces of business thinking a day from named founders, investors and operators \u2014 in Japanese, with a full Korean translation.",
+  },
 ];
 
 // Fails the build, naming the offender, if a section is missing from SECTIONS.
@@ -78,6 +86,7 @@ const SECTION_KEYS = SECTIONS.map((s) => s.key) as [
   "watch",
   "china",
   "mandarin",
+  "insight",
 ];
 const _sectionsCover: Covers<typeof SECTION_KEYS> = true;
 void _sectionsCover;

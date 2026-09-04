@@ -6,7 +6,7 @@ import type { Covers, Post, SectionKey } from "./types";
 // compiles fine and that section silently disappears from the home page — while
 // still appearing in its own index, in search and in the sitemap. The guard
 // below turns that into a build failure.
-const ORDER = ["fintech", "startup", "japan", "china", "mandarin", "watch"] as const;
+const ORDER = ["fintech", "startup", "insight", "japan", "china", "mandarin", "watch"] as const;
 const _orderCovers: Covers<typeof ORDER> = true;
 void _orderCovers;
 

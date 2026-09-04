@@ -25,7 +25,7 @@ from googleapiclient.discovery import build
 # is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import audio, furigana, issue as issue_row, store  # noqa: E402
+from shared import audio, furigana, issue as issue_row, plaintext, store  # noqa: E402
 from shared.http import request_with_retry  # noqa: E402
 
 # ── Config ──────────────────────────────────────────────────────────────────
@@ -416,87 +416,6 @@ NOTION_API_URL = "https://api.notion.com/v1/pages"
 NOTION_VERSION = "2022-06-28"
 
 # Only exact section header lines should become H2 — not partial matches
-_SECTION_HEADER_EXACT = [
-    "SECTION 1",
-    "SECTION 2",
-    "SECTION 3",
-    "SECTION 4",
-    "SECTION 5",
-    "JAPAN CRYPTO & REGULATION WATCH",
-    "ARCHITECTURE & URBAN DESIGN",
-    "TOKYO FOOD & FINDS",
-    "THIS WEEK'S BUZZ",
-    "JAPANESE EXPRESSION OF THE WEEK",
-]
-
-
-def _rich_text(content: str) -> dict:
-    return {"type": "text", "text": {"content": content[:2000]}}
-
-
-def _is_section_header(line: str) -> bool:
-    """Only match lines that ARE section headers, not body text containing those words."""
-    stripped = line.strip()
-    if not stripped:
-        return False
-    # Must start with SECTION or be a standalone header line (short, ALL CAPS or JP header)
-    upper = stripped.upper()
-    if upper.startswith("SECTION "):
-        return True
-    # Match exact standalone header lines only (not body text that happens to contain keywords)
-    return any(upper == h or stripped == h for h in _SECTION_HEADER_EXACT)
-
-
-def _is_divider(line: str) -> bool:
-    return "━" in line and line.strip().count("━") >= 5
-
-
-def _text_to_notion_blocks(text: str) -> list[dict]:
-    blocks = []
-    for line in text.split("\n"):
-        stripped = line.strip()
-        if not stripped:
-            continue
-        if _is_divider(stripped):
-            blocks.append({"object": "block", "type": "divider", "divider": {}})
-            continue
-        if _is_section_header(stripped):
-            blocks.append({
-                "object": "block",
-                "type": "heading_2",
-                "heading_2": {"rich_text": [_rich_text(stripped)], "is_toggleable": False},
-            })
-            continue
-        # Only 【見出し】 lines that are actual story headlines should be H3
-        # They must start with 【 and be short enough to be a headline (< 80 chars)
-        if stripped.startswith("【") and "】" in stripped and len(stripped) < 120:
-            blocks.append({
-                "object": "block",
-                "type": "heading_3",
-                "heading_3": {"rich_text": [_rich_text(stripped)], "is_toggleable": False},
-            })
-            continue
-        # 📝 marker line — skip (Korean text follows as a plain paragraph)
-        if stripped in ("📝 한국어 번역:", "📝 한국어 번역", "📝 한국어번역:", "📝 한국어번역"):
-            continue
-        if stripped.startswith("📖"):
-            blocks.append({
-                "object": "block",
-                "type": "callout",
-                "callout": {
-                    "rich_text": [_rich_text(stripped[1:].strip())],
-                    "icon": {"emoji": "📖"},
-                },
-            })
-            continue
-        blocks.append({
-            "object": "block",
-            "type": "paragraph",
-            "paragraph": {"rich_text": [_rich_text(stripped)]},
-        })
-    return blocks
-
-
 def create_notion_page(
     all_blocks: list[dict], title: str, date_str: str
 ) -> tuple[str, str]:
@@ -575,7 +494,7 @@ def run():
 
     # Build the blocks once. They feed the furigana pass, Supabase and Notion,
     # so the three can never disagree about what the issue contains.
-    all_blocks = _text_to_notion_blocks(issue_text)
+    all_blocks = plaintext.to_notion_blocks(issue_text)
     try:
         all_blocks = furigana.augment(
             all_blocks,

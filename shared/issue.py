@@ -38,7 +38,7 @@ def parse_title(raw: str) -> tuple[str, str | None, int | None]:
 # Mirrors the database CHECK. Without it a typo costs the whole run: the write
 # is the last step, so it fails after both Claude calls have been paid for.
 SECTIONS = frozenset(
-    {"startup", "fintech", "japan", "watch", "china", "mandarin"}
+    {"startup", "fintech", "japan", "watch", "china", "mandarin", "insight"}
 )
 
 

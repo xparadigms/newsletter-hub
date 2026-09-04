@@ -84,6 +84,30 @@ def patch_issue(run_key: str, fields: dict[str, Any]) -> None:
     resp.raise_for_status()
 
 
+def recent_titles(section: str, limit: int = 10) -> list[str]:
+    """Titles of the last `limit` issues, newest first. Empty on any failure.
+
+    Insight sources are podcasts and essays, which publish weekly, so the same
+    episode stays inside the lookback window for days. Handing the model what it
+    already covered is what stops it writing up the same interview twice — the
+    failure that produced four identical startup issues in August.
+    """
+    try:
+        base, key = _config()
+        resp = http.request_with_retry(
+            "GET",
+            f"{base}/rest/v1/{TABLE}"
+            f"?section=eq.{section}&select=title&order=issue_date.desc&limit={limit}",
+            label="Supabase",
+            headers=_headers(key),
+        )
+        resp.raise_for_status()
+        return [r["title"] for r in resp.json() if r.get("title")]
+    except Exception as e:  # noqa: BLE001 — a missing exclusion list is not fatal
+        print(f"  ⚠ could not read recent titles (non-fatal): {e}")
+        return []
+
+
 def ping_revalidate(section: str, slug: str) -> None:
     """Ask the site to drop its cached list and body for one issue.
 
