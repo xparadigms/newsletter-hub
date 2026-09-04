@@ -4,7 +4,12 @@ on:
   schedule:
     # Runs at 23:00 UTC = 08:00 KST every day
     - cron: "0 23 * * *"
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Reuse a number when re-running a day (blank = next)"
+        type: string
+        default: ""
 
 jobs:
   generate-issue:
@@ -40,5 +45,5 @@ jobs:
           CALENDAR_ID: ad3a712618285ba2a011179683b92bdc10718051482df8d950ccfb95a1f0aa19@group.calendar.google.com
           NOTION_DATABASE_ID: 3535bc953df3807b83c9dc5be40b72e6
           TIMEZONE: Asia/Seoul
-          ISSUE_NUMBER: ${{ github.run_number }}
+          ISSUE_NUMBER: ${{ inputs.issue_number || github.run_number }}
         run: python main.py

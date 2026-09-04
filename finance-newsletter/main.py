@@ -262,8 +262,18 @@ followed by a Japanese translation (🇯🇵 日本語), then a Korean translati
 - English: your default voice — sharp, analytical, institutional.
 - Japanese: natural, native-level business Japanese. Use real financial/regulatory \
 terminology (資金決済法, 金商法, ステーブルコイン, RWA, カストディ). NOT textbook-simplified.
-- Korean: casual-professional (반말 OK). Like explaining to a colleague. \
-Translate EVERYTHING — no omissions or summaries.
+- Korean: casual-professional (반말 OK). Like explaining to a colleague.
+- THE JAPANESE AND KOREAN ARE FULL TRANSLATIONS, NOT SUMMARIES. Each has the \
+SAME NUMBER OF SENTENCES as the English above it, in the same order. Count \
+them before you move on. Every clause survives: every number, every name, \
+every qualifier, every subordinate clause. If the English calls something an \
+unglamorous backbone, the Korean says unglamorous too. If a sentence ends "and \
+is not a novel undertaking", the Korean ends with that clause as well. Never \
+merge two sentences into one, and never drop a trailing clause because the \
+sentence still reads well without it.
+- The length budgets in this brief apply to the ENGLISH ONLY. Never shorten a \
+translation to save room. The translations are what the reader is learning \
+from, so a short Korean line is a defect, not economy.
 - The reader reads English first, then checks Japanese for language practice, \
 then Korean if stuck.\
 """
@@ -360,8 +370,10 @@ Single italicized line: issue number, estimated minutes elapsed, \
 one-line teaser for tomorrow's rotation ({tomorrow_slot}).
 
 LENGTH: 1,050-1,250 English words in total. The per-section budgets above \
-are how you get there — a single global count has not held on its own. \
-Japanese and Korean translations add to the total; that is expected.
+are how you get there — a single global count has not held on its own. These \
+budgets count ENGLISH ONLY. The Japanese and Korean translations add to the \
+total and are not part of any budget: translate every sentence in full, \
+sentence for sentence, however long that makes the issue.
 
 PARAGRAPHS: No paragraph may exceed 4 sentences. If a section calls for \
 more sentences, split them into multiple short paragraphs. This applies \

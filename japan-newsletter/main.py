@@ -208,6 +208,13 @@ Korean line. Never group the Korean, never summarise it, never write a block \
 of Japanese and then a block of Korean. One Japanese line, then that same line \
 in Korean, then the next Japanese line.
 
+The Korean line is a FULL translation of the Japanese line above it — the same \
+sentences in the same order, with every number, name, date and source citation \
+carried across, and every qualifier kept. Never shorten it, never merge two \
+sentences into one, and never drop a trailing clause because the line already \
+reads well without it. A Korean line shorter than the Japanese it translates \
+is a defect.
+
 Japanese: natural, current, spoken register. Real vocabulary from the news, but \
 this is a conversation — no 資料調 stiffness.
 Korean: casual-professional (반말 OK), the way you would explain it to a friend.

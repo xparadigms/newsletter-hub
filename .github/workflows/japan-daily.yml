@@ -16,6 +16,10 @@ on:
         description: "Print the issue and publish nothing"
         type: boolean
         default: false
+      issue_number:
+        description: "Reuse a number when re-running a day (blank = next)"
+        type: string
+        default: ""
 
 jobs:
   generate-issue:
@@ -55,4 +59,6 @@ jobs:
         run: |
           ARGS=""
           if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="--dry-run"; fi
-          ISSUE_NUMBER=$((GITHUB_RUN_NUMBER + ISSUE_NUMBER_OFFSET)) python main.py $ARGS
+          NUM="${{ inputs.issue_number }}"
+          if [ -z "$NUM" ]; then NUM=$((GITHUB_RUN_NUMBER + ISSUE_NUMBER_OFFSET)); fi
+          ISSUE_NUMBER=$NUM python main.py $ARGS
