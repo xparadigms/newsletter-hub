@@ -318,9 +318,19 @@ TONE:
 """
 
 
-def generate_trilingual(english_summary: str) -> str:
-    """Convert the English newsletter summary into trilingual Notion Markdown."""
+def generate_trilingual(english_summary: str, news_items: list[dict]) -> str:
+    """Convert the English newsletter summary into trilingual Notion Markdown.
+
+    `news_items` is passed for its URLs alone: the summary is prose and carries
+    none, so without them the model has nothing to attach to a 🔗 line and will
+    invent one, which shared/sources.py then drops.
+    """
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    catalogue = "\n".join(
+        f"- {item['text'][:120]}\n  {item['url']}"
+        for item in news_items
+        if item.get("url")
+    )
 
     response = client.messages.create(
         model="claude-sonnet-4-6",
@@ -331,7 +341,9 @@ def generate_trilingual(english_summary: str) -> str:
                 "role": "user",
                 "content": TRILINGUAL_PROMPT.format(
                     english_summary=english_summary
-                ),
+                )
+                + "\n\n--- SOURCE URLS (match each story to its own) ---\n"
+                + catalogue,
             },
         ],
     )
@@ -644,7 +656,7 @@ def run():
     # event (plain text) and the Notion page (rich blocks).
     print("▸ Converting to trilingual (EN/JP/KR)...")
     try:
-        trilingual_md = generate_trilingual(summary)
+        trilingual_md = generate_trilingual(summary, news_items)
         trilingual_md = sources.attach(trilingual_md, news_items)
         print("  ✓ Trilingual conversion complete.")
     except Exception as e:
