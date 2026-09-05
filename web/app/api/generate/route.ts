@@ -1,5 +1,7 @@
+import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { SECTIONS } from "@/lib/config";
+import { AUTH_COOKIE } from "@/middleware";
 import type { SectionKey } from "@/lib/types";
 
 // Ask GitHub to run a newsletter generator now, producing an EXTRA issue for
@@ -9,7 +11,11 @@ import type { SectionKey } from "@/lib/types";
 // GitHub Actions — so this route is a gate in front of workflow_dispatch. That
 // makes the gate the whole security story, and it is deliberately two things:
 //
-//   1. A password, checked here on the server. It never reaches the browser.
+//   1. The site password, already presented at the door and carried in an
+//      httpOnly cookie. Middleware would reject an anonymous request before it
+//      reached this file; the check here is repeated rather than assumed,
+//      because a route that depends on middleware staying configured is one
+//      config edit away from being open.
 //   2. A hard daily cap, because a password of this strength will not survive
 //      contact with the internet forever and every run spends Anthropic
 //      credits. The cap counts dispatches, not issues, so failed runs still
@@ -62,24 +68,25 @@ async function usedToday(token: string): Promise<number> {
 }
 
 export async function POST(request: Request) {
-  const password = process.env.GENERATE_PASSWORD;
+  const password = process.env.SITE_PASSWORD ?? process.env.GENERATE_PASSWORD;
   const token = process.env.GITHUB_TOKEN;
-  if (!password || !token) {
+  if (!token) {
     return NextResponse.json(
-      { error: "Generation is not configured on this deployment." },
+      { error: "No GitHub token on this deployment, so nothing can be dispatched." },
       { status: 501 }
     );
   }
 
-  let body: { section?: string; password?: string };
+  const jar = await cookies();
+  if (password && jar.get(AUTH_COOKIE)?.value !== password) {
+    return NextResponse.json({ error: "Not signed in." }, { status: 401 });
+  }
+
+  let body: { section?: string };
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: "Bad request." }, { status: 400 });
-  }
-
-  if (body.password !== password) {
-    return NextResponse.json({ error: "Wrong password." }, { status: 401 });
   }
 
   const section = body.section as SectionKey;

@@ -6,11 +6,9 @@ import type { SectionKey } from "@/lib/types";
 // "Generate" on a section page: make one more issue of this newsletter today,
 // covering stories the last three issues did not.
 //
-// The password is remembered so the second press does not ask again, but it is
-// only ever checked on the server — nothing here decides whether the run is
-// allowed, and a wrong password comes back as a 401 from the API.
-
-const KEY = "generate-password";
+// No password prompt here — the site asks once at the door and carries an
+// httpOnly cookie, which the browser attaches to this request on its own.
+// Nothing in this file decides whether the run is allowed.
 
 type State = { kind: "idle" | "busy" | "done" | "error"; message?: string };
 
@@ -18,23 +16,12 @@ export default function GenerateButton({ section }: { section: SectionKey }) {
   const [state, setState] = useState<State>({ kind: "idle" });
 
   async function run() {
-    let password = "";
-    try {
-      password = window.localStorage.getItem(KEY) ?? "";
-    } catch {
-      // Private mode, or storage blocked. Ask every time instead.
-    }
-    if (!password) {
-      password = window.prompt("Password") ?? "";
-      if (!password) return;
-    }
-
     setState({ kind: "busy" });
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ section, password }),
+        body: JSON.stringify({ section }),
       });
       const data = (await res.json()) as {
         error?: string;
@@ -43,20 +30,9 @@ export default function GenerateButton({ section }: { section: SectionKey }) {
       };
 
       if (!res.ok) {
-        // A rejected password must not be remembered, or the button becomes
-        // permanently broken with no way to retype it.
-        if (res.status === 401) {
-          try {
-            window.localStorage.removeItem(KEY);
-          } catch {}
-        }
         setState({ kind: "error", message: data.error ?? "Failed." });
         return;
       }
-
-      try {
-        window.localStorage.setItem(KEY, password);
-      } catch {}
       setState({
         kind: "done",
         message:
