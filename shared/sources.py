@@ -142,10 +142,17 @@ def already_covered(rows: list[dict[str, Any]]) -> str:
     return "\n".join(parts) + "\n"
 
 
+# Below this many surviving items the filter has taken the day's news away
+# rather than deduplicated it. Startup scrapes a single Telegram channel and
+# came back with three items, all three of them already used — the summariser
+# got nothing and the model published an apology instead of an issue.
+MIN_ITEMS = 5
+
+
 def drop_used(
     items: list[dict[str, Any]], rows: list[dict[str, Any]]
 ) -> list[dict[str, Any]]:
-    """Remove items the recent issues already cited.
+    """Remove items the recent issues already cited, unless that empties it.
 
     Telling a model not to reuse a story gets most of the way and no further —
     an extra edition still came back with a previous one reworded. Taking the
@@ -153,6 +160,11 @@ def drop_used(
     reading its instructions. It cannot stop the same EVENT arriving through a
     second outlet, which is what the prompt block is still for; between them the
     overlap is small rather than absent.
+
+    The floor matters more than the filtering. A thin scrape on a quiet day is
+    mostly stories the last issues already ran, and an issue that repeats one of
+    them is worth more than no issue at all — the prompt block still asks for
+    something new, it just stops being enforced by subtraction.
     """
     used = {
         _normalise(u)
@@ -162,5 +174,11 @@ def drop_used(
     if not used:
         return items
     kept = [i for i in items if _normalise(i.get("url") or "") not in used]
+    if len(kept) < MIN_ITEMS:
+        print(
+            f"  ⚠ only {len(kept)} of {len(items)} item(s) are unused — keeping "
+            "all of them rather than writing from nothing"
+        )
+        return items
     print(f"  excluded {len(items) - len(kept)} item(s) used by recent issues")
     return kept

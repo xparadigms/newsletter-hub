@@ -200,29 +200,21 @@ is trending. It is NOT a crypto newsletter — his Rails journal already covers 
 stablecoins and regulation every day, so do not write about them here unless a \
 crypto story is genuinely one of the biggest news items in Japan that day.
 
-THE FORMAT IS A DIALOGUE between two people:
-- ハル — a journalist living in Tokyo. Explains what happened, cites the source.
-- ミン — from Seoul, learning Japanese. Asks the questions a foreigner would ask.
+THE FORMAT IS A BRIEFING, one story at a time. Each story is a headline, then \
+labelled paragraphs, then its Korean translation. It is written, not spoken — \
+there is no conversation and there are no characters.
 
-They talk like colleagues who know each other. Short turns, natural spoken \
-Japanese, not written-report Japanese. ミン asks; ハル answers with the fact, \
-the number and the source; ミン reacts or asks the obvious follow-up.
-
-CRITICAL LINE RULE: every Japanese line is IMMEDIATELY followed by its own \
-Korean line. Never group the Korean, never summarise it, never write a block \
-of Japanese and then a block of Korean. One Japanese line, then that same line \
-in Korean, then the next Japanese line.
-
-The Korean line is a FULL translation of the Japanese line above it — the same \
+CRITICAL TRANSLATION RULE: every Japanese paragraph is followed by its own \
+Korean translation, and that translation is COMPLETE — the same number of \
 sentences in the same order, with every number, name, date and source citation \
 carried across, and every qualifier kept. Never shorten it, never merge two \
-sentences into one, and never drop a trailing clause because the line already \
-reads well without it. A Korean line shorter than the Japanese it translates \
-is a defect.
+sentences into one, and never drop a trailing clause because the paragraph \
+already reads well without it. A Korean paragraph shorter than the Japanese \
+above it is a defect.
 
-Japanese: natural, current, spoken register. Real vocabulary from the news, but \
-this is a conversation — no 資料調 stiffness.
-Korean: casual-professional (반말 OK), the way you would explain it to a friend.
+Japanese: clean news register (です・ます), the way NHK or Nikkei would write it. \
+Real vocabulary from the story. Not textbook-simplified, not stiff.
+Korean: casual-professional (반말 OK), the way you would explain it to a colleague.
 
 Voice: concrete. Name the ministry, the company, the number, the date. No \
 editorialising, no filler.
@@ -241,19 +233,18 @@ MAIN_TITLE: [concise English title of the single most important story, ≤8 word
 HEADER:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 JAPAN DAILY TALK — Issue #{issue_number}
-{date_line} · 日本デイリーニュース、会話で読む今日のホットトピック
+{date_line} · 日本デイリーニュース、今日のホットトピック
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 今号のハイライト: [2-3 sentences in Japanese on what today's issue covers]
 [the same highlight in Korean, starting with 이번 호 하이라이트:]
-📖 登場人物: ハル（東京在住の記者）と ミン（ソウル出身、日本語学習中）
 
 Then FOUR sections. Choose the four that fit today's news from this pool, and \
-ALWAYS include テクノロジートーク:
+ALWAYS include テクノロジー:
 
-  SECTION N · 政治トーク (POLITICS TALK)
-  SECTION N · 経済トーク (ECONOMY TALK)
-  SECTION N · テクノロジートーク (TECHNOLOGY TALK)
-  SECTION N · くらし・防災トーク (LIFESTYLE & SAFETY TALK)
+  SECTION N · 政治 (POLITICS)
+  SECTION N · 経済 (ECONOMY)
+  SECTION N · テクノロジー (TECHNOLOGY)
+  SECTION N · くらし・防災 (LIFESTYLE & SAFETY)
   SECTION N · 今日の話題 (TODAY'S BUZZ)
 
 Number them 1 to 4 in the order you present them. Put a ━━━ divider line \
@@ -263,23 +254,25 @@ Each section carries ONE story, except 今日の話題 which may carry two. Writ
 each story exactly like this:
 
 【Japanese headline】(Korean translation of the headline)
-ミン: [question, 1-2 sentences of spoken Japanese]
-민: [that same line in Korean]
-ハル: [answer with the fact, the number and the source, 1-2 sentences]
-하루: [that same line in Korean]
-ミン: [reaction or follow-up]
-민: [same line in Korean]
-ハル: [the part that makes it matter]
-하루: [same line in Korean]
+
+▸ 何があったか
+[Japanese: the facts. What happened, who did it, the number, the date. Cite \
+the outlet inline like （NHK, 2026-09-05）. 2-3 sentences.]
+📝 한국어 번역:
+[full Korean translation, sentence for sentence]
+
+▸ 背景
+[Japanese: the context that makes the fact make sense — what came before, or \
+why it is happening now. 2-3 sentences.]
+📝 한국어 번역:
+[full Korean translation, sentence for sentence]
+
 왜 중요한가: [1-2 Korean sentences on why this matters to the reader]
 🔗 [the URL of the source item you used, copied exactly from the material]
 
-Copy the URL character for character from the item ハル actually cited. Never \
+Copy the URL character for character from the item you actually used. Never \
 shorten it, never reconstruct one from the outlet's name, and never invent \
 one. A link that was not in the material is removed before publishing.
-
-Six to eight dialogue lines per story — three or four turns each. Cite the \
-outlet and date inside ハル's line, like （NHK, 2026-09-02）.
 
 TECHNOLOGY TALK covers AI, semiconductors, robotics, consumer gadgets, \
 platforms, telecoms and the Japanese companies behind them. It is a real \
@@ -300,7 +293,7 @@ LENGTH: 1,600-2,200 words in total across both languages.
 - No Markdown at all (no #, ##, **, *, ```)
 - ━━━━━━━━━━━━━━━━━━━━ as section dividers
 - 【】for story headlines
-- 📖 only for the 登場人物 line and the expression of the day
+- 📖 is not used in this newsletter
 - No other emoji
 - A blank line between sections
 

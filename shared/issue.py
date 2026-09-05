@@ -37,6 +37,8 @@ def parse_title(raw: str) -> tuple[str, str | None, int | None]:
 
 # Mirrors the database CHECK. Without it a typo costs the whole run: the write
 # is the last step, so it fails after both Claude calls have been paid for.
+MIN_PLAIN_TEXT = 700
+
 SECTIONS = frozenset(
     {"startup", "fintech", "japan", "watch", "china", "mandarin", "business"}
 )
@@ -61,6 +63,18 @@ def build_row_from_blocks(
     if section not in SECTIONS:
         raise ValueError(f"unknown section {section!r}; expected one of {sorted(SECTIONS)}")
 
+    # A model handed too little material does not fail — it apologises, and the
+    # apology is a well-formed issue as far as everything downstream can tell.
+    # One reached the site as "⚠ 変換できません / 변환 불가", published under a real
+    # issue number. The shortest genuine issue on record is 874 characters (a
+    # Mandarin lesson), so anything under this is not an issue.
+    plain = blocks_mod.plain_text(blocks)
+    if len(plain) < MIN_PLAIN_TEXT:
+        raise ValueError(
+            f"refusing to store a {len(plain)}-character issue for {section!r} "
+            f"— under {MIN_PLAIN_TEXT}, this is a stub or a refusal, not an issue"
+        )
+
     title, series, issue_number = parse_title(raw_title)
     return {
         "section": section,
@@ -71,7 +85,7 @@ def build_row_from_blocks(
         "issue_number": issue_number,
         "summary": summary,
         "blocks": blocks,
-        "plain_text": blocks_mod.plain_text(blocks),
+        "plain_text": plain,
         "source_text": source_text,
         "source_format": source_format,
         # One issue per section per day, plus any on-demand editions. A rerun
