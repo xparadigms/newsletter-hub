@@ -33,7 +33,7 @@ from googleapiclient.discovery import build
 # root is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import issue as issue_row, store  # noqa: E402
+from shared import issue as issue_row, sources, store  # noqa: E402
 from shared.http import request_with_retry  # noqa: E402
 from shared.trilingual import md_to_blocks as trilingual_to_blocks  # noqa: E402
 
@@ -198,7 +198,15 @@ def generate_summary(news_items: list[dict]) -> tuple[str, str]:
         max_tokens=4000,
         system="You are a senior watch-industry analyst and journalist.",
         messages=[
-            {"role": "user", "content": SUMMARY_PROMPT.format(today=today_str, news_items=formatted)},
+            {
+                "role": "user",
+                "content": SUMMARY_PROMPT.format(
+                    today=today_str, news_items=formatted
+                )
+                + sources.already_covered(
+                    store.recent_issues("watch", sources.RECENT_ISSUES)
+                ),
+            },
         ],
     )
     raw = response.content[0].text
@@ -520,6 +528,9 @@ def run():
         print("✗ No news items found.")
         sys.exit(1)
     print(f"  Found {len(news_items)} items.")
+    news_items = sources.drop_used(
+        news_items, store.recent_issues("watch", sources.RECENT_ISSUES)
+    )
 
     print("▸ Generating English weekly summary...")
     main_title, summary = generate_summary(news_items)

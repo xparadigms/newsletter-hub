@@ -314,10 +314,8 @@ def generate_issue(items: list[dict], recent: list[str]) -> tuple[str, str]:
                 recent="\n".join(f"- {t}" for t in recent) or "(none yet)",
                 news_items=formatted,
             )
-            + (
-                sources.already_covered(store.recent_issues("business", 3))
-                if EDITION > 1
-                else ""
+            + sources.already_covered(
+                store.recent_issues("business", sources.RECENT_ISSUES)
             ),
         }],
     )
@@ -359,8 +357,9 @@ def run():
     if recent:
         print(f"  Excluding {len(recent)} recent issue(s).")
 
-    if EDITION > 1:
-        all_items = sources.drop_used(all_items, store.recent_issues("business", 3))
+    all_items = sources.drop_used(
+        all_items, store.recent_issues("business", sources.RECENT_ISSUES)
+    )
     print(f"▸ Generating via Claude ({len(all_items[:60])} items)...")
     main_title, issue_text = generate_issue(all_items[:60], recent)
     issue_text = sources.attach(issue_text, all_items[:60])

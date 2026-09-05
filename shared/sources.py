@@ -23,6 +23,12 @@ URL_RE = re.compile(r"https?://[^\s<>\"'、。」）\]]+")
 
 MARKER = "🔗"
 
+# How many recent issues a new one must not repeat. Applies to every run, not
+# only the on-demand extras: a daily brief re-running yesterday's lead is the
+# same defect whoever asked for it, and it is how the startup brief once
+# produced four identical issues.
+RECENT_ISSUES = 4
+
 
 def collect(items: Iterable[dict[str, Any]]) -> set[str]:
     """Every URL the generator actually scraped."""
@@ -115,8 +121,8 @@ def already_covered(rows: list[dict[str, Any]]) -> str:
     parts = [
         "",
         "--- ALREADY COVERED — do not use any of these again ---",
-        "This is an EXTRA issue for a day that already has one. Every story must "
-        "be one the issues below did not cover. Match on the EVENT, not on the "
+        "Every story must be one the recent issues below did not cover. "
+        "Match on the EVENT, not on the "
         "wording or the URL: the same rainfall, the same earnings release or the "
         "same product launch is a repeat even when it is phrased differently or "
         "reached through a different outlet. Same-topic follow-ups are fine only "

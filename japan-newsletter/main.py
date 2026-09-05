@@ -333,7 +333,9 @@ def generate_issue(news_items: list[dict]) -> tuple[str, str]:
         next_issue_date=next_issue_date,
         news_items=formatted,
     )
-    prompt += sources.already_covered(store.recent_issues("japan", 3)) if EDITION > 1 else ""
+    prompt += sources.already_covered(
+        store.recent_issues("japan", sources.RECENT_ISSUES)
+    )
 
 
     response = client.messages.create(
@@ -480,8 +482,9 @@ def run():
         sys.exit(1)
     print(f"  {len(all_items)} items after dedupe.")
 
-    if EDITION > 1:
-        all_items = sources.drop_used(all_items, store.recent_issues("japan", 3))
+    all_items = sources.drop_used(
+        all_items, store.recent_issues("japan", sources.RECENT_ISSUES)
+    )
     items_for_llm = all_items[:60]
 
     print(f"▸ Generating Japan Daily Talk via Claude ({len(items_for_llm)} items)...")

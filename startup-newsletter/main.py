@@ -207,10 +207,8 @@ def generate_summary(news_items: list[dict]) -> tuple[str, str]:
                 "content": SUMMARY_PROMPT.format(
                     today=today_str, news_items=formatted
                 )
-                + (
-                    sources.already_covered(store.recent_issues("startup", 3))
-                    if EDITION > 1
-                    else ""
+                + sources.already_covered(
+                    store.recent_issues("startup", sources.RECENT_ISSUES)
                 ),
             },
         ],
@@ -657,8 +655,9 @@ def run():
         print("✗ No news items found.")
         sys.exit(1)
     print(f"  Found {len(news_items)} items.")
-    if EDITION > 1:
-        news_items = sources.drop_used(news_items, store.recent_issues("startup", 3))
+    news_items = sources.drop_used(
+        news_items, store.recent_issues("startup", sources.RECENT_ISSUES)
+    )
 
     print("▸ Generating English summary...")
     main_title, summary = generate_summary(news_items)

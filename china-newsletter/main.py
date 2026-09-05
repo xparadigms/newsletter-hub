@@ -279,7 +279,9 @@ def generate_issue(items: list[dict]) -> str:
     prompt = ISSUE_PROMPT.format(
         date_line=now.strftime("%A, %B %d, %Y"), news_items=news
     )
-    prompt += sources.already_covered(store.recent_issues("china", 3)) if EDITION > 1 else ""
+    prompt += sources.already_covered(
+        store.recent_issues("china", sources.RECENT_ISSUES)
+    )
 
     # Streamed, not a plain create: at this max_tokens the SDK refuses a
     # non-streaming request outright, because the response could take longer
@@ -360,8 +362,9 @@ def run():
         # the slug for the day and a rerun would keep the sparse URL.
         print(f"✗ Only {len(items)} usable items — too thin for a full issue.")
         sys.exit(1)
-    if EDITION > 1:
-        items = sources.drop_used(items, store.recent_issues("china", 3))
+    items = sources.drop_used(
+        items, store.recent_issues("china", sources.RECENT_ISSUES)
+    )
     items = items[:90]
     print(f"  {len(items)} items after dedupe.")
 
