@@ -120,16 +120,21 @@ def _anthropic(model: str, system: str, user: str, max_tokens: int) -> tuple[str
     if not key:
         raise RuntimeError("ANTHROPIC_API_KEY is not set")
     client = anthropic.Anthropic(api_key=key)
-    resp = client.messages.create(
+    # Streamed, not create(). The SDK refuses a non-streaming request whose
+    # max_tokens implies a generation that could run past ten minutes, and a
+    # full trilingual issue is exactly that size. get_final_message() collects
+    # the stream, so callers still get one string and one usage record.
+    with client.messages.stream(
         model=model,
         max_tokens=max_tokens,
         system=system,
         messages=[{"role": "user", "content": user}],
-    )
-    return resp.content[0].text, Usage(
+    ) as stream:
+        final = stream.get_final_message()
+    return final.content[0].text, Usage(
         model=model,
-        input_tokens=resp.usage.input_tokens,
-        output_tokens=resp.usage.output_tokens,
+        input_tokens=final.usage.input_tokens,
+        output_tokens=final.usage.output_tokens,
     )
 
 
