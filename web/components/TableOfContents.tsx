@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import BottomSheet from "@/components/BottomSheet";
 import type { TocItem } from "@/lib/text";
 
@@ -10,6 +10,7 @@ const ACTIVE_OFFSET = 120;
 export default function TableOfContents({ items }: { items: TocItem[] }) {
   const [active, setActive] = useState<string | null>(items[0]?.id ?? null);
   const [open, setOpen] = useState(false);
+  const railRef = useRef<HTMLDivElement>(null);
 
   // Highlight the last heading scrolled past. A rAF-throttled scroll read is
   // simpler and steadier here than IntersectionObserver, whose rootMargin
@@ -44,6 +45,32 @@ export default function TableOfContents({ items }: { items: TocItem[] }) {
     };
   }, [items]);
 
+  // Keep the current section visible inside the rail. These issues run to more
+  // headings than fit a viewport, so the rail scrolls internally — and without
+  // this it stays wherever it was left, showing a part of the issue you are no
+  // longer reading while the entry you want sits clipped above or below.
+  //
+  // scrollTop rather than scrollIntoView: even with block:"nearest" that call
+  // walks every scrollable ancestor, and the nearest one here is the page. It
+  // would drag the article out from under the reader to tidy a sidebar.
+  useEffect(() => {
+    const rail = railRef.current;
+    if (!rail || !active) return;
+    const link = rail.querySelector<HTMLElement>(`a[href="#${CSS.escape(active)}"]`);
+    if (!link) return;
+
+    const pad = 24;
+    const top = link.offsetTop - rail.offsetTop;
+    const above = top - pad < rail.scrollTop;
+    const below = top + link.offsetHeight + pad > rail.scrollTop + rail.clientHeight;
+    if (above || below) {
+      rail.scrollTo({
+        top: Math.max(0, top - rail.clientHeight / 3),
+        behavior: "smooth",
+      });
+    }
+  }, [active]);
+
   const go = useCallback((e: React.MouseEvent, id: string) => {
     e.preventDefault();
     setOpen(false);
@@ -77,7 +104,7 @@ export default function TableOfContents({ items }: { items: TocItem[] }) {
   return (
     <>
       <nav className="toc" aria-label="Table of contents">
-        <div className="toc__inner">
+        <div className="toc__inner" ref={railRef}>
           <span className="label toc__heading">Contents</span>
           {list}
         </div>

@@ -1183,11 +1183,22 @@ main {
 .toc__inner {
   position: sticky;
   top: calc(var(--header-total) + 28px);
-  max-height: calc(100dvh - var(--header-total) - 64px);
+  max-height: calc(100dvh - var(--header-total) - 56px);
   overflow-y: auto;
+  /* Reaching the end of the rail must not start scrolling the article behind
+     it — the rail is a place to look, not a second way to move the page. */
+  overscroll-behavior: contain;
   border-left: 1px solid var(--border);
   padding-left: 18px;
   scrollbar-width: thin;
+}
+
+/* Sticky resolves against the nearest scrollport, and the rail can only travel
+   as far as its own grid item is tall. Stretching the item to the row means it
+   is as tall as the article, so the rail stays put for the whole read instead
+   of scrolling away with the column it sits beside. */
+.toc {
+  align-self: stretch;
 }
 
 .toc__heading {
