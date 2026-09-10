@@ -17,7 +17,8 @@ from __future__ import annotations
 
 from typing import Any, Callable
 
-import anthropic
+from . import llm
+
 
 Block = dict[str, Any]
 # (index into the block list, the Japanese text to annotate)
@@ -187,16 +188,16 @@ VARIANTS: dict[str, tuple[Callable[[list[dict]], list[Target]], str]] = {
 
 def generate_batch(targets: list[Target], api_key: str, prompt: str) -> dict[int, str]:
     """One Claude call for every paragraph, returned keyed by target position."""
-    client = anthropic.Anthropic(api_key=api_key)
     parts = [f"[{idx}]\n{text}" for idx, (_, text) in enumerate(targets)]
-    resp = client.messages.create(
+    text_out = llm.complete(
         model=MODEL,
-        max_tokens=MAX_TOKENS,
         system=FURIGANA_SYSTEM,
-        messages=[{"role": "user", "content": prompt.format(paragraphs="\n\n".join(parts))}],
+        user=prompt.format(paragraphs="\n\n".join(parts)),
+        max_tokens=MAX_TOKENS,
+        label="furigana",
     )
 
-    raw = resp.content[0].text
+    raw = text_out
     results: dict[int, str] = {}
     cur_idx: int | None = None
     cur_lines: list[str] = []
