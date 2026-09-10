@@ -27,7 +27,7 @@ from googleapiclient.discovery import build
 # root is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import issue as issue_row, store  # noqa: E402
+from shared import issue as issue_row, llm, store  # noqa: E402
 from shared.http import request_with_retry  # noqa: E402
 from shared import sources  # noqa: E402
 from shared.trilingual import md_to_blocks as trilingual_to_blocks  # noqa: E402
@@ -122,6 +122,11 @@ def scrape_techcrunch_telegram() -> list[dict]:
 
 # ── LLM Summary ─────────────────────────────────────────────────────────────
 ISSUE_NUMBER = int(os.environ.get("ISSUE_NUMBER", "1"))
+
+# Overridable so a model can be tried on one run without a commit.
+# `or`, not a get() default: a scheduled run has no workflow inputs, so the
+# workflow sets LLM_MODEL to the empty string rather than leaving it unset.
+MODEL = os.environ.get("LLM_MODEL") or "gpt-6-astra"
 # An extra issue for a day that already has one, requested from the site. The
 # scheduled run is edition 1 and its run_key is unchanged, so nothing about the
 # daily path moves.
@@ -189,7 +194,6 @@ def generate_summary(news_items: list[dict]) -> tuple[str, str]:
 
     Returns (main_title, summary_text).
     """
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
     formatted = "\n\n".join(
         f"- {item['text']}\n  URL: {item['url']}\n  Date: {item['date']}"
@@ -197,23 +201,16 @@ def generate_summary(news_items: list[dict]) -> tuple[str, str]:
     )
     today_str = datetime.now(KST).strftime("%B %d, %Y")
 
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=4000,
+    raw = llm.complete(
+        model=MODEL,
         system="You are a senior startup and venture capital analyst.",
-        messages=[
-            {
-                "role": "user",
-                "content": SUMMARY_PROMPT.format(
-                    today=today_str, news_items=formatted
-                )
-                + sources.already_covered(
-                    store.recent_issues("startup", sources.RECENT_ISSUES)
-                ),
-            },
-        ],
+        user=SUMMARY_PROMPT.format(today=today_str, news_items=formatted)
+        + sources.already_covered(
+            store.recent_issues("startup", sources.RECENT_ISSUES)
+        ),
+        max_tokens=8000,
+        label="summary",
     )
-    raw = response.content[0].text
 
     # Extract the MAIN_TITLE line
     main_title = "Startup News"
@@ -333,29 +330,21 @@ def generate_trilingual(english_summary: str, news_items: list[dict]) -> str:
     none, so without them the model has nothing to attach to a 🔗 line and will
     invent one, which shared/sources.py then drops.
     """
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     catalogue = "\n".join(
         f"- {item['text'][:120]}\n  {item['url']}"
         for item in news_items
         if item.get("url")
     )
 
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=16000,
+    return llm.complete(
+        model=MODEL,
         system="You are an expert trilingual (EN/JP/KR) startup newsletter editor.",
-        messages=[
-            {
-                "role": "user",
-                "content": TRILINGUAL_PROMPT.format(
-                    english_summary=english_summary
-                )
-                + "\n\n--- SOURCE URLS (match each story to its own) ---\n"
-                + catalogue,
-            },
-        ],
+        user=TRILINGUAL_PROMPT.format(english_summary=english_summary)
+        + "\n\n--- SOURCE URLS (match each story to its own) ---\n"
+        + catalogue,
+        max_tokens=24000,
+        label="trilingual",
     )
-    return response.content[0].text
 
 
 # ── Google Calendar ──────────────────────────────────────────────────────────

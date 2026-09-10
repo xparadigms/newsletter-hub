@@ -20,6 +20,10 @@ on:
         description: "Reuse a number when re-running a day (blank = next)"
         type: string
         default: ""
+      llm_model:
+        description: "Override the model for one run (blank = gpt-6-astra)"
+        type: string
+        default: ""
 
 jobs:
   generate-summary:
@@ -47,6 +51,8 @@ jobs:
       - name: Run daily summary
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LLM_MODEL: ${{ inputs.llm_model }}
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

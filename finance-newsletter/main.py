@@ -24,7 +24,7 @@ from googleapiclient.discovery import build
 # is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import audio, furigana, issue as issue_row, sources, store  # noqa: E402
+from shared import audio, furigana, issue as issue_row, llm, sources, store  # noqa: E402
 from shared.http import request_with_retry  # noqa: E402
 
 # ── Config ──────────────────────────────────────────────────────────────────
@@ -45,6 +45,11 @@ KST = timezone(timedelta(hours=9))
 
 # Issue counter file (persisted via git or env)
 ISSUE_NUMBER = int(os.environ.get("ISSUE_NUMBER", "1"))
+
+# Overridable so a model can be tried on one run without a commit.
+# `or`, not a get() default: a scheduled run has no workflow inputs, so the
+# workflow sets LLM_MODEL to the empty string rather than leaving it unset.
+MODEL = os.environ.get("LLM_MODEL") or "gpt-6-astra"
 # An extra issue for a day that already has one, requested from the site. The
 # scheduled run is edition 1 and its run_key is unchanged, so nothing about the
 # daily path moves.
@@ -425,7 +430,6 @@ def generate_issue(news_items: list[dict]) -> tuple[str, str]:
     Returns (main_title, issue_text) where main_title is the extracted
     headline for use in the [Finance Infra #NN] (main_title) format.
     """
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 
     now_kst = datetime.now(KST)
     weekday = now_kst.weekday()
@@ -451,13 +455,13 @@ def generate_issue(news_items: list[dict]) -> tuple[str, str]:
     )
 
 
-    response = client.messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=16000,
+    raw = llm.complete(
+        model=MODEL,
         system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": prompt}],
+        user=prompt,
+        max_tokens=16000,
+        label="issue",
     )
-    raw = response.content[0].text
 
     # Extract the MAIN_TITLE line from the top of the response
     main_title = "Finance Infra"
