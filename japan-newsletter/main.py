@@ -214,7 +214,11 @@ above it is a defect.
 
 Japanese: clean news register (です・ます), the way NHK or Nikkei would write it. \
 Real vocabulary from the story. Not textbook-simplified, not stiff.
-Korean: casual-professional (반말 OK), the way you would explain it to a colleague.
+Korean register: 평어체. Every Korean sentence ends in the plain declarative \
+form — ~다 / ~이다 / ~했다 / ~한다 — the register Korean newspapers write in. \
+Never 존댓말 (~습니다, ~합니다, ~예요, ~해요) and never 반말 conversational endings \
+(~야, ~지, ~거든). Vocabulary stays plain and direct; only the sentence endings \
+are formal.
 
 Voice: concrete. Name the ministry, the company, the number, the date. No \
 editorialising, no filler.

@@ -187,7 +187,11 @@ the source only paraphrases, present it as a paraphrase.
 Japanese: natural business Japanese, 敬体 (です・ます). Real vocabulary — 意思決定, \
 経営判断, 採用, 資本効率, 参入障壁. Not textbook-simplified, not stiff translationese.
 
-Korean: casual-professional (반말 OK), the way you would explain it to a colleague.
+Korean register: 평어체. Every Korean sentence ends in the plain declarative \
+form — ~다 / ~이다 / ~했다 / ~한다 — the register Korean newspapers write in. \
+Never 존댓말 (~습니다, ~합니다, ~예요, ~해요) and never 반말 conversational endings \
+(~야, ~지, ~거든). Vocabulary stays plain and direct; only the sentence endings \
+are formal.
 
 CRITICAL TRANSLATION RULE: the Korean under each Japanese paragraph is a FULL \
 translation — the SAME NUMBER OF SENTENCES, in the same order, with every name, \

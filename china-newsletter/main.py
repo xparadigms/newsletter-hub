@@ -208,8 +208,11 @@ No editorialising, no filler, no hedging. This is a brief, not an essay.
 
 Write in natural Simplified Chinese at roughly HSK 5 level: real news register, \
 not textbook sentences, but avoid rare literary idiom where a common word will \
-do. Korean translations are casual-professional — the way you would explain the \
-story to a colleague.
+do. Korean register: 평어체. Every Korean sentence ends in the plain declarative \
+form — ~다 / ~이다 / ~했다 / ~한다 — the register Korean newspapers write in. \
+Never 존댓말 (~습니다, ~합니다, ~예요, ~해요) and never 반말 conversational endings \
+(~야, ~지, ~거든). Vocabulary stays plain and direct; only the sentence endings \
+are formal.
 """
 
 ISSUE_PROMPT = """\

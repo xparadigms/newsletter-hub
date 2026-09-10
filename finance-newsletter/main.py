@@ -281,7 +281,11 @@ followed by a Japanese translation (🇯🇵 日本語), then a Korean translati
 - English: your default voice — sharp, analytical, institutional.
 - Japanese: natural, native-level business Japanese. Use real financial/regulatory \
 terminology (資金決済法, 金商法, ステーブルコイン, RWA, カストディ). NOT textbook-simplified.
-- Korean: casual-professional (반말 OK). Like explaining to a colleague.
+- Korean register: 평어체. Every Korean sentence ends in the plain declarative \
+form — ~다 / ~이다 / ~했다 / ~한다 — the register Korean newspapers write in. \
+Never 존댓말 (~습니다, ~합니다, ~예요, ~해요) and never 반말 conversational endings \
+(~야, ~지, ~거든). Vocabulary stays plain and direct; only the sentence endings \
+are formal.
 - THE JAPANESE AND KOREAN ARE FULL TRANSLATIONS, NOT SUMMARIES. Each has the \
 SAME NUMBER OF SENTENCES as the English above it, in the same order. Count \
 them before you move on. Every clause survives: every number, every name, \

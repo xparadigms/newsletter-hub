@@ -297,7 +297,12 @@ Pick one useful Japanese watch/business term from the issue:
 
 TONE:
 - Japanese: clean journalistic newsletter (です/ます or だ/である, match source register)
-- Korean: natural, concise, watch-savvy reader
+- Korean: natural and concise for a watch-savvy reader.
+- Korean register: 평어체. Every Korean sentence ends in the plain declarative \
+form — ~다 / ~이다 / ~했다 / ~한다 — the register Korean newspapers write in. \
+Never 존댓말 (~습니다, ~합니다, ~예요, ~해요) and never 반말 conversational endings \
+(~야, ~지, ~거든). Vocabulary stays plain and direct; only the sentence endings \
+are formal.
 - Currency: $10,000 → 1万ドル (JP) / 1만 달러 (KR). Keep English figure in English layer.
 
 --- ENGLISH NEWSLETTER TO CONVERT ---
