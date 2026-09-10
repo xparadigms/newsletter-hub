@@ -15,7 +15,7 @@ on:
         type: string
         default: ""
       llm_model:
-        description: "Override the model for one run (blank = gpt-6-astra)"
+        description: "Override the model for one run (blank = claude-sonnet-4-6)"
         type: string
         default: ""
 

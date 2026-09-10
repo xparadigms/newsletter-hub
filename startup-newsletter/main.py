@@ -124,9 +124,13 @@ def scrape_techcrunch_telegram() -> list[dict]:
 ISSUE_NUMBER = int(os.environ.get("ISSUE_NUMBER", "1"))
 
 # Overridable so a model can be tried on one run without a commit.
+# gpt-6-astra was measured at 3.33x Sonnet on the same work — $25.87 a month
+# against $10.32 for these two newsletters — and did not write a better issue
+# for it. LLM_MODEL still routes a single run anywhere without a commit.
+#
 # `or`, not a get() default: a scheduled run has no workflow inputs, so the
 # workflow sets LLM_MODEL to the empty string rather than leaving it unset.
-MODEL = os.environ.get("LLM_MODEL") or "gpt-6-astra"
+MODEL = os.environ.get("LLM_MODEL") or "claude-sonnet-4-6"
 # An extra issue for a day that already has one, requested from the site. The
 # scheduled run is edition 1 and its run_key is unchanged, so nothing about the
 # daily path moves.
