@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { renderAnnotated } from "@/components/ArticleBlocks";
+import FuriganaToggle from "@/components/FuriganaToggle";
 import LangToggle from "@/components/LangToggle";
 import PageTransition from "@/components/PageTransition";
 import TableOfContents from "@/components/TableOfContents";
@@ -104,6 +105,9 @@ export default async function PostPage({
   const hasJa = annotated.some((a) => a.lang === "ja");
   const hasKo = annotated.some((a) => a.lang === "ko");
   const hasZh = annotated.some((a) => a.lang === "zh");
+  // Only worth offering where there are readings to hide. Pinyin is ruby
+  // too, but it is the point of the Chinese sections rather than an aid.
+  const hasRuby = annotated.some((a) => a.ruby?.some((s) => s.reading));
   const minutes = readingTime(annotated);
   const toc = buildToc(annotated);
   const { prev, next } = findAdjacent(sectionPosts, post.id);
@@ -121,6 +125,7 @@ export default async function PostPage({
                   .filter(Boolean)
                   .join(" · ")}
               </span>
+              {hasRuby && <FuriganaToggle />}
               {(hasJa || hasKo || hasZh) && <LangToggle source={section.sourceLang === "zh" ? "中文" : "日本語"} />}
             </div>
             <h1>{post.title}</h1>

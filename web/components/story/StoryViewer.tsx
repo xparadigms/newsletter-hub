@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { headingContent, renderAnnotated } from "@/components/ArticleBlocks";
 import { blockAudio } from "@/lib/text";
 import type { SectionKey } from "@/lib/types";
+import FuriganaToggle from "@/components/FuriganaToggle";
 import LangToggle from "@/components/LangToggle";
 import type { StoryCard } from "@/lib/story";
 
@@ -139,6 +140,11 @@ export default function StoryViewer({
   const router = useRouter();
   const [index, setIndex] = useState(0);
   const count = cards.length;
+  // Only offer the toggle where there are readings to hide. Pinyin is ruby too,
+  // but it is the point of the Chinese sections rather than a reading aid.
+  const hasRuby = cards.some(
+    (c) => c.kind === "content" && c.blocks.some((b) => b.ruby?.some((s) => s.reading))
+  );
   const start = useRef<{ x: number; y: number } | null>(null);
   const bodyAtTop = useRef(true);
   const scrollAtDown = useRef(0);
@@ -326,6 +332,7 @@ export default function StoryViewer({
 
       <div className="story-topbar">
         <span className="story-topbar__title">{title}</span>
+        {hasRuby && <FuriganaToggle />}
         <LangToggle source={sourceLang === "zh" ? "中文" : "日本語"} />
         <button
           type="button"

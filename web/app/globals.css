@@ -406,6 +406,32 @@ img {
   white-space: nowrap;
 }
 
+/* Furigana off: hide the readings, not the ruby, so the base text keeps its
+   position in the line. .has-ruby scopes this to the Japanese reading aid —
+   pinyin is <ruby> as well, and hiding it would empty the Chinese sections of
+   the thing they exist for. */
+html[data-furigana="off"] .has-ruby rt {
+  display: none;
+}
+
+.furigana-toggle {
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.02em;
+  color: var(--text-tertiary);
+  background: 0 0;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+html[data-furigana="on"] .furigana-toggle {
+  color: var(--accent-strong);
+  border-color: var(--border-strong);
+}
+
 .enter-page {
   min-height: 100dvh;
   display: flex;

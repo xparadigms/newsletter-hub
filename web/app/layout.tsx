@@ -87,7 +87,7 @@ export const viewport: Viewport = {
 // persisted translation-filter setting, so neither flashes on load, and tints
 // the status bar to match. theme-color is set here rather than via the
 // prefers-color-scheme metadata because a manual theme choice must win.
-const bootScript = `(function(){try{var d=document.documentElement,t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";d.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?"#0d0d0d":"#ffffff");var l=localStorage.getItem("langs");if(l==="en"||l==="all"||l==="ja-ko")d.setAttribute("data-langs",l);d.setAttribute("data-story",localStorage.getItem("story-mode")==="on"?"on":"off");}catch(e){}})();`;
+const bootScript = `(function(){try{var d=document.documentElement,t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark")t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";d.setAttribute("data-theme",t);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?"#0d0d0d":"#ffffff");var l=localStorage.getItem("langs");if(l==="en"||l==="all"||l==="ja-ko")d.setAttribute("data-langs",l);d.setAttribute("data-story",localStorage.getItem("story-mode")==="on"?"on":"off");d.setAttribute("data-furigana",localStorage.getItem("furigana")==="off"?"off":"on");}catch(e){}})();`;
 
 // iOS picks a launch image by matching device-width/height and pixel ratio;
 // without one it shows a blank white screen while the app boots.
