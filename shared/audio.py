@@ -254,6 +254,14 @@ def attach_audio(blocks: list[Block], lang: str) -> int:
             block["audio"] = done[text]
             attached += 1
 
+    # tts-1 bills per character outright; the 4o voices bill per audio token,
+    # which tracks length just as closely. Either way the characters read aloud
+    # are the number that moves the bill, so print them.
+    print(
+        f"  audio: {attached}/{len(targets)} blocks "
+        f"({made} synthesised, {reused} reused, {missing} unsynthesised, "
+        f"{failed} failed) — {spoken_chars:,} chars read on {MODEL}"
+    )
     return attached
 
 
