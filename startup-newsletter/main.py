@@ -27,7 +27,7 @@ from googleapiclient.discovery import build
 # root is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import issue as issue_row, llm, store  # noqa: E402
+from shared import audio, issue as issue_row, llm, store  # noqa: E402
 from shared.http import request_with_retry  # noqa: E402
 from shared import sources  # noqa: E402
 from shared.trilingual import md_to_blocks as trilingual_to_blocks  # noqa: E402
@@ -695,6 +695,13 @@ def run():
         source_format="trilingual_md",
         edition=EDITION,
     )
+
+    try:
+        n = audio.attach_audio(row["blocks"], "ja")
+        print(f"  ✓ Audio: {n} block(s)")
+    except Exception as e:  # noqa: BLE001 — a silent issue still publishes
+        print(f"  ⚠ Audio failed (non-fatal): {e}")
+
     stored = store.upsert_issue(row)
     if stored.get("slug"):
         print(f"✓ Stored: startup/{stored['slug']}")
