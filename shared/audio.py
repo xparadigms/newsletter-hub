@@ -23,6 +23,7 @@ from __future__ import annotations
 import hashlib
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Iterator
 
 from . import http
@@ -55,6 +56,10 @@ MAX_CHARS = 900
 # Every synthesis is billable, and a runaway generator is the only way this ever
 # gets expensive. A normal issue needs 20-40.
 MAX_SYNTHESES = 200
+
+# Enough to hide the latency, small enough to stay well inside OpenAI's
+# per-minute limits on the audio endpoint.
+WORKERS = 6
 
 
 def _api_key() -> str:
@@ -185,45 +190,70 @@ def attach_audio(blocks: list[Block], lang: str) -> int:
     if not has_key:
         print("  ⚠ OPENAI_API_KEY not set — reusing existing audio only.")
 
-    seen: dict[str, str] = {}  # text -> url, for repeats within one issue
-    attached = made = reused = missing = failed = spoken_chars = 0
+    # Unique texts first. A sentence repeated inside one issue is one object in
+    # Storage and must be one synthesis, and deduplicating here rather than
+    # inside the loop is what makes the loop safe to run concurrently.
+    order: list[str] = []
+    for _, text in targets:
+        if text not in order:
+            order.append(text)
 
-    for block, text in targets:
+    def url_for(text: str) -> str:
+        name = f"{lang}/{_cache_key(text, voice, style)}.mp3"
+        return f"{base}/storage/v1/object/public/{BUCKET}/{name}"
+
+    # Sequential synthesis is what timed China out: 28 sentences at roughly ten
+    # seconds each ran the job past its fifteen-minute ceiling and the whole
+    # issue was cancelled after the writing had already been paid for. These
+    # calls are independent and almost entirely spent waiting on the network.
+    done: dict[str, str] = {}
+    reused = failed = missing = made = spoken_chars = 0
+
+    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+        exists = dict(zip(order, pool.map(lambda t: _exists(url_for(t)), order)))
+
+    fresh = [t for t in order if exists[t]]
+    for t in fresh:
+        done[t] = url_for(t)
+    reused = len(fresh)
+
+    todo = [t for t in order if not exists[t]]
+    if not has_key:
+        missing = len(todo)
+        todo = []
+    elif len(todo) > MAX_SYNTHESES:
+        print(
+            f"  ⚠ audio budget ({MAX_SYNTHESES}) reached; "
+            f"{len(todo) - MAX_SYNTHESES} sentence(s) stay silent."
+        )
+        missing = len(todo) - MAX_SYNTHESES
+        todo = todo[:MAX_SYNTHESES]
+
+    def make(text: str) -> tuple[str, str | None, str]:
         try:
-            url = seen.get(text)
-            if url is None:
-                name = f"{lang}/{_cache_key(text, voice, style)}.mp3"
-                url = f"{base}/storage/v1/object/public/{BUCKET}/{name}"
-                if _exists(url):
-                    reused += 1
-                elif not has_key:
-                    missing += 1
-                    continue
-                else:
-                    if made >= MAX_SYNTHESES:
-                        print(
-                            f"  ⚠ audio budget ({MAX_SYNTHESES}) reached; "
-                            "the rest of this issue stays silent."
-                        )
-                        break
-                    _upload(base, sb_key, name, _synthesize(text, voice, style))
+            name = f"{lang}/{_cache_key(text, voice, style)}.mp3"
+            _upload(base, sb_key, name, _synthesize(text, voice, style))
+            return text, url_for(text), ""
+        except Exception as e:  # noqa: BLE001 — one sentence must not stop the issue
+            return text, None, str(e)
+
+    if todo:
+        with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+            for text, url, err in pool.map(make, todo):
+                if url:
+                    done[text] = url
                     made += 1
                     spoken_chars += len(text)
-                seen[text] = url
-            block["audio"] = url
-            attached += 1
-        except Exception as e:  # noqa: BLE001 — one sentence must not stop the issue
-            failed += 1
-            print(f"  ⚠ audio failed for {text[:24]!r}: {e}")
+                else:
+                    failed += 1
+                    print(f"  ⚠ audio failed for {text[:24]!r}: {err}")
 
-    # tts-1 bills per character outright; the 4o voices bill per audio token,
-    # which tracks length just as closely. Either way the characters read aloud
-    # are the number that moves the bill, so print them.
-    print(
-        f"  audio: {attached}/{len(targets)} blocks "
-        f"({made} synthesised, {reused} reused, {missing} unsynthesised, "
-        f"{failed} failed) — {spoken_chars:,} chars read on {MODEL}"
-    )
+    attached = 0
+    for block, text in targets:
+        if text in done:
+            block["audio"] = done[text]
+            attached += 1
+
     return attached
 
 
