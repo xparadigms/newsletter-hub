@@ -58,23 +58,47 @@ function toPost(row: Row): Post {
   };
 }
 
+// Every list expires on the same 300s clock, so a regeneration is a burst of
+// seven-plus concurrent queries. Supabase's gateway answered some of those
+// with 504 Gateway Timeout, and the old code turned that into an empty list —
+// which unstable_cache then held for the next five minutes. Three sections
+// were blank for days while the query itself worked fine from anywhere else.
+const ATTEMPTS = 3;
+const BACKOFF_MS = 400;
+
 async function fetchPosts(section: SectionKey): Promise<Post[]> {
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from("newsletter")
-    .select(LIST_COLUMNS)
-    .eq("section", section)
-    .order("issue_date", { ascending: false })
-    .order("published_at", { ascending: false })
-    .limit(500);
 
-  if (error) {
-    // Matches the previous behaviour: a list failure degrades to an empty
-    // section rather than an error page. It is cached for 5 minutes at most.
-    console.error(`Failed to load posts for ${section}:`, error.message);
-    return [];
+  let lastError = "";
+  for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+    const { data, error } = await supabase
+      .from("newsletter")
+      .select(LIST_COLUMNS)
+      .eq("section", section)
+      .order("issue_date", { ascending: false })
+      .order("published_at", { ascending: false })
+      .limit(500);
+
+    if (!error) return (data as Row[]).map(toPost);
+
+    lastError = error.message;
+    console.error(
+      `Failed to load posts for ${section} (attempt ${attempt}/${ATTEMPTS}):`,
+      lastError
+    );
+    if (attempt < ATTEMPTS) {
+      // Jittered so seven retries do not re-form the burst that caused this.
+      await new Promise((r) =>
+        setTimeout(r, BACKOFF_MS * attempt + Math.random() * 200)
+      );
+    }
   }
-  return (data as Row[]).map(toPost);
+
+  // Throw, do not return []. A thrown revalidation leaves unstable_cache's
+  // last good value in place, so a section stays populated through a bad
+  // moment instead of going blank. Only a cold cache with no good value ever
+  // sees this as an error, and that is the honest outcome.
+  throw new Error(`posts for ${section} unavailable: ${lastError}`);
 }
 
 // Shared across home, section, article and search routes so one revalidation
