@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { SECTIONS } from "@/lib/config";
 import type { SectionKey } from "@/lib/types";
 
@@ -56,8 +57,43 @@ const TABS: { key: string; href: string; label: string; glyph: SectionKey | "hom
   })),
 ];
 
+// Scrolling down past this tucks the bar away; any upward scroll brings it
+// back. The threshold stops a rubber-band bounce at the top from flickering it.
+const TUCK_AFTER = 80;
+
 export default function TabBar() {
   const pathname = usePathname() ?? "/";
+  const [minimized, setMinimized] = useState(false);
+
+  // The iOS 26 tab bar gets out of the way while you read and returns the
+  // moment you reach for it. Direction, not position: a long article scrolled
+  // halfway should still show the bar as soon as the thumb moves up.
+  useEffect(() => {
+    let last = window.scrollY;
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const y = window.scrollY;
+      const down = y > last && y > TUCK_AFTER;
+      const up = y < last || y <= TUCK_AFTER;
+      if (down) setMinimized(true);
+      else if (up) setMinimized(false);
+      last = y;
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  // A new page starts with the bar visible, whatever the last one did.
+  useEffect(() => {
+    setMinimized(false);
+  }, [pathname]);
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -67,7 +103,7 @@ export default function TabBar() {
   };
 
   return (
-    <nav className="tabbar" aria-label="Sections">
+    <nav className="tabbar" aria-label="Sections" data-minimized={minimized}>
       <ul className="tabbar__list">
         {TABS.map((tab) => {
           const active = isActive(tab.href);

@@ -68,6 +68,30 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
 
+  /* Corner scale, concentric: a control inside a container uses one step
+     smaller, so the gap between the two curves reads as even. Nothing is
+     square any more except the type. */
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+
+  /* Liquid-glass materials. A translucent fill, a hairline that is lighter than
+     the fill so the edge catches light, and the blur underneath. Three layers
+     on the same surface is what makes chrome read as floating over content
+     rather than painted onto it. */
+  --glass-bg: rgb(255 255 255 / 66%);
+  --glass-bg-strong: rgb(255 255 255 / 84%);
+  --glass-border: rgb(255 255 255 / 70%);
+  --glass-edge: rgb(0 0 0 / 8%);
+  --glass-blur: saturate(180%) blur(22px);
+  --shadow-float: 0 10px 30px rgb(0 0 0 / 12%), 0 1px 2px rgb(0 0 0 / 6%);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 4%);
+  /* Grouped-list surface, one step off the page like iOS inset lists. */
+  --surface: #ffffff;
+  --page: #f2f2f7;
+  --tap: rgb(0 0 0 / 5%);
+
   /* Motion tokens — one iOS-style spring curve used everywhere. */
   --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
@@ -78,6 +102,15 @@
 
 [data-theme="dark"] {
   color-scheme: dark;
+  --glass-bg: rgb(28 28 30 / 62%);
+  --glass-bg-strong: rgb(28 28 30 / 84%);
+  --glass-border: rgb(255 255 255 / 14%);
+  --glass-edge: rgb(0 0 0 / 40%);
+  --shadow-float: 0 10px 30px rgb(0 0 0 / 45%), 0 1px 2px rgb(0 0 0 / 30%);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 30%);
+  --surface: #1c1c1e;
+  --page: #000000;
+  --tap: rgb(255 255 255 / 8%);
   --bg: #0d0d0d;
   --bg-subtle: #1a1a1a;
   --border: #262626;
@@ -98,6 +131,15 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
+    --glass-bg: rgb(28 28 30 / 62%);
+    --glass-bg-strong: rgb(28 28 30 / 84%);
+    --glass-border: rgb(255 255 255 / 14%);
+    --glass-edge: rgb(0 0 0 / 40%);
+    --shadow-float: 0 10px 30px rgb(0 0 0 / 45%), 0 1px 2px rgb(0 0 0 / 30%);
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 30%);
+    --surface: #1c1c1e;
+    --page: #000000;
+    --tap: rgb(255 255 255 / 8%);
     --bg: #0d0d0d;
     --bg-subtle: #1a1a1a;
     --border: #262626;
@@ -2589,4 +2631,404 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
    state lives on html[data-langs] and never enters the tree. */
 html[data-langs="en"] .story-audio {
   display: none;
+}
+
+/* =========================================================================
+   iOS 26 chrome pass.
+
+   The editorial type and the reading surfaces are untouched. What changes is
+   the chrome around them: nothing square, every floating surface a glass
+   material, lists as inset groups, controls as pills. These rules sit at the
+   end so they win over the earlier flat styling at equal specificity, which
+   keeps the earlier blocks — and everything that depends on them, like the
+   story-mode token rebinding — exactly as they were.
+   ========================================================================= */
+
+/* ---------- nav bar: glass, hairline only once content is under it -------- */
+
+.navbar {
+  background: var(--glass-bg-strong);
+  border-bottom-color: transparent;
+}
+
+@supports (backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px)) {
+  .navbar {
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+  }
+}
+
+.navbar[data-collapsed="true"] {
+  border-bottom-color: var(--glass-edge);
+}
+
+.navbar__back {
+  border-radius: 999px;
+  padding: 6px 10px 6px 6px;
+  margin-left: -6px;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.navbar__back:active {
+  background: var(--tap);
+}
+
+/* ---------- toolbar buttons: 36px circles, glass ---------- */
+
+.theme-toggle,
+.search-toggle,
+.story-toggle {
+  width: 36px;
+  height: 36px;
+  margin-right: 0;
+  border-radius: 999px;
+  border-color: var(--glass-edge);
+  background: var(--glass-bg);
+  transition: transform 0.12s var(--ease-out), background var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.navbar__side--end {
+  gap: 8px;
+}
+
+.theme-toggle:active,
+.search-toggle:active,
+.story-toggle:active {
+  transform: scale(0.9);
+  background: var(--tap);
+}
+
+.story-toggle[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ---------- segmented control: pill with a raised thumb ---------- */
+
+.lang-toggle {
+  border: 0;
+  border-radius: 999px;
+  padding: 3px;
+  background: var(--tap);
+  gap: 2px;
+}
+
+.lang-toggle button {
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 12px;
+  transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur-fast) var(--ease-out);
+}
+
+html:not([data-langs]) .lang-toggle button[data-value="ja-ko"],
+html[data-langs="ja-ko"] .lang-toggle button[data-value="ja-ko"],
+html[data-langs="en"] .lang-toggle button[data-value="en"],
+html[data-langs="all"] .lang-toggle button[data-value="all"] {
+  background: var(--surface);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-card);
+}
+
+/* ---------- floating tab bar ---------- */
+
+.tabbar {
+  left: 12px;
+  right: 12px;
+  bottom: calc(var(--safe-bottom) + 10px);
+  padding: 0;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: var(--glass-bg);
+  box-shadow: var(--shadow-float), inset 0 1px 0 var(--glass-border);
+  overflow: hidden;
+  /* Minimising and restoring animate the height and the labels together. */
+  transition: transform var(--dur-slow) var(--ease-ios), opacity var(--dur-base) var(--ease-out);
+}
+
+@supports (backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px)) {
+  .tabbar {
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+  }
+}
+
+.tabbar__list {
+  padding: 4px;
+  gap: 2px;
+  max-width: none;
+}
+
+.tabbar__tab {
+  height: 48px;
+  border-radius: 999px;
+  gap: 3px;
+  transition: background var(--dur-base) var(--ease-ios), color var(--dur-fast) var(--ease-out),
+    transform 0.12s var(--ease-out);
+}
+
+.tabbar__tab[data-active="true"] {
+  background: var(--accent-tint);
+}
+
+/* Eight sections do not fit eight labels in a phone-width pill. The iOS 26
+   shape for this is the minimised bar: only the active tab carries its label,
+   in a tinted pill; the rest are glyphs. On scroll the whole bar tucks down to
+   a single row of glyphs and comes back on the first upward scroll. */
+@media (max-width: 1023px) {
+  .tabbar__label {
+    display: none;
+  }
+  .tabbar__list > li {
+    flex: 1 1 0;
+  }
+  .tabbar__list > li:has(.tabbar__tab[data-active="true"]) {
+    flex: 2.2 1 0;
+  }
+  .tabbar__tab[data-active="true"] {
+    flex-direction: row;
+    gap: 6px;
+  }
+  .tabbar__tab[data-active="true"] .tabbar__label {
+    display: inline;
+    font-size: var(--text-xs);
+    font-weight: 600;
+  }
+  .tabbar[data-minimized="true"] {
+    transform: translate3d(0, calc(100% + var(--safe-bottom) + 14px), 0);
+    opacity: 0.6;
+  }
+}
+
+/* The desktop pill keeps its labels and just picks up the glass. */
+@media (min-width: 1024px) {
+  .tabbar {
+    left: 50%;
+    right: auto;
+    bottom: 20px;
+  }
+}
+
+/* Content clears the taller floating bar. */
+main {
+  padding-bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 28px);
+}
+
+/* ---------- lists as inset groups ---------- */
+
+.post-list,
+.section-module__list,
+.latest__list,
+.search-results {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.post-list {
+  border-top: 1px solid var(--border);
+}
+
+.post-row,
+.section-module__list li,
+.latest__item {
+  border-bottom: 1px solid var(--border);
+}
+
+.post-row:last-child,
+.section-module__list li:last-child,
+.latest__item:last-child,
+.search-results li:last-child {
+  border-bottom: 0;
+}
+
+.post-row a,
+.section-module__list a,
+.latest__item a,
+.search-results a {
+  padding-left: 16px;
+  padding-right: 16px;
+  min-height: 52px;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.post-row a:active,
+.section-module__list a:active,
+.latest__item a:active,
+.search-results a:active,
+.secondary__item:active {
+  background: var(--tap);
+}
+
+.post-row a {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.section-module__list a,
+.latest__item a {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+/* iOS rows end in a chevron, not an arrow. */
+.post-row__arrow {
+  font-size: 0;
+  width: 8px;
+  height: 8px;
+  border-right: 1.8px solid var(--text-faint);
+  border-bottom: 1.8px solid var(--text-faint);
+  transform: rotate(-45deg);
+  justify-self: end;
+}
+
+.post-row a:hover .post-row__arrow {
+  transform: rotate(-45deg) translate(1px, 1px);
+}
+
+.month-label {
+  padding-left: 16px;
+}
+
+.tag {
+  border-radius: 999px;
+  border-color: transparent;
+}
+
+.arrow-link {
+  border-radius: 999px;
+  padding: 8px 14px;
+  margin-left: -14px;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.arrow-link:active {
+  background: var(--tap);
+}
+
+.secondary__item {
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  margin: 0 -14px;
+}
+
+/* ---------- sheet: deeper corners, glass ---------- */
+
+.sheet {
+  border: 1px solid var(--glass-border);
+  border-bottom: 0;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  background: var(--glass-bg-strong);
+  box-shadow: 0 -12px 44px rgb(0 0 0 / 30%);
+}
+
+@supports (backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px)) {
+  .sheet {
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+  }
+}
+
+.sheet__grabber {
+  width: 40px;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+
+.search-input {
+  border-radius: var(--radius-sm);
+  border-color: transparent;
+  padding: 11px 14px;
+}
+
+/* ---------- generate / enter / furigana buttons ---------- */
+
+.generate__button,
+.enter__button,
+.furigana-toggle {
+  border-color: var(--glass-edge);
+  background: var(--glass-bg);
+  transition: transform 0.12s var(--ease-out), background var(--dur-fast) var(--ease-out);
+}
+
+.generate__button:active:not(:disabled),
+.enter__button:active:not(:disabled),
+.furigana-toggle:active {
+  transform: scale(0.94);
+}
+
+.enter__input {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
+  background: var(--surface);
+}
+
+.enter__input:focus {
+  border-color: var(--accent);
+}
+
+/* ---------- story mode: glass controls over the card ---------- */
+
+.story-topbar__close,
+.story-root .lang-toggle {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+}
+
+.story-topbar__close {
+  width: 34px;
+  height: 34px;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+}
+
+.story-controls {
+  padding: 5px;
+  border-radius: 999px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--shadow-float), inset 0 1px 0 var(--glass-border);
+}
+
+@supports (backdrop-filter: blur(20px)) or (-webkit-backdrop-filter: blur(20px)) {
+  .story-controls,
+  .story-topbar__close,
+  .story-root .lang-toggle {
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+  }
+}
+
+.story-controls .furigana-toggle,
+.story-controls .story-audio {
+  border: 0;
+  background: none;
+  padding: 8px 14px;
+}
+
+.story-controls .story-audio[aria-pressed="true"],
+html[data-furigana="on"] .story-controls .furigana-toggle {
+  background: var(--surface);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-card);
+}
+
+.story-progress__seg {
+  border-radius: 999px;
+}
+
+/* ---------- a PWA has no footer ---------- */
+
+@media (max-width: 1023px) {
+  .site-footer {
+    display: none;
+  }
 }
