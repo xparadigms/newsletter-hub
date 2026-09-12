@@ -20,7 +20,6 @@ delete every key that appears in no row's blocks.
 
 from __future__ import annotations
 
-import base64
 import hashlib
 import os
 import sys
@@ -32,22 +31,25 @@ from .furigana import is_jp_body
 Block = dict[str, Any]
 
 BUCKET = os.environ.get("TTS_BUCKET", "tts")
-SYNTHESIZE_URL = "https://texttospeech.googleapis.com/v1/text:synthesize"
-VOICES_URL = "https://texttospeech.googleapis.com/v1/voices"
+SPEECH_URL = "https://api.openai.com/v1/audio/speech"
 
-# (BCP-47 code, voice, speaking rate). The rate is part of the cache key below,
-# so changing the pace re-synthesises rather than serving the old one.
-#
-# Slightly under natural pace on both: this doubles as listening practice. An
-# unknown voice name is a 400 on EVERY call, which would silence a whole issue —
-# check against list_voices() before changing either.
+# OpenAI rather than Google Cloud, because the key for it already exists. This
+# feature sat finished but silent for a week waiting on a GCP key that was never
+# minted, while OPENAI_API_KEY was right there.
+MODEL = os.environ.get("TTS_MODEL", "gpt-4o-mini-tts")
+
+# (voice, spoken instruction). OpenAI voices are language-agnostic — the model
+# reads whatever script it is given — so the two newsletters get different
+# voices to tell them apart by ear, and the pace is asked for in words rather
+# than set as a rate. Both are part of the cache key, so changing either
+# re-synthesises instead of serving the old audio.
 VOICES = {
-    "zh": ("cmn-CN", "cmn-CN-Wavenet-A", 0.85),
-    "ja": ("ja-JP", "ja-JP-Neural2-B", 0.95),
+    "zh": ("nova", "Speak clearly and a little slower than natural pace, for a learner."),
+    "ja": ("alloy", "Speak clearly and a little slower than natural pace, for a learner."),
 }
 
-# Cloud TTS caps input at 5000 bytes. A "sentence" past this is a parser bug
-# rather than a sentence, so skip it instead of failing the call.
+# A "sentence" past this is a parser bug rather than a sentence, so skip it
+# instead of paying to read it aloud.
 MAX_CHARS = 900
 
 # Every synthesis is billable, and a runaway generator is the only way this ever
@@ -56,9 +58,9 @@ MAX_SYNTHESES = 200
 
 
 def _api_key() -> str:
-    key = os.environ.get("GCP_TTS_API_KEY", "").strip()
+    key = os.environ.get("OPENAI_API_KEY", "").strip()
     if not key:
-        raise RuntimeError("GCP_TTS_API_KEY is not set")
+        raise RuntimeError("OPENAI_API_KEY is not set")
     return key
 
 
@@ -70,8 +72,8 @@ def _supabase() -> tuple[str, str]:
     return url, key
 
 
-def _cache_key(text: str, voice: str, rate: float) -> str:
-    return hashlib.sha256(f"{voice}|{rate}|{text}".encode()).hexdigest()[:16]
+def _cache_key(text: str, voice: str, style: str) -> str:
+    return hashlib.sha256(f"{MODEL}|{voice}|{style}|{text}".encode()).hexdigest()[:16]
 
 
 def _speakable(blocks: list[Block], lang: str) -> Iterator[tuple[Block, str]]:
@@ -112,21 +114,33 @@ def _exists(public_url: str) -> bool:
     return resp.status_code == 200
 
 
-def _synthesize(text: str, code: str, voice: str, rate: float) -> bytes:
+def _synthesize(text: str, voice: str, style: str) -> bytes:
+    body: dict[str, Any] = {
+        "model": MODEL,
+        "voice": voice,
+        "input": text,
+        "response_format": "mp3",
+    }
+    # tts-1 takes a numeric speed and rejects `instructions`; the 4o models take
+    # the instruction and ignore speed. Sending the wrong one is a 400.
+    if MODEL.startswith("tts-"):
+        body["speed"] = 0.9
+    else:
+        body["instructions"] = style
+
     resp = http.request_with_retry(
         "POST",
-        f"{SYNTHESIZE_URL}?key={_api_key()}",
-        label="Cloud TTS",
-        headers={"Content-Type": "application/json"},
-        json={
-            "input": {"text": text},
-            "voice": {"languageCode": code, "name": voice},
-            "audioConfig": {"audioEncoding": "MP3", "speakingRate": rate},
+        SPEECH_URL,
+        label="OpenAI TTS",
+        headers={
+            "Authorization": f"Bearer {_api_key()}",
+            "Content-Type": "application/json",
         },
-        timeout=60,
+        json=body,
+        timeout=120,
     )
     resp.raise_for_status()
-    return base64.b64decode(resp.json()["audioContent"])
+    return resp.content
 
 
 def _upload(base: str, key: str, name: str, mp3: bytes) -> None:
@@ -159,7 +173,7 @@ def attach_audio(blocks: list[Block], lang: str) -> int:
     if lang not in VOICES:
         raise ValueError(f"no voice configured for {lang!r}")
 
-    code, voice, rate = VOICES[lang]
+    voice, style = VOICES[lang]
     base, sb_key = _supabase()
     targets = [(b, t) for b, t in _speakable(blocks, lang) if len(t) <= MAX_CHARS]
 
@@ -167,18 +181,18 @@ def attach_audio(blocks: list[Block], lang: str) -> int:
     # still attaches. rerender.py leans on this — a keyless run that attached
     # nothing would report every row as changed and --commit would PATCH the
     # audio away.
-    has_key = bool(os.environ.get("GCP_TTS_API_KEY", "").strip())
+    has_key = bool(os.environ.get("OPENAI_API_KEY", "").strip())
     if not has_key:
-        print("  ⚠ GCP_TTS_API_KEY not set — reusing existing audio only.")
+        print("  ⚠ OPENAI_API_KEY not set — reusing existing audio only.")
 
     seen: dict[str, str] = {}  # text -> url, for repeats within one issue
-    attached = made = reused = missing = failed = 0
+    attached = made = reused = missing = failed = spoken_chars = 0
 
     for block, text in targets:
         try:
             url = seen.get(text)
             if url is None:
-                name = f"{lang}/{_cache_key(text, voice, rate)}.mp3"
+                name = f"{lang}/{_cache_key(text, voice, style)}.mp3"
                 url = f"{base}/storage/v1/object/public/{BUCKET}/{name}"
                 if _exists(url):
                     reused += 1
@@ -192,8 +206,9 @@ def attach_audio(blocks: list[Block], lang: str) -> int:
                             "the rest of this issue stays silent."
                         )
                         break
-                    _upload(base, sb_key, name, _synthesize(text, code, voice, rate))
+                    _upload(base, sb_key, name, _synthesize(text, voice, style))
                     made += 1
+                    spoken_chars += len(text)
                 seen[text] = url
             block["audio"] = url
             attached += 1
@@ -201,10 +216,13 @@ def attach_audio(blocks: list[Block], lang: str) -> int:
             failed += 1
             print(f"  ⚠ audio failed for {text[:24]!r}: {e}")
 
+    # tts-1 bills per character outright; the 4o voices bill per audio token,
+    # which tracks length just as closely. Either way the characters read aloud
+    # are the number that moves the bill, so print them.
     print(
         f"  audio: {attached}/{len(targets)} blocks "
         f"({made} synthesised, {reused} reused, {missing} unsynthesised, "
-        f"{failed} failed)"
+        f"{failed} failed) — {spoken_chars:,} chars read on {MODEL}"
     )
     return attached
 
@@ -236,20 +254,8 @@ def ensure_bucket() -> None:
     print(f"created public bucket {BUCKET!r}")
 
 
-def list_voices(code: str) -> None:
-    """python3 -m shared.audio --voices cmn-CN — check a name before trusting it."""
-    resp = http.request_with_retry(
-        "GET", f"{VOICES_URL}?languageCode={code}&key={_api_key()}", label="Cloud TTS"
-    )
-    resp.raise_for_status()
-    for v in resp.json().get("voices", []):
-        print(f"  {v['name']:28s} {v.get('ssmlGender','?'):8s} {v.get('naturalSampleRateHertz','')}")
-
-
 if __name__ == "__main__":
     if "--ensure-bucket" in sys.argv:
         ensure_bucket()
-    elif "--voices" in sys.argv:
-        list_voices(sys.argv[sys.argv.index("--voices") + 1])
     else:
         print(__doc__)

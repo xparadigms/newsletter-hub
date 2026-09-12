@@ -47,7 +47,7 @@ jobs:
           NOTION_DATABASE_ID: 3bf5bc953df38025952ce0086f4e5576
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-          GCP_TTS_API_KEY: ${{ secrets.GCP_TTS_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           SITE_URL: ${{ secrets.SITE_URL }}
           REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
           TIMEZONE: Asia/Seoul
