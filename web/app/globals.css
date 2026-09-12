@@ -2546,12 +2546,28 @@ html[data-langs="all"] .story-topbar .lang-toggle button[data-value="all"] {
    in a card paints below .story-zone (absolute, z-index 1 in .story-stage) —
    .story-card__body escapes only because it lifts itself to 2. Without this the
    button is covered and the tap lands on "next card" instead. */
+/* Both reading controls, centred under the card. Above the tap zones, which
+   are absolute at z-index 1 inside the stage; the bar is a later sibling with
+   its own z-index, so it paints over them rather than racing them. */
+.story-controls .furigana-toggle {
+  padding: 6px 12px;
+  border-color: var(--border-strong);
+}
+
+.story-controls {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--safe-bottom) + 20px);
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* The bar positions these now; the button no longer places itself. */
 .story-audio {
-  position: relative;
-  z-index: 3;
-  align-self: flex-start;
   flex-shrink: 0;
-  margin-top: 10px;
   display: inline-flex;
   align-items: center;
   gap: 6px;

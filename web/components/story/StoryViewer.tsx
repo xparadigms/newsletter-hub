@@ -38,16 +38,10 @@ function Card({
   card,
   sectionKey,
   sourceLang,
-  playing,
-  onPlay,
-  onStop,
 }: {
   card: StoryCard;
   sectionKey: SectionKey;
   sourceLang: "ja" | "zh";
-  playing: boolean;
-  onPlay: (urls: string[]) => void;
-  onStop: () => void;
 }) {
   if (card.kind === "cover") {
     return (
@@ -80,14 +74,6 @@ function Card({
     );
   }
 
-  // By presence of `audio`, not by a.lang: the generator already decided what is
-  // speakable and never gave Korean a URL, so re-deciding here would only add a
-  // way for the two to disagree. Card order is buildDeck's order, so the queue
-  // matches what is on screen.
-  const audioUrls = card.blocks
-    .map((a) => blockAudio(a.block))
-    .filter((u): u is string => !!u);
-
   return (
     <div className="story-card story-card--content">
       {card.kicker && <span className="label story-card__eyebrow">{card.kicker}</span>}
@@ -96,21 +82,6 @@ function Card({
         <p className="story-card__subtitle" lang="ko">
           {card.subtitle}
         </p>
-      )}
-      {audioUrls.length > 0 && (
-        <button
-          type="button"
-          className="story-audio"
-          // A literal <button> with no data-zone: the pointerup escape hatch in
-          // onPointerUp matches `button:not([data-zone])` and bails, so this
-          // neutralises the swipe/tap layer over itself for free.
-          aria-pressed={playing}
-          aria-label={playing ? "Stop reading" : "Read this card aloud"}
-          onClick={() => (playing ? onStop() : onPlay(audioUrls))}
-        >
-          <SpeakerIcon playing={playing} />
-          <span className="label">{playing ? "Stop" : "Listen"}</span>
-        </button>
       )}
       <div
         className="story-card__body article__body"
@@ -142,6 +113,13 @@ export default function StoryViewer({
   const count = cards.length;
   // Only offer the toggle where there are readings to hide. Pinyin is ruby too,
   // but it is the point of the Chinese sections rather than a reading aid.
+  const current = cards[index];
+  const cardAudio =
+    current?.kind === "content"
+      ? current.blocks
+          .map((a) => blockAudio(a.block))
+          .filter((u): u is string => !!u)
+      : [];
   const hasRuby = cards.some(
     (c) => c.kind === "content" && c.blocks.some((b) => b.ruby?.some((s) => s.reading))
   );
@@ -332,7 +310,6 @@ export default function StoryViewer({
 
       <div className="story-topbar">
         <span className="story-topbar__title">{title}</span>
-        {hasRuby && <FuriganaToggle />}
         <LangToggle source={sourceLang === "zh" ? "中文" : "日本語"} />
         <button
           type="button"
@@ -352,9 +329,6 @@ export default function StoryViewer({
             card={cards[index]}
             sectionKey={sectionKey}
             sourceLang={sourceLang}
-            playing={playing}
-            onPlay={playCard}
-            onStop={stopAudio}
           />
         </div>
 
@@ -366,6 +340,29 @@ export default function StoryViewer({
         <button type="button" data-zone className="story-zone story-zone--prev" onClick={zone("prev")} aria-label="Previous card" />
         <button type="button" data-zone className="story-zone story-zone--next" onClick={zone("next")} aria-label="Next card" />
       </div>
+
+      {/* Both reading controls, under the card rather than in it. They are
+          literal <button>s with no data-zone, so the pointerup escape hatch
+          bails on them and the swipe layer is neutralised over the bar for
+          free. Listen is driven by the card on screen: the queue is rebuilt
+          from `index` on every render, so it always reads what is visible. */}
+      {(hasRuby || cardAudio.length > 0) && (
+        <div className="story-controls">
+          {hasRuby && <FuriganaToggle />}
+          {cardAudio.length > 0 && (
+            <button
+              type="button"
+              className="story-audio"
+              aria-pressed={playing}
+              aria-label={playing ? "Stop reading" : "Read this card aloud"}
+              onClick={() => (playing ? stopAudio() : playCard(cardAudio))}
+            >
+              <SpeakerIcon playing={playing} />
+              <span className="label">{playing ? "Stop" : "Listen"}</span>
+            </button>
+          )}
+        </div>
+      )}
 
       <audio
         ref={audioRef}
