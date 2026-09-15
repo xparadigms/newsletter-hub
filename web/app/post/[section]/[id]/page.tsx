@@ -125,7 +125,6 @@ export default async function PostPage({
                   .filter(Boolean)
                   .join(" · ")}
               </span>
-              {hasRuby && <FuriganaToggle />}
               {(hasJa || hasKo || hasZh) && <LangToggle source={section.sourceLang === "zh" ? "中文" : "日本語"} />}
             </div>
             <h1>{post.title}</h1>
@@ -177,6 +176,17 @@ export default async function PostPage({
             )}
           </div>
           {toc.length > 1 && <TableOfContents items={toc} />}
+          {/* Floats at the bottom right so it is reachable mid-read. data-with-toc
+              lifts it above the contents button, which owns that corner on
+              phones. */}
+          {hasRuby && (
+            <div
+              className="article__fab"
+              data-with-toc={toc.length > 1 ? "" : undefined}
+            >
+              <FuriganaToggle />
+            </div>
+          )}
         </div>
       </article>
     </PageTransition>

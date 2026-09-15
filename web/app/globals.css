@@ -1433,6 +1433,40 @@ main {
   }
 }
 
+/* Floating furigana toggle — bottom right, sized to match .toc-fab. Same
+   containing-block caveat as the contents button (see the view-transition
+   note above). */
+.article__fab {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 14px);
+  z-index: 62;
+}
+
+/* Stack above the contents button while it is on screen. */
+.article__fab[data-with-toc] {
+  bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 14px + 46px + 10px);
+}
+
+@media (min-width: 1180px) {
+  .article__fab[data-with-toc] {
+    bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 14px);
+  }
+}
+
+.article__fab .furigana-toggle {
+  height: 46px;
+  padding: 0 16px;
+  font-size: var(--text-xs);
+  color: var(--text-primary);
+  background: var(--bg);
+  box-shadow: 0 6px 20px rgb(0 0 0 / 18%);
+}
+
+html[data-furigana="on"] .article__fab .furigana-toggle {
+  color: var(--accent-strong);
+}
+
 .article__meta {
   display: flex;
   align-items: center;
