@@ -449,11 +449,14 @@ img {
 }
 
 /* Furigana off: hide the readings, not the ruby, so the base text keeps its
-   position in the line. .has-ruby scopes this to the Japanese reading aid —
-   pinyin is <ruby> as well, and hiding it would empty the Chinese sections of
-   the thing they exist for. */
+   position in the line. visibility rather than display: native ruby widens a
+   base to fit a long reading, and display:none gave that width back, so every
+   line re-broke on toggle. A hidden rt still holds its box, which keeps the
+   spacing and the line breaks identical in both states. .has-ruby scopes this
+   to the Japanese reading aid — pinyin is <ruby> as well, and hiding it would
+   empty the Chinese sections of the thing they exist for. */
 html[data-furigana="off"] .has-ruby rt {
-  display: none;
+  visibility: hidden;
 }
 
 .furigana-toggle {
