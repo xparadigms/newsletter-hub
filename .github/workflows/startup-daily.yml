@@ -1,4 +1,5 @@
 name: Daily Startup News Summary
+run-name: ${{ inputs.scheduled == 'true' && format('{0} (scheduled)', github.workflow) || github.workflow }}
 
 # ISSUE_NUMBER continuity: the old startup-techcrunch-summary repo never passed
 # ISSUE_NUMBER, so main.py fell back to its default of 1 and every issue was
@@ -6,12 +7,15 @@ name: Daily Startup News Summary
 # both fixes the numbering and continues from where the run count left off.
 
 on:
-  schedule:
-    # 23:20 UTC = 08:20 KST, staggered after the Rails daily job so the two
-    # API-heavy jobs do not hit Anthropic and Notion at the same moment.
-    - cron: "20 23 * * *"
+  # No `schedule:` here. GitHub started scheduled runs about two hours late,
+  # so web/vercel.json's crons dispatch this workflow with scheduled=true
+  # instead, and retry it later in the morning if it has not succeeded.
   workflow_dispatch:
     inputs:
+      scheduled:
+        description: "Set by the site's cron: this is the day's regular issue"
+        type: string
+        default: ""
       edition:
         description: "2+ makes an extra issue for the day instead of replacing it"
         type: string

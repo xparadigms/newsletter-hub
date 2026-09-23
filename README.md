@@ -32,19 +32,23 @@ directly.
 
 ## Projects
 
-| Directory | Newsletter | Schedule (UTC) | Status |
-| --- | --- | --- | --- |
-| `finance-newsletter/` | Rails — financial infrastructure | 23:00 daily | Active |
-| `startup-newsletter/` | Startup News summary | 23:20 daily | Active |
-| `watch-newsletter/` | Watch Weekly | 00:00 Saturday | Active |
-| `japan-newsletter/` | Japan Briefing | — | **Paused** |
+| Directory | Newsletter | Cron hour (UTC) |
+| --- | --- | --- |
+| `mandarin-newsletter/` | Mandarin Basics | 21:00 daily |
+| `china-newsletter/` | China Daily | 22:00 daily |
+| `business-newsletter/` | Business Insight | 22:00 daily |
+| `finance-newsletter/` | Rails — financial infrastructure | 23:00 daily |
+| `japan-newsletter/` | Japan Daily Talk | 23:00 daily |
+| `startup-newsletter/` | Startup News summary | 23:00 daily |
+| `watch-newsletter/` | Watch Weekly | 23:00 Friday (Saturday KST) |
 
-Daily jobs are staggered so the API-heavy runs do not hit Anthropic and Notion
-simultaneously.
-
-Japan is paused deliberately: its `schedule` trigger in
-`.github/workflows/japan-daily.yml` is commented out. Uncomment the two
-`schedule` lines to resume it.
+The workflows have no `schedule:` trigger. GitHub fired those about two hours
+late, so a morning reader found yesterday's issue on top. Instead the crons in
+`web/vercel.json` call the site's `/api/cron`, which dispatches each workflow
+with `scheduled=true`. Vercel's Hobby plan fires a cron somewhere inside its
+hour, so every daily issue is out before about 09:00 KST. A catch-up cron at
+01:00 UTC (02:00 Saturday for Watch) re-dispatches any section whose scheduled
+run today (KST) has not succeeded or started. On a normal day it does nothing.
 
 ## The site (`web/`)
 

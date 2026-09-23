@@ -1,14 +1,19 @@
 name: Mandarin Basics — Daily Lesson
+run-name: ${{ inputs.scheduled == 'true' && format('{0} (scheduled)', github.workflow) || github.workflow }}
 
 # ISSUE_NUMBER: no prior repository, so github.run_number starts at 1 and needs
 # no offset — unlike japan (45), watch (6) and startup (163).
 
 on:
-  schedule:
-    # 21:30 UTC = 06:30 KST, ahead of china at 22:00 and the 23:00 group.
-    - cron: "30 21 * * *"
+  # No `schedule:` here. GitHub started scheduled runs about two hours late,
+  # so web/vercel.json's crons dispatch this workflow with scheduled=true
+  # instead, and retry it later in the morning if it has not succeeded.
   workflow_dispatch:
     inputs:
+      scheduled:
+        description: "Set by the site's cron: this is the day's regular issue"
+        type: string
+        default: ""
       edition:
         description: "2+ makes an extra issue for the day instead of replacing it"
         type: string

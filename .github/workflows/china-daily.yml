@@ -1,16 +1,20 @@
 name: China Daily — Newsletter
+run-name: ${{ inputs.scheduled == 'true' && format('{0} (scheduled)', github.workflow) || github.workflow }}
 
 # ISSUE_NUMBER: there is no prior repository for this newsletter, so
 # github.run_number starts at 1 and needs no offset — unlike japan (45),
 # watch (6) and startup (163).
 
 on:
-  schedule:
-    # 22:00 UTC = 07:00 KST, ahead of the 23:00 / 23:10 / 23:20 stagger that
-    # keeps the Anthropic-heavy jobs from overlapping.
-    - cron: "0 22 * * *"
+  # No `schedule:` here. GitHub started scheduled runs about two hours late,
+  # so web/vercel.json's crons dispatch this workflow with scheduled=true
+  # instead, and retry it later in the morning if it has not succeeded.
   workflow_dispatch:
     inputs:
+      scheduled:
+        description: "Set by the site's cron: this is the day's regular issue"
+        type: string
+        default: ""
       edition:
         description: "2+ makes an extra issue for the day instead of replacing it"
         type: string

@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { SECTIONS } from "@/lib/config";
 import { AUTH_COOKIE } from "@/middleware";
+import { WORKFLOWS, gh, SCHEDULED_SUFFIX } from "@/lib/github";
 import type { SectionKey } from "@/lib/types";
 
 // Ask GitHub to run a newsletter generator now, producing an EXTRA issue for
@@ -26,33 +27,9 @@ import type { SectionKey } from "@/lib/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const REPO = process.env.GITHUB_REPO ?? "xparadigms/newsletter-hub";
 const MAX_PER_DAY = Number(process.env.GENERATE_MAX_PER_DAY ?? 4);
 
-const WORKFLOWS: Record<SectionKey, string> = {
-  startup: "startup-daily.yml",
-  business: "business-daily.yml",
-  fintech: "daily-newsletter.yml",
-  japan: "japan-daily.yml",
-  watch: "watch-weekly.yml",
-  china: "china-daily.yml",
-  mandarin: "mandarin-daily.yml",
-};
-
-function gh(path: string, token: string, init?: RequestInit) {
-  return fetch(`https://api.github.com/repos/${REPO}${path}`, {
-    ...init,
-    headers: {
-      Accept: "application/vnd.github+json",
-      Authorization: `Bearer ${token}`,
-      "X-GitHub-Api-Version": "2022-11-28",
-      ...(init?.headers ?? {}),
-    },
-    cache: "no-store",
-  });
-}
-
-/** Dispatches started today, across every newsletter workflow. */
+/** Extra issues requested today, across every newsletter workflow. */
 async function usedToday(token: string): Promise<number> {
   const since = new Date().toISOString().slice(0, 10);
   const res = await gh(
@@ -60,10 +37,15 @@ async function usedToday(token: string): Promise<number> {
     token
   );
   if (!res.ok) throw new Error(`GitHub runs: ${res.status}`);
-  const data = (await res.json()) as { workflow_runs?: { path?: string }[] };
+  const data = (await res.json()) as {
+    workflow_runs?: { path?: string; display_title?: string }[];
+  };
   const files = new Set(Object.values(WORKFLOWS));
-  return (data.workflow_runs ?? []).filter((r) =>
-    files.has((r.path ?? "").replace(".github/workflows/", ""))
+  // The daily cron dispatches too; those runs are the schedule, not extras.
+  return (data.workflow_runs ?? []).filter(
+    (r) =>
+      files.has((r.path ?? "").replace(".github/workflows/", "")) &&
+      !(r.display_title ?? "").endsWith(SCHEDULED_SUFFIX)
   ).length;
 }
 

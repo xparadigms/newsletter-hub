@@ -1,11 +1,16 @@
 name: Rails — Daily Newsletter
+run-name: ${{ inputs.scheduled == 'true' && format('{0} (scheduled)', github.workflow) || github.workflow }}
 
 on:
-  schedule:
-    # Runs at 23:00 UTC = 08:00 KST every day
-    - cron: "0 23 * * *"
+  # No `schedule:` here. GitHub started scheduled runs about two hours late,
+  # so web/vercel.json's crons dispatch this workflow with scheduled=true
+  # instead, and retry it later in the morning if it has not succeeded.
   workflow_dispatch:
     inputs:
+      scheduled:
+        description: "Set by the site's cron: this is the day's regular issue"
+        type: string
+        default: ""
       edition:
         description: "2+ makes an extra issue for the day instead of replacing it"
         type: string

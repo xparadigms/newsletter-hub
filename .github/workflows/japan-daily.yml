@@ -1,4 +1,5 @@
 name: Japan Daily Talk — Daily Newsletter
+run-name: ${{ inputs.scheduled == 'true' && format('{0} (scheduled)', github.workflow) || github.workflow }}
 
 # ISSUE_NUMBER continuity: this workflow file is new, so github.run_number
 # restarts at 1. The last issue published before the migration was #11
@@ -8,10 +9,15 @@ name: Japan Daily Talk — Daily Newsletter
 # needs the same adjustment.
 
 on:
-  schedule:
-    - cron: "10 23 * * *" # 23:10 UTC = 08:10 KST, staggered after Rails
+  # No `schedule:` here. GitHub started scheduled runs about two hours late,
+  # so web/vercel.json's crons dispatch this workflow with scheduled=true
+  # instead, and retry it later in the morning if it has not succeeded.
   workflow_dispatch:
     inputs:
+      scheduled:
+        description: "Set by the site's cron: this is the day's regular issue"
+        type: string
+        default: ""
       edition:
         description: "2+ makes an extra issue for the day instead of replacing it"
         type: string

@@ -16,10 +16,12 @@ export const AUTH_COOKIE = "brief_auth";
 // /api/revalidate is on this list deliberately: the generators call it with
 // their own shared secret to refresh a section after publishing, and gating it
 // would break every issue's appearance without any error a reader could see.
+// /api/cron likewise: Vercel Cron carries CRON_SECRET, never a cookie.
 const OPEN = [
   "/enter",
   "/api/auth",
   "/api/revalidate",
+  "/api/cron",
   "/offline", // the service worker's fallback page
   "/manifest.webmanifest",
   "/sw.js",
