@@ -125,6 +125,25 @@ export function buildDeck(
     }
     if (!g.blocks.length) continue;
 
+    // China and Mandarin Basics number their headings — "1. …", "2. …" — and
+    // each number is one news story or one lesson step. Splitting it into a
+    // card per sentence scattered one item across several cards under the same
+    // number, so it stays whole on a single card in source order, and the card
+    // body scrolls if it runs long.
+    if (section.sourceLang === "zh") {
+      const blocks = g.blocks.filter((a) => a.block.type !== "divider");
+      if (blocks.length) {
+        cards.push({
+          kind: "content",
+          heading: g.heading,
+          subtitle: g.subtitle,
+          kicker: g.kicker,
+          blocks,
+        });
+      }
+      continue;
+    }
+
     // One translation pair per card. A story previously became a single card
     // holding every paragraph in all three languages, which overflowed the
     // screen.

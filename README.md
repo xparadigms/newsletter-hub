@@ -38,7 +38,7 @@ directly.
 | `china-newsletter/` | China Daily | 22:00 daily |
 | `business-newsletter/` | Business Insight | 22:00 daily |
 | `finance-newsletter/` | Rails — financial infrastructure | 23:00 daily |
-| `japan-newsletter/` | Japan Daily Talk | 23:00 daily |
+| `japan-newsletter/` | Japan Daily Talk | **Paused** — not in `web/vercel.json` |
 | `startup-newsletter/` | Startup News summary | 23:00 daily |
 | `watch-newsletter/` | Watch Weekly | 23:00 Friday (Saturday KST) |
 
@@ -49,6 +49,9 @@ with `scheduled=true`. Vercel's Hobby plan fires a cron somewhere inside its
 hour, so every daily issue is out before about 09:00 KST. A catch-up cron at
 01:00 UTC (02:00 Saturday for Watch) re-dispatches any section whose scheduled
 run today (KST) has not succeeded or started. On a normal day it does nothing.
+
+Japan is paused by leaving it out of both crons. To resume it, add `japan` back
+to the 23:00 and 01:00 entries in `web/vercel.json` and redeploy.
 
 ## The site (`web/`)
 
