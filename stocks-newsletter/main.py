@@ -304,7 +304,9 @@ WRITING RULES
 - Clear, direct, professional sentences. State who is doing what and why it \
 matters. No vague or metaphorical phrasing.
 - No rhetorical contrast constructions such as 「XではなくY」「XというよりY」, or \
-their Korean equivalents 「X가 아니라 Y」.
+their Korean equivalents 「X가 아니라 Y」. Say what the company does.
+- Never mention the reader or the audience (no 「銀行幹部にとって」「투자자에게」). \
+State the implication itself.
 - Every paragraph has at most three sentences.
 - Never use em dashes, en dashes or hyphens anywhere: no —, –, ―, ‐ or -. \
 Write "30 day" and "long term" style compounds without a hyphen, and write \
@@ -350,22 +352,23 @@ figures. At most two sentences.]
 [Korean]
 WHAT:
 [Japanese: the specific events of the last 30 days with dates and figures. \
-220 to 280 characters in one or two paragraphs, each followed by its Korean \
-translation under 📝 한국어 번역:]
+FOUR sentences at most, in one or two paragraphs, each paragraph followed by \
+its Korean translation under 📝 한국어 번역:]
 INDUSTRY:
-[Japanese: how the sector works and where this company sits in it. 150 to 200 \
-characters in one paragraph, followed by its Korean translation.]
+[Japanese: how the sector works and where this company sits in it. THREE \
+sentences at most, in one paragraph, followed by its Korean translation.]
 WHY:
 [Japanese: implications for markets, policy, the wider economy, and where \
-relevant for Korea, Japan and Asia. 190 to 240 characters in one or two \
+relevant for Korea, Japan and Asia. FOUR sentences at most, in one or two \
 paragraphs, each followed by its Korean translation.]
 SOURCES:
 🔗 [URL from this company's research, copied exactly]
 🔗 [one to three lines]
 
-LENGTH: WHAT, INDUSTRY and WHY together run 560 to 720 Japanese characters per \
-company, excluding BASIC and excluding the Korean. Keep to the budgets above: \
-cut background before cutting figures. The TITLE is English, in Title Case, \
+LENGTH: the sentence caps above are hard limits; count your sentences before \
+you finish. Each sentence carries one point and stays under about 70 Japanese \
+characters, so WHAT, INDUSTRY and WHY together come to roughly 560 to 720 \
+Japanese characters. Cut background before cutting figures. The TITLE is English, in Title Case, \
 with no hyphens or dashes.
 
 --- RESEARCH ---
