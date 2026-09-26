@@ -415,6 +415,73 @@ def write_edition(
     )
 
 
+# Hard limits per part, checked after writing: (max sentences, max characters)
+# of Japanese. Roughly 20% under the first edition. The model reads budgets in
+# the prompt as suggestions — two dry runs asked for 560 to 720 characters
+# across WHAT, INDUSTRY and WHY and got about 1,030 — so they are measured and
+# sent back instead.
+LIMITS = {"BASIC": (3, 200), "WHAT": (4, 280), "INDUSTRY": (3, 200), "WHY": (4, 260)}
+BANNED = {
+    "ではなく": "a 「XではなくY」 contrast",
+    "というより": "a 「XというよりY」 contrast",
+    "가 아니라": "a 「X가 아니라 Y」 contrast",
+    "이 아니라": "a 「X이 아니라 Y」 contrast",
+    "銀行幹部": "a mention of the reader or audience",
+    "読者": "a mention of the reader or audience",
+}
+
+
+def _japanese(lines: list[str]) -> list[str]:
+    return [line for line in lines if furigana.has_japanese_chars(line)]
+
+
+def problems(companies: list[tuple[str, dict[str, list[str]]]]) -> list[str]:
+    """Every part over its limit and every banned phrase, as instructions."""
+    found = []
+    for title, sections in companies:
+        name = title.split(":")[0]
+        for key, (max_sentences, max_chars) in LIMITS.items():
+            ja = _japanese(sections.get(key, []))
+            chars = sum(len(line) for line in ja)
+            sentences = sum(max(line.count("。"), 1) for line in ja)
+            if sentences > max_sentences or chars > max_chars:
+                found.append(
+                    f"{name}, {key}: {sentences} sentences and {chars} Japanese "
+                    f"characters. Cut it to at most {max_sentences} sentences and "
+                    f"{max_chars} characters, and cut its Korean to match."
+                )
+        text = "\n".join(line for lines in sections.values() for line in lines)
+        for phrase, what in BANNED.items():
+            if phrase in text:
+                found.append(f"{name}: remove {what} ({phrase}); state the point directly.")
+    return found
+
+
+REVISE_PROMPT = """\
+Here is a draft in the required layout, followed by the problems a check found. \
+Return the whole draft again in exactly the same layout with every problem \
+fixed. Change nothing else: keep the markers, titles, figures, dates, sources \
+and 🔗 lines. Every Korean paragraph stays a full translation of the Japanese \
+above it.
+
+--- PROBLEMS ---
+{problems}
+
+--- DRAFT ---
+{draft}
+"""
+
+
+def revise(draft: str, found: list[str]) -> str:
+    return llm.complete(
+        model=MODEL,
+        system=WRITE_SYSTEM,
+        user=REVISE_PROMPT.format(problems="\n".join(f"- {p}" for p in found), draft=draft),
+        max_tokens=20000,
+        label="revise",
+    )
+
+
 # ── Assembly ────────────────────────────────────────────────────────────────
 PARTS = [
     ("BASIC", "【基本情報】(기본 정보)"),
@@ -535,7 +602,23 @@ def run() -> None:
                   f"30d {p['change_30d']}, 6m {p['change_6m']}, 1y {p['change_1y']}")
 
     print("▸ Writing...")
-    companies = split_edition(write_edition(data, prices, weekday, count), count)
+    draft = write_edition(data, prices, weekday, count)
+    companies = split_edition(draft, count)
+    found = problems(companies)
+    if found:
+        print(f"▸ Revising for {len(found)} problem(s):")
+        for p in found:
+            print(f"  - {p}")
+        try:
+            revised = split_edition(revise(draft, found), count)
+            left = problems(revised)
+            print(f"  {len(left)} left after revision")
+            # Keep the revision unless it made things worse; never lose a run
+            # to a revision that came back malformed.
+            if len(left) <= len(found):
+                companies = revised
+        except Exception as e:  # noqa: BLE001
+            print(f"  ⚠ revision failed, keeping the draft: {e}")
 
     for title, sections in companies:
         check_amounts(title, sections)
