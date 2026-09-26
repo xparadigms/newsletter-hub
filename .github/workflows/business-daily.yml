@@ -69,5 +69,8 @@ jobs:
           ARGS=""
           if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="--dry-run"; fi
           NUM="${{ inputs.issue_number }}"
-          if [ -z "$NUM" ]; then NUM=$GITHUB_RUN_NUMBER; fi
+          # Runs 26 and 27 were dry runs that published nothing, so the run
+          # count is two ahead of the issue count. Any future dry run needs
+          # the same adjustment.
+          if [ -z "$NUM" ]; then NUM=$((GITHUB_RUN_NUMBER - 2)); fi
           ISSUE_NUMBER=$NUM python main.py $ARGS
