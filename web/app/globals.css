@@ -586,6 +586,29 @@ html[data-furigana="on"] .furigana-toggle {
   color: var(--accent-warn, var(--text-secondary));
 }
 
+/* Stocks: a company to write about on request. */
+.company-request {
+  margin-top: 20px;
+  max-width: 420px;
+}
+
+.company-request__label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.company-request__row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.company-request__input {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px; /* under 16px, iOS Safari zooms the page on focus */
+}
+
 /* The verified source link under a story. Language-neutral, so it survives the
    reading-mode filter that hides the English layer. */
 .source-link {

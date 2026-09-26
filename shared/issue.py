@@ -54,13 +54,14 @@ def build_row_from_blocks(
     source_format: str,
     summary: str | None = None,
     edition: int = 1,
-    part: int | None = None,
+    part: int | str | None = None,
 ) -> dict[str, Any]:
     """The row to upsert, given the website's Block[] directly.
 
     `part` is for a section that publishes several articles per edition —
     Three Companies writes one per company. Each part needs its own run_key,
-    or the second article would replace the first.
+    or the second article would replace the first. A string part names an
+    article outside the numbered set, such as a reader's company request.
 
     `slug` is deliberately absent — the database trigger derives it and keeps an
     existing one, so a same-day rerun republishes under the URL it first used.
@@ -117,7 +118,7 @@ def build_row(
     source_format: str,
     summary: str | None = None,
     edition: int = 1,
-    part: int | None = None,
+    part: int | str | None = None,
 ) -> dict[str, Any]:
     """The Notion-shaped path: the four mirroring generators hand over the
     blocks they are about to send Notion, and this maps them. China builds

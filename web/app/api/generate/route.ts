@@ -64,7 +64,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Not signed in." }, { status: 401 });
   }
 
-  let body: { section?: string };
+  let body: { section?: string; company?: string };
   try {
     body = await request.json();
   } catch {
@@ -74,6 +74,20 @@ export async function POST(request: Request) {
   const section = body.section as SectionKey;
   if (!SECTIONS.some((s) => s.key === section)) {
     return NextResponse.json({ error: "Unknown newsletter." }, { status: 400 });
+  }
+
+  // Stocks only: a ticker or company name to write one article about. Letters in
+  // any script, digits, and the punctuation company names use. It reaches the
+  // workflow as an input and the model as text, never a shell.
+  let company: string | null = null;
+  if (body.company !== undefined) {
+    company = String(body.company).trim().replace(/\s+/g, " ");
+    if (section !== "stocks" || !/^[\p{L}\p{N} .,&'()/]{1,60}$/u.test(company)) {
+      return NextResponse.json(
+        { error: "Enter a ticker or company name (up to 60 characters)." },
+        { status: 400 }
+      );
+    }
   }
 
   try {
@@ -94,7 +108,7 @@ export async function POST(request: Request) {
       method: "POST",
       body: JSON.stringify({
         ref: "main",
-        inputs: { edition: String(2 + used) },
+        inputs: company ? { company } : { edition: String(2 + used) },
       }),
     });
     if (!res.ok) {
@@ -109,7 +123,9 @@ export async function POST(request: Request) {
       ok: true,
       remaining: MAX_PER_DAY - used - 1,
       // The run takes several minutes and this route does not wait for it.
-      message: "Generating. The new issue appears in a few minutes.",
+      message: company
+        ? `Writing about ${company}. The article appears in about five minutes.`
+        : "Generating. The new issue appears in a few minutes.",
     });
   } catch (e) {
     return NextResponse.json(

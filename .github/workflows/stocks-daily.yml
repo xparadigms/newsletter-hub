@@ -1,5 +1,5 @@
 name: Three Companies — Daily Stock Newsletter
-run-name: ${{ inputs.scheduled == 'true' && format('{0} (scheduled)', github.workflow) || github.workflow }}
+run-name: ${{ inputs.scheduled == 'true' && format('{0} (scheduled)', github.workflow) || inputs.company && format('{0} · {1}', github.workflow, inputs.company) || github.workflow }}
 
 # ISSUE_NUMBER: read from Supabase by the script rather than github.run_number,
 # so dry runs and failed runs leave no gaps. Set issue_number to override.
@@ -11,6 +11,10 @@ on:
     inputs:
       scheduled:
         description: "Set by the site's cron: this is the day's regular issue"
+        type: string
+        default: ""
+      company:
+        description: "A ticker or company name: write one article on it instead of the day's three"
         type: string
         default: ""
       edition:
@@ -62,6 +66,8 @@ jobs:
           PYTHONUNBUFFERED: "1"
           EDITION: ${{ inputs.edition || '1' }}
           ISSUE_NUMBER: ${{ inputs.issue_number }}
+          # Through env, never interpolated into the script: it is reader input.
+          COMPANY: ${{ inputs.company }}
         run: |
           ARGS=""
           if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="--dry-run"; fi

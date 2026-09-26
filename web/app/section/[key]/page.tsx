@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import CompanyRequest from "@/components/CompanyRequest";
 import GenerateButton from "@/components/GenerateButton";
 import PageTransition from "@/components/PageTransition";
 import PostList from "@/components/PostList";
@@ -53,6 +54,7 @@ export default async function SectionPage({
         <div className="container">
           <p>{section.description}</p>
           <GenerateButton section={section.key} />
+          {section.key === "stocks" && <CompanyRequest />}
         </div>
       </div>
       <section className="section section--flat">

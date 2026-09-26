@@ -15,8 +15,8 @@ Three passes, because each one fails differently:
    six month and one year changes by arithmetic rather than by search, so the
    numbers in the basic info line are computed, not recalled. If Yahoo does
    not answer for a symbol, the researched figures are used instead.
-3. Writing. One call writes the shared backdrop and all three companies, so
-   they read as one edition, and the script splits it into three articles.
+3. Writing. One call writes all three companies, so they read as one
+   edition, and the script splits it into three articles.
 
 Links are verified the way every other generator verifies them: a 🔗 line
 survives only if its URL came back from the web search.
@@ -64,6 +64,32 @@ search tool for every price, market cap and event. Never rely on memory for \
 prices or events: if a search does not confirm something, leave it out.\
 """
 
+# What research hands the writer, for the daily three and a request alike.
+JSON_SHAPE = """\
+{
+  "backdrop": "4 to 6 sentences of macro facts for today with dates and sources",
+  "companies": [
+    {
+      "name": "Company name as it is usually written in English",
+      "ticker": "ticker as usually quoted, e.g. NVDA, 005930, 7203",
+      "exchange": "e.g. NASDAQ, KRX, TSE, HKEX",
+      "yahoo_symbol": "the Yahoo Finance symbol, e.g. NVDA, 005930.KS, 7203.T, 0700.HK",
+      "currency": "USD, KRW, JPY ...",
+      "role": "hot or wildcard",
+      "industry": "the industry in a few words",
+      "country": "headquarters country",
+      "market_cap": "approximate market cap with currency and a USD figure, with source",
+      "valuation": "one valuation or yield figure with source, e.g. forward P/E or dividend yield",
+      "price_note": "latest close and date as a source reports it",
+      "events": ["YYYY-MM-DD: what happened, with figures, per SOURCE"],
+      "industry_notes": "how the sector works and where this company sits in it",
+      "why_notes": "implications for markets, policy, the wider economy, and Korea, Japan and Asia where relevant",
+      "urls": ["the URLs of the pages the facts above came from"]
+    }
+  ]
+}
+"""
+
 RESEARCH_PROMPT = """\
 Today is {today} (Korea time). Research today's edition.
 
@@ -88,34 +114,34 @@ last 30 days. Record dates and figures exactly as the sources state them, and \
 note which source said what.
 
 Finish with ONLY a JSON object, no prose before or after, in this shape:
-{{
-  "backdrop": "4 to 6 sentences of macro facts for today with dates and sources",
-  "companies": [
-    {{
-      "name": "Company name as it is usually written in English",
-      "ticker": "ticker as usually quoted, e.g. NVDA, 005930, 7203",
-      "exchange": "e.g. NASDAQ, KRX, TSE, HKEX",
-      "yahoo_symbol": "the Yahoo Finance symbol, e.g. NVDA, 005930.KS, 7203.T, 0700.HK",
-      "currency": "USD, KRW, JPY ...",
-      "role": "hot or wildcard",
-      "industry": "the industry in a few words",
-      "country": "headquarters country",
-      "market_cap": "approximate market cap with currency and a USD figure, with source",
-      "valuation": "one valuation or yield figure with source, e.g. forward P/E or dividend yield",
-      "price_note": "latest close and date as a source reports it",
-      "events": ["YYYY-MM-DD: what happened, with figures, per SOURCE"],
-      "industry_notes": "how the sector works and where this company sits in it",
-      "why_notes": "implications for markets, policy, the wider economy, and Korea, Japan and Asia where relevant",
-      "urls": ["the URLs of the pages the facts above came from"]
-    }}
-  ]
-}}
+{shape}
 """
 
 # The basic search tool, not web_search_20260209. The newer one filters results
 # in a code sandbox, and the model used that sandbox to try fetching prices
 # itself: with no network there, each attempt hung for three to five minutes
 # and a dry run ran past its 30 minute timeout. Prices come from Yahoo below.
+# A reader's request from the Stocks page: one company, named by ticker or name.
+REQUEST_PROMPT = """\
+Today is {today} (Korea time). A reader asked for an article on this company:
+
+    {request}
+
+Identify the listed company they mean. If the text is a ticker, use the \
+company that trades under it; if it could be several, pick the most widely \
+followed listing. If no public company matches, finish with \
+{{"backdrop": "", "companies": []}} and nothing else.
+
+First search current market news to understand the macro setting: rates, \
+energy, AI capex, US China trade, Asian markets. Then search for the company's \
+latest price, market cap and news from the last 30 days. Record dates and \
+figures exactly as the sources state them, and note which source said what.
+
+Finish with ONLY a JSON object, no prose before or after, in the same shape as \
+below, with exactly one entry in "companies" and "role" set to "request":
+{shape}
+"""
+
 WEB_SEARCH_TOOL = {"type": "web_search_20250305", "name": "web_search", "max_uses": 12}
 
 
@@ -140,18 +166,26 @@ def _last_json_object(text: str) -> dict[str, Any] | None:
     return found
 
 
-def research(today: str, recent: list[str]) -> tuple[dict[str, Any], set[str]]:
-    """Pick three companies and gather their facts. Returns (research, URLs seen)."""
+def research(
+    today: str, recent: list[str], request: str | None = None
+) -> tuple[dict[str, Any], set[str]]:
+    """Pick three companies, or look up the requested one, and gather their
+    facts. Returns (research, URLs seen)."""
     # A hard ceiling per request: without one a stalled stream sat until the
     # job's 30 minute timeout, with nothing in the log to say where.
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY, timeout=600, max_retries=1)
     started = time.monotonic()
     messages: list[dict[str, Any]] = [{
         "role": "user",
-        "content": RESEARCH_PROMPT.format(
-            today=today,
-            window=REPEAT_WINDOW_DAYS,
-            recent="\n".join(f"   - {t}" for t in recent) or "   (none yet)",
+        "content": (
+            REQUEST_PROMPT.format(today=today, request=request, shape=JSON_SHAPE)
+            if request
+            else RESEARCH_PROMPT.format(
+                today=today,
+                window=REPEAT_WINDOW_DAYS,
+                recent="\n".join(f"   - {t}" for t in recent) or "   (none yet)",
+                shape=JSON_SHAPE,
+            )
         ),
     }]
     urls: set[str] = set()
@@ -197,8 +231,13 @@ def research(today: str, recent: list[str]) -> tuple[dict[str, Any], set[str]]:
     if data is None:
         raise RuntimeError(f"research did not end in JSON: {text[-800:]!r}")
     companies = data.get("companies") or []
-    if len(companies) != 3:
-        raise RuntimeError(f"research returned {len(companies)} companies, expected 3")
+    expected = 1 if request else 3
+    if request and not companies:
+        raise RuntimeError(f"no listed company matches {request!r}")
+    if len(companies) != expected:
+        raise RuntimeError(
+            f"research returned {len(companies)} companies, expected {expected}"
+        )
     print(f"  {len(urls)} URLs from search")
     return data, urls
 
@@ -295,15 +334,10 @@ WRITE_PROMPT = """\
 Write today's edition, {weekday}. Output plain text only, no Markdown.
 
 Use exactly this layout. Lines in CAPITALS followed by a colon are markers the \
-script reads; keep them exactly.
+script reads; keep them exactly. There is no separate macro backdrop section: \
+use the research backdrop only where it explains a company's own story.
 
-BACKDROP:
-[Japanese: 3 to 4 sentences on the macro setting today]
-📝 한국어 번역:
-[Korean translation]
-
-Then three company blocks, in this order: the two hot companies, then the \
-wildcard.
+{company_order}
 
 === COMPANY ===
 TITLE: Company Name (TICKER): A Short Descriptive Subtitle In Title Case
@@ -311,26 +345,28 @@ BASIC:
 [Japanese: one paragraph with price, market cap, 30 day change, six month \
 change, one year change, 52 week range, and one valuation or yield figure where \
 relevant. Use the PRICE DATA where it is given; otherwise the researched \
-figures. At most three sentences.]
+figures. At most two sentences.]
 📝 한국어 번역:
 [Korean]
 WHAT:
-[Japanese: the specific events of the last 30 days with dates and figures. One \
-or two paragraphs, each followed by its Korean translation under 📝 한국어 번역:]
+[Japanese: the specific events of the last 30 days with dates and figures. \
+220 to 280 characters in one or two paragraphs, each followed by its Korean \
+translation under 📝 한국어 번역:]
 INDUSTRY:
-[Japanese: how the sector works and where this company sits in it. One or two \
-paragraphs, each followed by its Korean translation.]
+[Japanese: how the sector works and where this company sits in it. 150 to 200 \
+characters in one paragraph, followed by its Korean translation.]
 WHY:
 [Japanese: implications for markets, policy, the wider economy, and where \
-relevant for Korea, Japan and Asia. One or two paragraphs, each followed by its \
-Korean translation.]
+relevant for Korea, Japan and Asia. 190 to 240 characters in one or two \
+paragraphs, each followed by its Korean translation.]
 SOURCES:
 🔗 [URL from this company's research, copied exactly]
 🔗 [one to three lines]
 
-LENGTH: WHAT, INDUSTRY and WHY together run 700 to 900 Japanese characters per \
-company, excluding BASIC and excluding the Korean. The TITLE is English, in \
-Title Case, with no hyphens or dashes.
+LENGTH: WHAT, INDUSTRY and WHY together run 560 to 720 Japanese characters per \
+company, excluding BASIC and excluding the Korean. Keep to the budgets above: \
+cut background before cutting figures. The TITLE is English, in Title Case, \
+with no hyphens or dashes.
 
 --- RESEARCH ---
 {research}
@@ -353,12 +389,19 @@ def _no_dashes(line: str, *, japanese: bool) -> str:
     return _ASCII_HYPHEN.sub(" ", line)
 
 
-def write_edition(data: dict[str, Any], prices: list[dict | None], weekday: str) -> str:
+THREE_ORDER = "Then three company blocks, in this order: the two hot companies, then the wildcard."
+ONE_ORDER = "Then one company block, for the company in the research."
+
+
+def write_edition(
+    data: dict[str, Any], prices: list[dict | None], weekday: str, count: int = 3
+) -> str:
     return llm.complete(
         model=MODEL,
         system=WRITE_SYSTEM,
         user=WRITE_PROMPT.format(
             weekday=weekday,
+            company_order=THREE_ORDER if count == 3 else ONE_ORDER,
             research=json.dumps(data, ensure_ascii=False, indent=2),
             prices=json.dumps(
                 [p for p in prices if p], ensure_ascii=False, indent=2
@@ -424,10 +467,11 @@ def _clean(lines: list[str]) -> list[str]:
     ]
 
 
-def split_edition(text: str) -> tuple[list[str], list[tuple[str, dict[str, list[str]]]]]:
-    """(backdrop lines, [(title, sections)]) from the writer's output."""
-    head, *blocks = text.split("=== COMPANY ===")
-    backdrop = _clean(_sections(head).get("BACKDROP", []))
+def split_edition(
+    text: str, expected: int = 3
+) -> list[tuple[str, dict[str, list[str]]]]:
+    """[(title, sections)] from the writer's output."""
+    _, *blocks = text.split("=== COMPANY ===")
     companies = []
     for block in blocks:
         m = re.search(r"^TITLE:\s*(.+)$", block, re.M)
@@ -435,19 +479,14 @@ def split_edition(text: str) -> tuple[list[str], list[tuple[str, dict[str, list[
             raise RuntimeError(f"company block without a TITLE line: {block[:200]!r}")
         title = _no_dashes(m.group(1).strip(), japanese=False)
         companies.append((title, {k: _clean(v) for k, v in _sections(block).items()}))
-    if len(companies) != 3 or not backdrop:
-        raise RuntimeError(
-            f"writer returned {len(companies)} companies and "
-            f"{len(backdrop)} backdrop lines; expected 3 and some"
-        )
-    return backdrop, companies
+    if len(companies) != expected:
+        raise RuntimeError(f"writer returned {len(companies)} companies, expected {expected}")
+    return companies
 
 
-def article_text(
-    headline: str, part: int, backdrop: list[str], sections: dict[str, list[str]]
-) -> str:
+def article_text(header: str, sections: dict[str, list[str]]) -> str:
     """One company as the plain-text format plaintext.to_notion_blocks reads."""
-    lines = [f"{headline} · {part}/3", DIVIDER, "【市場の背景】(시장 배경)", *backdrop]
+    lines = [header]
     for key, heading in PARTS:
         lines += [DIVIDER, heading, *sections.get(key, [])]
     links = [line for line in sections.get("SOURCES", []) if line.startswith(sources.MARKER)]
@@ -468,13 +507,20 @@ def run() -> None:
     now = datetime.now(KST)
     today_iso = now.strftime("%Y-%m-%d")
     weekday = now.strftime("%A, %B %-d, %Y")
-    headline = f"Three Companies, Three Industries: {weekday}"
+    # Set when a reader asked for a company from the Stocks page.
+    request = (os.environ.get("COMPANY") or "").strip() or None
+    headline = (
+        f"Three Companies: On Request · {weekday}"
+        if request
+        else f"Three Companies, Three Industries: {weekday}"
+    )
+    count = 1 if request else 3
     dry_run = "--dry-run" in sys.argv
-    print(f"▸ {headline} (edition {EDITION})")
+    print(f"▸ {headline} (edition {EDITION}{f', request {request!r}' if request else ''})")
 
-    recent = _recent_companies()
+    recent = [] if request else _recent_companies()
     print(f"▸ Researching with web search ({len(recent)} recent titles excluded)...")
-    data, urls = research(weekday, recent)
+    data, urls = research(weekday, recent, request)
     for c in data["companies"]:
         print(f"  {c.get('role', '?'):8} {c.get('name')} ({c.get('yahoo_symbol')}) · {c.get('industry')}")
 
@@ -486,21 +532,31 @@ def run() -> None:
                   f"30d {p['change_30d']}, 6m {p['change_6m']}, 1y {p['change_1y']}")
 
     print("▸ Writing...")
-    backdrop, companies = split_edition(write_edition(data, prices, weekday))
+    companies = split_edition(write_edition(data, prices, weekday, count), count)
 
-    number = int(os.environ.get("ISSUE_NUMBER") or 0) or store.next_issue_number(
-        SECTION, today_iso, EDITION
-    )
-    check_amounts("Backdrop", {"BACKDROP": backdrop})
     for title, sections in companies:
         check_amounts(title, sections)
 
-    articles = []
-    for part, (title, sections) in enumerate(companies, start=1):
-        text = sources.attach(article_text(headline, part, backdrop, sections), [
+    articles: list[tuple[int | str, str, str]] = []
+    if request:
+        # A request has no issue number and no place in the day's three. Its
+        # run_key part is the symbol, so asking for the same company twice in a
+        # day rewrites that one article instead of adding a second.
+        symbol = re.sub(r"[^a-z0-9]", "", (data["companies"][0].get("yahoo_symbol") or "").lower())
+        title, sections = companies[0]
+        text = sources.attach(article_text(headline, sections), [
             {"url": u} for u in urls
-        ], label=f"links {part}/3")
-        articles.append((part, f"[{SERIES} #{number} · {part}/3] ({title})", text))
+        ])
+        articles.append((f"q{symbol or 'x'}", f"[{SERIES} · On Request] ({title})", text))
+    else:
+        number = int(os.environ.get("ISSUE_NUMBER") or 0) or store.next_issue_number(
+            SECTION, today_iso, EDITION
+        )
+        for part, (title, sections) in enumerate(companies, start=1):
+            text = sources.attach(article_text(f"{headline} · {part}/3", sections), [
+                {"url": u} for u in urls
+            ], label=f"links {part}/3")
+            articles.append((part, f"[{SERIES} #{number} · {part}/3] ({title})", text))
 
     if dry_run:
         for _, raw_title, text in articles:
