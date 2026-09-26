@@ -347,28 +347,28 @@ BASIC:
 [Japanese: one paragraph with price, market cap, 30 day change, six month \
 change, one year change, 52 week range, and one valuation or yield figure where \
 relevant. Use the PRICE DATA where it is given; otherwise the researched \
-figures. At most two sentences.]
+figures. At most three sentences and 200 characters.]
 📝 한국어 번역:
 [Korean]
 WHAT:
 [Japanese: the specific events of the last 30 days with dates and figures. \
-FOUR sentences at most, in one or two paragraphs, each paragraph followed by \
-its Korean translation under 📝 한국어 번역:]
+FIVE sentences and 370 characters at most, in one or two paragraphs, each \
+paragraph followed by its Korean translation under 📝 한국어 번역:]
 INDUSTRY:
-[Japanese: how the sector works and where this company sits in it. THREE \
-sentences at most, in one paragraph, followed by its Korean translation.]
+[Japanese: how the sector works and where this company sits in it. FOUR \
+sentences and 390 characters at most, in one or two paragraphs, each followed \
+by its Korean translation.]
 WHY:
 [Japanese: implications for markets, policy, the wider economy, and where \
-relevant for Korea, Japan and Asia. FOUR sentences at most, in one or two \
-paragraphs, each followed by its Korean translation.]
+relevant for Korea, Japan and Asia. FIVE sentences and 370 characters at \
+most, in one or two paragraphs, each followed by its Korean translation.]
 SOURCES:
 🔗 [URL from this company's research, copied exactly]
 🔗 [one to three lines]
 
-LENGTH: the sentence caps above are hard limits; count your sentences before \
-you finish. Each sentence carries one point and stays under about 70 Japanese \
-characters, so WHAT, INDUSTRY and WHY together come to roughly 560 to 720 \
-Japanese characters. Cut background before cutting figures. The TITLE is English, in Title Case, \
+LENGTH: the caps above are hard limits; count before you finish. WHAT, \
+INDUSTRY and WHY together come to about 1,000 to 1,130 Japanese characters. \
+Cut background before cutting figures. The TITLE is English, in Title Case, \
 with no hyphens or dashes.
 
 --- RESEARCH ---
@@ -416,11 +416,10 @@ def write_edition(
 
 
 # Hard limits per part, checked after writing: (max sentences, max characters)
-# of Japanese. Roughly 20% under the first edition. The model reads budgets in
-# the prompt as suggestions — two dry runs asked for 560 to 720 characters
-# across WHAT, INDUSTRY and WHY and got about 1,030 — so they are measured and
-# sent back instead.
-LIMITS = {"BASIC": (3, 200), "WHAT": (4, 280), "INDUSTRY": (3, 200), "WHY": (4, 260)}
+# of Japanese. 20% under the first edition, which averaged 240, 460, 490 and
+# 460 characters for these four parts. The model reads budgets in the prompt as
+# suggestions, so they are measured and sent back instead.
+LIMITS = {"BASIC": (3, 200), "WHAT": (5, 370), "INDUSTRY": (4, 390), "WHY": (5, 370)}
 BANNED = {
     "ではなく": "a 「XではなくY」 contrast",
     "というより": "a 「XというよりY」 contrast",
