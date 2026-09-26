@@ -22,7 +22,6 @@ from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 load_dotenv()
 
-import anthropic
 import feedparser
 import requests
 from bs4 import BeautifulSoup
@@ -33,7 +32,7 @@ from googleapiclient.discovery import build
 # root is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import issue as issue_row, sources, store  # noqa: E402
+from shared import issue as issue_row, llm, sources, store  # noqa: E402
 from shared.http import request_with_retry  # noqa: E402
 from shared.trilingual import md_to_blocks as trilingual_to_blocks  # noqa: E402
 
@@ -185,31 +184,20 @@ This week: {today}
 
 def generate_summary(news_items: list[dict]) -> tuple[str, str]:
     """Call Claude to produce the weekly English recap. Returns (main_title, body)."""
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-
     formatted = "\n\n".join(
         f"[{item['source']}] {item['text']}\n  URL: {item['url']}\n  Date: {item['date']}"
         for item in news_items
     )
     today_str = datetime.now(KST).strftime("%B %d, %Y")
 
-    response = client.messages.create(
+    raw = llm.complete(
         model="claude-sonnet-4-6",
         max_tokens=4000,
         system="You are a senior watch-industry analyst and journalist.",
-        messages=[
-            {
-                "role": "user",
-                "content": SUMMARY_PROMPT.format(
-                    today=today_str, news_items=formatted
-                )
-                + sources.already_covered(
-                    store.recent_issues("watch", sources.RECENT_ISSUES)
-                ),
-            },
-        ],
+        user=SUMMARY_PROMPT.format(today=today_str, news_items=formatted)
+        + sources.already_covered(store.recent_issues("watch", sources.RECENT_ISSUES)),
+        label="summary",
     )
-    raw = response.content[0].text
 
     main_title = "Watch Weekly"
     lines = raw.splitlines()
@@ -312,16 +300,13 @@ are formal.
 
 def generate_trilingual(english_summary: str) -> str:
     """Convert the English weekly recap into trilingual Notion Markdown."""
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-    response = client.messages.create(
+    return llm.complete(
         model="claude-sonnet-4-6",
         max_tokens=16000,
         system="You are an expert trilingual (EN/JP/KR) watch newsletter editor.",
-        messages=[
-            {"role": "user", "content": TRILINGUAL_PROMPT.format(english_summary=english_summary)},
-        ],
+        user=TRILINGUAL_PROMPT.format(english_summary=english_summary),
+        label="trilingual",
     )
-    return response.content[0].text
 
 
 # ── Google Calendar ──────────────────────────────────────────────────────────

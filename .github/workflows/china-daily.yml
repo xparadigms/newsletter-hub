@@ -42,11 +42,17 @@ jobs:
       - name: Install dependencies
         run: pip install -r ../requirements.txt
 
+      # Claude calls run on the Claude subscription through Claude Code, and on
+      # the API key if that fails (shared/llm.py).
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
       - name: Run daily issue
         # No GCP_SA_KEY and no CALENDAR_ID: this newsletter creates no calendar
         # event. Notion is a browsable mirror, written after Supabase.
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: 3bf5bc953df38025952ce0086f4e5576
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}

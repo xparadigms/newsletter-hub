@@ -14,7 +14,6 @@ import time
 from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 
-import anthropic
 import feedparser
 import requests
 from bs4 import BeautifulSoup
@@ -25,7 +24,7 @@ from googleapiclient.discovery import build
 # is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import audio, furigana, issue as issue_row, plaintext, sources, store  # noqa: E402
+from shared import audio, furigana, issue as issue_row, llm, plaintext, sources, store  # noqa: E402
 from shared.http import request_with_retry  # noqa: E402
 
 # ── Config ──────────────────────────────────────────────────────────────────
@@ -312,8 +311,6 @@ def generate_issue(news_items: list[dict]) -> tuple[str, str]:
     Returns (main_title, issue_text) where main_title is the extracted
     headline for use in the [Japan Daily Talk #NN] (main_title) format.
     """
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-
     now_kst = datetime.now(KST)
     date_line = now_kst.strftime("%B %d, %Y")
     next_issue = now_kst + timedelta(days=1)
@@ -335,13 +332,13 @@ def generate_issue(news_items: list[dict]) -> tuple[str, str]:
     )
 
 
-    response = client.messages.create(
+    raw = llm.complete(
         model="claude-sonnet-4-6",
         max_tokens=12000,
         system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": prompt}],
+        user=prompt,
+        label="issue",
     )
-    raw = response.content[0].text
 
     # Extract the MAIN_TITLE line from the top of the response
     main_title = "Japan Daily Talk"

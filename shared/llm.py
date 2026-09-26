@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -190,6 +191,9 @@ def _claude_code(model: str, system: str, user: str, max_tokens: int) -> tuple[s
                     "--tools", "",
                     "--max-turns", "1",
                     "--no-session-persistence",
+                    # A developer machine's own settings (model, hooks) must
+                    # not leak into a newsletter call.
+                    "--setting-sources", "project",
                 ],
                 input=user,
                 capture_output=True,
@@ -211,6 +215,85 @@ def _claude_code(model: str, system: str, user: str, max_tokens: int) -> tuple[s
 
     usage = out.get("usage") or {}
     return out["result"], Usage(
+        model=model,
+        input_tokens=(usage.get("input_tokens") or 0)
+        + (usage.get("cache_read_input_tokens") or 0)
+        + (usage.get("cache_creation_input_tokens") or 0),
+        output_tokens=usage.get("output_tokens") or 0,
+        subscription=True,
+    )
+
+
+_URL = re.compile(r"https?://[^\s\"'<>\\\]\)]+")
+
+
+def claude_code_search(
+    model: str, system: str, user: str, *, max_turns: int = 25, timeout: int = 1500
+) -> tuple[str, set[str], Usage]:
+    """A research session through Claude Code with web search, on the
+    subscription. Returns (final text, every URL the searches returned, usage).
+
+    The URLs are what source links are verified against, the same role the
+    API's web_search_tool_result blocks play. They come from the stream-json
+    transcript, since the plain json output keeps only the final answer.
+
+    Sonnet 4.6 cannot be used here: through Claude Code on a subscription, its
+    second turn is refused with "Usage credits required for 1M context", even
+    with CLAUDE_CODE_DISABLE_1M_CONTEXT set. Sonnet 5 and Opus 5.5 work.
+    Raises ClaudeCodeError on any failure so the caller can fall back to the API.
+    """
+    exe = shutil.which("claude")
+    if not exe:
+        raise ClaudeCodeError("the claude CLI is not installed")
+    env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
+    with tempfile.TemporaryDirectory() as cwd:
+        system_file = os.path.join(cwd, "system.txt")
+        with open(system_file, "w", encoding="utf-8") as f:
+            f.write(system)
+        try:
+            proc = subprocess.run(
+                [
+                    exe, "-p",
+                    "--model", model,
+                    "--output-format", "stream-json", "--verbose",
+                    "--system-prompt-file", system_file,
+                    "--tools", "WebSearch",
+                    "--allowedTools", "WebSearch",
+                    "--max-turns", str(max_turns),
+                    "--no-session-persistence",
+                    "--setting-sources", "project",
+                ],
+                input=user,
+                capture_output=True,
+                text=True,
+                cwd=cwd,
+                env=env,
+                timeout=timeout,
+            )
+        except subprocess.TimeoutExpired as e:
+            raise ClaudeCodeError(f"timed out after {timeout}s") from e
+
+    urls: set[str] = set()
+    result: dict[str, Any] | None = None
+    for line in proc.stdout.splitlines():
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if event.get("type") == "assistant":
+            for block in event.get("message", {}).get("content", []):
+                if block.get("type") == "tool_use":
+                    print(f"    search: {block.get('input', {}).get('query', block.get('input'))}")
+        elif event.get("type") == "user" and event.get("tool_use_result"):
+            urls.update(_URL.findall(json.dumps(event["tool_use_result"], ensure_ascii=False)))
+        elif event.get("type") == "result":
+            result = event
+    if not result or result.get("is_error") or not result.get("result"):
+        detail = (result or {}).get("result") or proc.stderr.strip()[-400:]
+        raise ClaudeCodeError(f"exit {proc.returncode}: {str(detail)[:400]}")
+
+    usage = result.get("usage") or {}
+    return result["result"], urls, Usage(
         model=model,
         input_tokens=(usage.get("input_tokens") or 0)
         + (usage.get("cache_read_input_tokens") or 0)

@@ -17,7 +17,6 @@ import sys
 from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 
-import anthropic
 import feedparser
 import requests
 from bs4 import BeautifulSoup
@@ -26,7 +25,7 @@ from bs4 import BeautifulSoup
 # is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import audio, issue as issue_row, markers as china_blocks, sources, store  # noqa: E402
+from shared import audio, issue as issue_row, llm, markers as china_blocks, sources, store  # noqa: E402
 from shared.http import request_with_retry  # noqa: E402
 
 # ── Config ──────────────────────────────────────────────────────────────────
@@ -273,7 +272,6 @@ the other. Do not let any one area take more than half the issue.
 
 
 def generate_issue(items: list[dict]) -> str:
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     now = datetime.now(KST)
     news = "\n\n".join(
         f"[{i['source']}] {i['text'][:400]}" + (f"\n  URL: {i['url']}" if i["url"] else "")
@@ -286,18 +284,15 @@ def generate_issue(items: list[dict]) -> str:
         store.recent_issues("china", sources.RECENT_ISSUES)
     )
 
-    # Streamed, not a plain create: at this max_tokens the SDK refuses a
-    # non-streaming request outright, because the response could take longer
-    # than ten minutes. A full-length issue is what needs the budget, so stream
-    # rather than trim the issue back to fit.
-    with client.messages.stream(
+    # shared/llm streams on the API path, which this max_tokens needs: the SDK
+    # refuses a non-streaming request that could run past ten minutes.
+    return llm.complete(
         model=MODEL,
         max_tokens=MAX_TOKENS,
         system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": prompt}],
-    ) as stream:
-        message = stream.get_final_message()
-    return message.content[0].text.strip()
+        user=prompt,
+        label="issue",
+    ).strip()
 
 
 def _issue_title(main_title: str) -> str:

@@ -26,14 +26,13 @@ import sys
 from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 
-import anthropic
 import feedparser
 
 # The workflow runs with this project as the working directory, so the repo root
 # is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import audio, furigana, issue as issue_row, plaintext, sources, store  # noqa: E402
+from shared import audio, furigana, issue as issue_row, llm, plaintext, sources, store  # noqa: E402
 
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 TIMEZONE = os.environ.get("TIMEZONE", "Asia/Seoul")
@@ -299,19 +298,17 @@ DO NOT REPEAT these recent issues — pick different people and different ideas:
 
 
 def generate_issue(items: list[dict], recent: list[str]) -> tuple[str, str]:
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     now_kst = datetime.now(KST)
     formatted = "\n\n".join(
         f"[{i['source']}] {i['text']}\n  URL: {i['url']}\n  Date: {i['date']}"
         for i in items
     )
-    resp = client.messages.create(
+    text = llm.complete(
         model=MODEL,
         max_tokens=MAX_TOKENS,
         system=SYSTEM_PROMPT,
-        messages=[{
-            "role": "user",
-            "content": ISSUE_PROMPT.format(
+        user=(
+            ISSUE_PROMPT.format(
                 issue_number=ISSUE_NUMBER,
                 date_line=now_kst.strftime("%B %d, %Y"),
                 lookback=LOOKBACK_DAYS,
@@ -320,10 +317,10 @@ def generate_issue(items: list[dict], recent: list[str]) -> tuple[str, str]:
             )
             + sources.already_covered(
                 store.recent_issues("business", sources.RECENT_ISSUES)
-            ),
-        }],
-    )
-    text = resp.content[0].text.strip()
+            )
+        ),
+        label="issue",
+    ).strip()
 
     main_title = "Business Insight"
     lines = text.split("\n")

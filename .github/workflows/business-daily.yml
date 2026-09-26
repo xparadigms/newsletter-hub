@@ -48,10 +48,16 @@ jobs:
       - name: Install dependencies
         run: pip install -r ../requirements.txt
 
+      # Claude calls run on the Claude subscription through Claude Code, and on
+      # the API key if that fails (shared/llm.py).
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
       - name: Run daily issue
         # Supabase only: no Notion mirror and no calendar event, like mandarin.
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

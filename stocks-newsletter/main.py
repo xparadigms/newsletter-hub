@@ -166,28 +166,70 @@ def _last_json_object(text: str) -> dict[str, Any] | None:
     return found
 
 
+# Research on the subscription runs on Sonnet 5: through Claude Code, Sonnet
+# 4.6 cannot hold a multi-turn search session (see llm.claude_code_search).
+SUBSCRIPTION_RESEARCH_MODEL = "claude-sonnet-5"
+
+
+def _validated(text: str, request: str | None) -> dict[str, Any]:
+    data = _last_json_object(text)
+    if data is None:
+        raise RuntimeError(f"research did not end in JSON: {text[-800:]!r}")
+    companies = data.get("companies") or []
+    expected = 1 if request else 3
+    if request and not companies:
+        raise RuntimeError(f"no listed company matches {request!r}")
+    if len(companies) != expected:
+        raise RuntimeError(
+            f"research returned {len(companies)} companies, expected {expected}"
+        )
+    return data
+
+
 def research(
     today: str, recent: list[str], request: str | None = None
 ) -> tuple[dict[str, Any], set[str]]:
     """Pick three companies, or look up the requested one, and gather their
-    facts. Returns (research, URLs seen)."""
+    facts. Returns (research, URLs seen).
+
+    On the Claude subscription first when the workflow provides one, then the
+    API. A request for a company that does not exist fails on either path the
+    same way, so that error is not retried.
+    """
+    prompt = (
+        REQUEST_PROMPT.format(today=today, request=request, shape=JSON_SHAPE)
+        if request
+        else RESEARCH_PROMPT.format(
+            today=today,
+            window=REPEAT_WINDOW_DAYS,
+            recent="\n".join(f"   - {t}" for t in recent) or "   (none yet)",
+            shape=JSON_SHAPE,
+        )
+    )
+    if os.environ.get("CLAUDE_CODE_OAUTH_TOKEN"):
+        try:
+            text, urls, usage = llm.claude_code_search(
+                SUBSCRIPTION_RESEARCH_MODEL, RESEARCH_SYSTEM, prompt
+            )
+            print(usage.line("research"))
+            data = _validated(text, request)
+            print(f"  {len(urls)} URLs from search")
+            return data, urls
+        except llm.ClaudeCodeError as e:
+            print(f"  ⚠ subscription research failed, using the API key instead: {e}")
+        except RuntimeError as e:
+            if request and "no listed company" in str(e):
+                raise
+            print(f"  ⚠ subscription research unusable, using the API key instead: {e}")
+    return _research_api(prompt, request)
+
+
+def _research_api(prompt: str, request: str | None) -> tuple[dict[str, Any], set[str]]:
     # A hard ceiling per request: without one a stalled stream sat until the
     # job's 30 minute timeout, with nothing in the log to say where.
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY, timeout=600, max_retries=1)
     started = time.monotonic()
-    messages: list[dict[str, Any]] = [{
-        "role": "user",
-        "content": (
-            REQUEST_PROMPT.format(today=today, request=request, shape=JSON_SHAPE)
-            if request
-            else RESEARCH_PROMPT.format(
-                today=today,
-                window=REPEAT_WINDOW_DAYS,
-                recent="\n".join(f"   - {t}" for t in recent) or "   (none yet)",
-                shape=JSON_SHAPE,
-            )
-        ),
-    }]
+    messages: list[dict[str, Any]] = [{"role": "user", "content": prompt}]
     urls: set[str] = set()
     text_parts: list[str] = []
 
@@ -226,18 +268,7 @@ def research(
             break
         messages.append({"role": "assistant", "content": final.content})
 
-    text = "".join(text_parts)
-    data = _last_json_object(text)
-    if data is None:
-        raise RuntimeError(f"research did not end in JSON: {text[-800:]!r}")
-    companies = data.get("companies") or []
-    expected = 1 if request else 3
-    if request and not companies:
-        raise RuntimeError(f"no listed company matches {request!r}")
-    if len(companies) != expected:
-        raise RuntimeError(
-            f"research returned {len(companies)} companies, expected {expected}"
-        )
+    data = _validated("".join(text_parts), request)
     print(f"  {len(urls)} URLs from search")
     return data, urls
 
