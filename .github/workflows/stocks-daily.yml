@@ -58,6 +58,8 @@ jobs:
           SITE_URL: ${{ secrets.SITE_URL }}
           REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
           TIMEZONE: Asia/Seoul
+          # Progress lines appear as they happen instead of all at the end.
+          PYTHONUNBUFFERED: "1"
           EDITION: ${{ inputs.edition || '1' }}
           ISSUE_NUMBER: ${{ inputs.issue_number }}
         run: |

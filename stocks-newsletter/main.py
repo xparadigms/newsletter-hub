@@ -29,6 +29,7 @@ import os
 import pathlib
 import re
 import sys
+import time
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
@@ -111,7 +112,7 @@ Finish with ONLY a JSON object, no prose before or after, in this shape:
 }}
 """
 
-WEB_SEARCH_TOOL = {"type": "web_search_20260209", "name": "web_search", "max_uses": 30}
+WEB_SEARCH_TOOL = {"type": "web_search_20260209", "name": "web_search", "max_uses": 15}
 
 
 def _last_json_object(text: str) -> dict[str, Any] | None:
@@ -137,7 +138,10 @@ def _last_json_object(text: str) -> dict[str, Any] | None:
 
 def research(today: str, recent: list[str]) -> tuple[dict[str, Any], set[str]]:
     """Pick three companies and gather their facts. Returns (research, URLs seen)."""
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    # A hard ceiling per request: without one a stalled stream sat until the
+    # job's 30 minute timeout, with nothing in the log to say where.
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY, timeout=600, max_retries=1)
+    started = time.monotonic()
     messages: list[dict[str, Any]] = [{
         "role": "user",
         "content": RESEARCH_PROMPT.format(
@@ -159,7 +163,15 @@ def research(today: str, recent: list[str]) -> tuple[dict[str, Any], set[str]]:
             tools=[WEB_SEARCH_TOOL],
             messages=messages,
         ) as stream:
+            for event in stream:
+                if event.type == "content_block_start":
+                    kind = event.content_block.type
+                    if kind != "text":
+                        print(f"  [{time.monotonic() - started:5.0f}s] {kind}")
             final = stream.get_final_message()
+        for block in final.content:
+            if block.type == "server_tool_use":
+                print(f"    search: {(block.input or {}).get('query', block.input)}")
         u = final.usage
         print(f"  research: {u.input_tokens:,} in, {u.output_tokens:,} out, stop={final.stop_reason}")
 
