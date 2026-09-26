@@ -112,7 +112,11 @@ Finish with ONLY a JSON object, no prose before or after, in this shape:
 }}
 """
 
-WEB_SEARCH_TOOL = {"type": "web_search_20260209", "name": "web_search", "max_uses": 15}
+# The basic search tool, not web_search_20260209. The newer one filters results
+# in a code sandbox, and the model used that sandbox to try fetching prices
+# itself: with no network there, each attempt hung for three to five minutes
+# and a dry run ran past its 30 minute timeout. Prices come from Yahoo below.
+WEB_SEARCH_TOOL = {"type": "web_search_20250305", "name": "web_search", "max_uses": 12}
 
 
 def _last_json_object(text: str) -> dict[str, Any] | None:
