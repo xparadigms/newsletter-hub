@@ -27,7 +27,7 @@ import type { SectionKey } from "@/lib/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const MAX_PER_DAY = Number(process.env.GENERATE_MAX_PER_DAY ?? 4);
+const MAX_PER_DAY = Number(process.env.GENERATE_MAX_PER_DAY ?? 10);
 
 /** Extra issues requested today, across every newsletter workflow. */
 async function usedToday(token: string): Promise<number> {
