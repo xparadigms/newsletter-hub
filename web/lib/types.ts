@@ -5,7 +5,8 @@ export type SectionKey =
   | "watch"
   | "china"
   | "mandarin"
-  | "business";
+  | "business"
+  | "stocks";
 
 // Compile-time proof that a hand-maintained list covers every section. Several
 // of them are ordinary arrays that would happily compile with one missing —
@@ -29,6 +30,9 @@ export interface Section {
   // Which language a kana-free Han run belongs to, and which label the reading
   // toggle shows. Defaults to Japanese; the Chinese sections say so.
   sourceLang?: "ja" | "zh";
+  // Left out of the tab bar and the footer while a section is paused. Its
+  // index, its issues, search and the sitemap all keep working.
+  hideInNav?: boolean;
 }
 
 export interface Post {

@@ -15,6 +15,7 @@ export const WORKFLOWS: Record<SectionKey, string> = {
   watch: "watch-weekly.yml",
   china: "china-daily.yml",
   mandarin: "mandarin-daily.yml",
+  stocks: "stocks-daily.yml",
 };
 
 // Every workflow's run-name ends with this when the cron started it, which is

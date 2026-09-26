@@ -132,6 +132,37 @@ def recent_titles(section: str, limit: int = 10) -> list[str]:
         return []
 
 
+def next_issue_number(section: str, issue_date: str, edition: int = 1) -> int:
+    """The issue number for a run, read from what is stored rather than the run.
+
+    github.run_number counts dry runs and failed runs too, which leaves gaps a
+    reader can see. Rerunning a day that is already stored keeps that day's
+    number; anything else takes the next one. 1 when the section is empty or
+    unreadable.
+    """
+    try:
+        base, key = _config()
+        resp = http.request_with_retry(
+            "GET",
+            f"{base}/rest/v1/{TABLE}"
+            f"?section=eq.{section}&select=issue_date,edition,issue_number"
+            f"&issue_number=not.is.null&order=issue_number.desc&limit=1",
+            label="Supabase",
+            headers=_headers(key),
+        )
+        resp.raise_for_status()
+        rows = resp.json()
+    except Exception as e:  # noqa: BLE001 — a number is not worth failing a run over
+        print(f"  ⚠ could not read the last issue number (non-fatal): {e}")
+        return 1
+    if not rows:
+        return 1
+    last = rows[0]
+    if last["issue_date"] == issue_date and last.get("edition", 1) == edition:
+        return int(last["issue_number"])
+    return int(last["issue_number"]) + 1
+
+
 def ping_revalidate(section: str, slug: str) -> None:
     """Ask the site to drop its cached list and body for one issue.
 

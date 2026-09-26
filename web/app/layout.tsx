@@ -5,7 +5,7 @@ import NavBar, { LargeTitle } from "@/components/NavBar";
 import ServiceWorker from "@/components/ServiceWorker";
 import SwipeBack from "@/components/SwipeBack";
 import TabBar from "@/components/TabBar";
-import { SECTIONS, SITE } from "@/lib/config";
+import { NAV_SECTIONS, SITE } from "@/lib/config";
 import { dataConnected } from "@/lib/posts";
 import "./globals.css";
 
@@ -158,7 +158,7 @@ export default function RootLayout({
               <p className="site-footer__note">{SITE.tagline}</p>
             </div>
             <nav className="site-footer__nav">
-              {SECTIONS.map((s) => (
+              {NAV_SECTIONS.map((s) => (
                 <Link key={s.key} href={`/section/${s.key}`}>
                   {s.label}
                 </Link>

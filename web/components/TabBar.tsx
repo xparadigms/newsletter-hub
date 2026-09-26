@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { SECTIONS } from "@/lib/config";
+import { NAV_SECTIONS } from "@/lib/config";
 import type { SectionKey } from "@/lib/types";
 
 // Simple, legible glyphs in the SF Symbols spirit: outline when inactive, the
@@ -30,6 +30,15 @@ const GLYPHS: Record<SectionKey | "home", React.ReactNode> = {
   mandarin: <path d="M12 6.5v13M12 6.5C10.5 5 8 4.5 4 4.8v12.6c4-.3 6.5.2 8 1.6M12 6.5c1.5-1.5 4-2 8-1.7v12.6c-4-.3-6.5.2-8 1.6" />,
   // A lamp: this section carries ideas rather than a day's events.
   business: <path d="M9.5 18.5h5M10 21h4M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3Z" />,
+  // Three candlesticks: three companies a day.
+  stocks: (
+    <>
+      <path d="M6 4v3M6 17v3M12 7v3M12 18v2.5M18 3.5V6M18 15v3" fill="none" />
+      <rect x="4" y="7" width="4" height="10" rx="1" />
+      <rect x="10" y="10" width="4" height="8" rx="1" />
+      <rect x="16" y="6" width="4" height="9" rx="1" />
+    </>
+  ),
 };
 
 function Glyph({ name, active }: { name: SectionKey | "home"; active: boolean }) {
@@ -49,7 +58,7 @@ function Glyph({ name, active }: { name: SectionKey | "home"; active: boolean })
 
 const TABS: { key: string; href: string; label: string; glyph: SectionKey | "home" }[] = [
   { key: "home", href: "/", label: "Today", glyph: "home" },
-  ...SECTIONS.map((s) => ({
+  ...NAV_SECTIONS.map((s) => ({
     key: s.key,
     href: `/section/${s.key}`,
     label: s.label,

@@ -1,0 +1,66 @@
+name: Three Companies — Daily Stock Newsletter
+run-name: ${{ inputs.scheduled == 'true' && format('{0} (scheduled)', github.workflow) || github.workflow }}
+
+# ISSUE_NUMBER: read from Supabase by the script rather than github.run_number,
+# so dry runs and failed runs leave no gaps. Set issue_number to override.
+
+on:
+  # No `schedule:` here. web/vercel.json's crons dispatch this workflow with
+  # scheduled=true, and retry it later in the morning if it has not succeeded.
+  workflow_dispatch:
+    inputs:
+      scheduled:
+        description: "Set by the site's cron: this is the day's regular issue"
+        type: string
+        default: ""
+      edition:
+        description: "2+ makes an extra issue for the day instead of replacing it"
+        type: string
+        default: ""
+      dry_run:
+        description: "Print the articles and publish nothing"
+        type: boolean
+        default: false
+      issue_number:
+        description: "Override the issue number (blank = next, or today's on a rerun)"
+        type: string
+        default: ""
+
+jobs:
+  generate-issue:
+    runs-on: ubuntu-latest
+    # Web research, the writing call, then furigana and audio for three articles.
+    timeout-minutes: 30
+
+    defaults:
+      run:
+        working-directory: stocks-newsletter
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r ../requirements.txt
+
+      - name: Run daily issue
+        # Supabase only: no Notion mirror and no calendar event, like business.
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          SITE_URL: ${{ secrets.SITE_URL }}
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
+          TIMEZONE: Asia/Seoul
+          EDITION: ${{ inputs.edition || '1' }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="--dry-run"; fi
+          python main.py $ARGS

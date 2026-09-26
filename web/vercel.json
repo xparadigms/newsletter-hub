@@ -2,10 +2,10 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     { "path": "/api/cron?sections=mandarin", "schedule": "0 21 * * *" },
-    { "path": "/api/cron?sections=china,business", "schedule": "0 22 * * *" },
+    { "path": "/api/cron?sections=china,business,stocks", "schedule": "0 22 * * *" },
     { "path": "/api/cron?sections=fintech,startup", "schedule": "0 23 * * *" },
     { "path": "/api/cron?sections=watch", "schedule": "0 23 * * 5" },
-    { "path": "/api/cron?sections=mandarin,china,business,fintech,startup", "schedule": "0 1 * * *" },
+    { "path": "/api/cron?sections=mandarin,china,business,stocks,fintech,startup", "schedule": "0 1 * * *" },
     { "path": "/api/cron?sections=watch", "schedule": "0 2 * * 6" }
   ]
 }
