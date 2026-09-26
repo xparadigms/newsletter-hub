@@ -41,11 +41,18 @@ jobs:
       - name: Install dependencies
         run: pip install -r ../requirements.txt
 
+      # The lesson runs on the Claude subscription through Claude Code when the
+      # CLAUDE_CODE_OAUTH_TOKEN secret exists, and on the API key otherwise or
+      # if the subscription call fails (shared/llm.py).
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
       - name: Run daily lesson
         # Supabase only: no Notion mirror and no calendar event. There is no news
         # to scrape either, so no feed credentials.
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

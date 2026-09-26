@@ -15,13 +15,12 @@ import pathlib
 import sys
 from datetime import datetime, timedelta, timezone
 
-import anthropic
 
 # The workflow runs with this project as the working directory, so the repo root
 # is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import audio, issue as issue_row, markers, store  # noqa: E402
+from shared import audio, issue as issue_row, llm, markers, store  # noqa: E402
 
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 TIMEZONE = os.environ.get("TIMEZONE", "Asia/Seoul")
@@ -189,20 +188,22 @@ must be a word a learner at this level would plausibly not know yet.
 def generate_lesson() -> tuple[str, str, str, str]:
     """(issue_text, grammar, gloss, setting)."""
     grammar, gloss, setting = todays_lesson()
-    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
     prompt = LESSON_PROMPT.format(
         date_line=datetime.now(KST).strftime("%A, %B %d, %Y"),
         grammar=grammar,
         gloss=gloss,
         setting=setting,
     )
-    resp = client.messages.create(
+    # Through shared/llm, so the lesson runs on the Claude subscription when
+    # the workflow provides CLAUDE_CODE_OAUTH_TOKEN, with the API as fallback.
+    text = llm.complete(
         model=MODEL,
-        max_tokens=MAX_TOKENS,
         system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": prompt}],
+        user=prompt,
+        max_tokens=MAX_TOKENS,
+        label="lesson",
     )
-    return resp.content[0].text.strip(), grammar, gloss, setting
+    return text.strip(), grammar, gloss, setting
 
 
 def _issue_title(main_title: str) -> str:

@@ -16,7 +16,11 @@ does: one HTTP call does not justify another dependency tree.
 
 from __future__ import annotations
 
+import json
 import os
+import shutil
+import subprocess
+import tempfile
 from typing import Any, NamedTuple
 
 import anthropic
@@ -43,8 +47,14 @@ class Usage(NamedTuple):
     output_tokens: int
     reasoning_tokens: int = 0
 
+    # True when the call ran on the Claude subscription through Claude Code,
+    # which bills nothing per token.
+    subscription: bool = False
+
     @property
     def cost(self) -> float | None:
+        if self.subscription:
+            return 0.0
         price = PRICES.get(self.model)
         if not price:
             return None
@@ -63,7 +73,11 @@ class Usage(NamedTuple):
         if self.reasoning_tokens:
             bits.append(f"{self.reasoning_tokens:,} reasoning")
         cost = self.cost
-        money = f"${cost:.4f}" if cost is not None else "unpriced model"
+        money = (
+            "subscription"
+            if self.subscription
+            else f"${cost:.4f}" if cost is not None else "unpriced model"
+        )
         where = f" {label}" if label else ""
         return f"  llm{where}: {self.model} — {', '.join(bits)} = {money}"
 
@@ -138,6 +152,74 @@ def _anthropic(model: str, system: str, user: str, max_tokens: int) -> tuple[str
     )
 
 
+class ClaudeCodeError(RuntimeError):
+    """Claude Code did not return a usable answer: rate limited, logged out,
+    missing, or timed out. The caller falls back to the API."""
+
+
+def _claude_code(model: str, system: str, user: str, max_tokens: int) -> tuple[str, Usage]:
+    """One completion through the Claude Code CLI, billed to the subscription.
+
+    Enabled per workflow by giving it a CLAUDE_CODE_OAUTH_TOKEN secret (made
+    with `claude setup-token`). Claude Code is made to behave like a bare
+    completion: no tools, the caller's system prompt instead of its own, and an
+    empty working directory so no CLAUDE.md is picked up. Not --bare, which
+    would refuse the OAuth token.
+
+    ANTHROPIC_API_KEY is removed from the child's environment. With it set,
+    Claude Code bills the API key and ignores the subscription, which would
+    defeat the point while looking like it worked.
+    """
+    exe = shutil.which("claude")
+    if not exe:
+        raise ClaudeCodeError("the claude CLI is not installed")
+
+    env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
+    env["CLAUDE_CODE_MAX_OUTPUT_TOKENS"] = str(max_tokens)
+    with tempfile.TemporaryDirectory() as cwd:
+        system_file = os.path.join(cwd, "system.txt")
+        with open(system_file, "w", encoding="utf-8") as f:
+            f.write(system)
+        try:
+            proc = subprocess.run(
+                [
+                    exe, "-p",
+                    "--model", model,
+                    "--output-format", "json",
+                    "--system-prompt-file", system_file,
+                    "--tools", "",
+                    "--max-turns", "1",
+                    "--no-session-persistence",
+                ],
+                input=user,
+                capture_output=True,
+                text=True,
+                cwd=cwd,
+                env=env,
+                timeout=900,
+            )
+        except subprocess.TimeoutExpired as e:
+            raise ClaudeCodeError("timed out after 15 minutes") from e
+
+    try:
+        out = json.loads(proc.stdout)
+    except ValueError:
+        detail = (proc.stderr or proc.stdout).strip()[-400:]
+        raise ClaudeCodeError(f"exit {proc.returncode}: {detail}") from None
+    if proc.returncode != 0 or out.get("is_error") or not out.get("result"):
+        raise ClaudeCodeError(f"exit {proc.returncode}: {str(out.get('result'))[:400]}")
+
+    usage = out.get("usage") or {}
+    return out["result"], Usage(
+        model=model,
+        input_tokens=(usage.get("input_tokens") or 0)
+        + (usage.get("cache_read_input_tokens") or 0)
+        + (usage.get("cache_creation_input_tokens") or 0),
+        output_tokens=usage.get("output_tokens") or 0,
+        subscription=True,
+    )
+
+
 def complete(
     *,
     model: str,
@@ -146,8 +228,21 @@ def complete(
     max_tokens: int,
     label: str = "",
 ) -> str:
-    """Text from whichever vendor owns `model`, with the cost printed."""
-    fn = _openai if model.startswith("gpt-") else _anthropic
-    text, usage = fn(model, system, user, max_tokens)
+    """Text from whichever vendor owns `model`, with the cost printed.
+
+    Claude models go through the subscription first when the workflow provides
+    CLAUDE_CODE_OAUTH_TOKEN, and fall back to the API key if that fails — a
+    usage limit reached at 07:00 must not cost the morning its issue.
+    """
+    if model.startswith("gpt-"):
+        text, usage = _openai(model, system, user, max_tokens)
+    elif os.environ.get("CLAUDE_CODE_OAUTH_TOKEN"):
+        try:
+            text, usage = _claude_code(model, system, user, max_tokens)
+        except ClaudeCodeError as e:
+            print(f"  ⚠ subscription call failed, using the API key instead: {e}")
+            text, usage = _anthropic(model, system, user, max_tokens)
+    else:
+        text, usage = _anthropic(model, system, user, max_tokens)
     print(usage.line(label))
     return text

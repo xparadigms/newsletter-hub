@@ -1,0 +1,36 @@
+name: Subscription check
+
+# Confirms CLAUDE_CODE_OAUTH_TOKEN works from a runner, without generating or
+# publishing anything: one tiny completion through the same shared/llm path
+# the newsletters use. Run it after `claude setup-token`, or whenever a
+# newsletter's log says it fell back to the API key.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: npm install -g @anthropic-ai/claude-code
+      - name: One completion on the subscription
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          python - <<'PY'
+          from shared import llm
+          text, usage = llm._claude_code(
+              "claude-sonnet-4-6",
+              "Answer in exactly one Korean word.",
+              "What is the Korean word for apple?",
+              200,
+          )
+          print(usage.line("check"))
+          print("answer:", text)
+          PY
