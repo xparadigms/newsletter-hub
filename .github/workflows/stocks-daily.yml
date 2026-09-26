@@ -34,7 +34,9 @@ jobs:
   generate-issue:
     runs-on: ubuntu-latest
     # Web research, the writing call, then furigana and audio for three articles.
-    timeout-minutes: 30
+    # The first subscription edition took 21 minutes: 21 searches through Claude
+    # Code, then OpenAI TTS retrying through connection errors.
+    timeout-minutes: 45
 
     defaults:
       run:
