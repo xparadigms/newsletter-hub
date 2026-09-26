@@ -275,6 +275,7 @@ institution writes them in English, in both languages: Bank of Korea, Federal \
 Reserve, Bank of Japan, Samsung Electronics. Never add a Japanese or Korean \
 name in parentheses.
 - Round percentages and mark them approximate: 約12%上昇 / 약 12% 상승.
+- Large amounts use 兆 and 億 in Japanese and 조 and 억 in Korean. These are the same units (1兆 = 1조 = one trillion, 1億 = 1억 = 100 million), so every amount has identical numerals in both languages: USD 9,650億 / USD 9,650억. Convert from billions carefully: USD 965 billion is 9,650億, never 965億.
 - Attribute figures and claims to their sources in plain prose (Reutersによると).
 - Never give investment recommendations. No 買い, 売り or target prices of your own.
 - Use only facts from the research and price data you are given. Prices are \
@@ -393,6 +394,30 @@ def _sections(block: str) -> dict[str, list[str]]:
     return out
 
 
+_AMOUNT = re.compile(r"([0-9][0-9,.]*)\s*(兆|億|조|억)")
+_UNIT = {"兆": "T", "조": "T", "億": "H", "억": "H"}
+
+
+def check_amounts(title: str, sections: dict[str, list[str]]) -> int:
+    """Warn where a Korean paragraph's 조/억 amounts differ from its Japanese.
+
+    The two languages share these units, so the numerals must match. The first
+    edition published USD 965億 above a correct USD 9,650억; the model had
+    converted the Korean carefully and the Japanese carelessly. Logged rather
+    than fatal: the run should publish, and the log says what to fix.
+    """
+    problems = 0
+    for lines in sections.values():
+        for ja, marker, ko in zip(lines, lines[1:], lines[2:]):
+            if marker != "📝 한국어 번역:" or not furigana.has_japanese_chars(ja):
+                continue
+            amounts = lambda t: sorted((n.replace(",", ""), _UNIT[u]) for n, u in _AMOUNT.findall(t))  # noqa: E731
+            if amounts(ja) != amounts(ko):
+                problems += 1
+                print(f"  ⚠ {title[:40]}: amounts differ, JA {amounts(ja)} vs KO {amounts(ko)}")
+    return problems
+
+
 def _clean(lines: list[str]) -> list[str]:
     return [
         _no_dashes(line, japanese=furigana.has_japanese_chars(line)) for line in lines
@@ -466,6 +491,10 @@ def run() -> None:
     number = int(os.environ.get("ISSUE_NUMBER") or 0) or store.next_issue_number(
         SECTION, today_iso, EDITION
     )
+    check_amounts("Backdrop", {"BACKDROP": backdrop})
+    for title, sections in companies:
+        check_amounts(title, sections)
+
     articles = []
     for part, (title, sections) in enumerate(companies, start=1):
         text = sources.attach(article_text(headline, part, backdrop, sections), [
