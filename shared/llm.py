@@ -158,6 +158,23 @@ class ClaudeCodeError(RuntimeError):
     missing, or timed out. The caller falls back to the API."""
 
 
+def _child_env() -> dict[str, str]:
+    """The environment for a Claude Code subprocess.
+
+    Without ANTHROPIC_API_KEY: with it set, Claude Code bills the API key and
+    ignores the subscription, which would defeat the point while looking like
+    it worked.
+
+    With thinking off: Claude Code thinks by default, and the API calls these
+    replace never did. On a full issue it thought for over 15 minutes before
+    writing, so the first run on the subscription timed out; the same request
+    without thinking took under a minute.
+    """
+    env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
+    env["MAX_THINKING_TOKENS"] = "0"
+    return env
+
+
 def _claude_code(model: str, system: str, user: str, max_tokens: int) -> tuple[str, Usage]:
     """One completion through the Claude Code CLI, billed to the subscription.
 
@@ -167,15 +184,13 @@ def _claude_code(model: str, system: str, user: str, max_tokens: int) -> tuple[s
     empty working directory so no CLAUDE.md is picked up. Not --bare, which
     would refuse the OAuth token.
 
-    ANTHROPIC_API_KEY is removed from the child's environment. With it set,
-    Claude Code bills the API key and ignores the subscription, which would
-    defeat the point while looking like it worked.
+    The child's environment comes from _child_env().
     """
     exe = shutil.which("claude")
     if not exe:
         raise ClaudeCodeError("the claude CLI is not installed")
 
-    env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
+    env = _child_env()
     env["CLAUDE_CODE_MAX_OUTPUT_TOKENS"] = str(max_tokens)
     with tempfile.TemporaryDirectory() as cwd:
         system_file = os.path.join(cwd, "system.txt")
@@ -245,7 +260,7 @@ def claude_code_search(
     exe = shutil.which("claude")
     if not exe:
         raise ClaudeCodeError("the claude CLI is not installed")
-    env = {k: v for k, v in os.environ.items() if k != "ANTHROPIC_API_KEY"}
+    env = _child_env()
     with tempfile.TemporaryDirectory() as cwd:
         system_file = os.path.join(cwd, "system.txt")
         with open(system_file, "w", encoding="utf-8") as f:
