@@ -143,6 +143,24 @@ export const getPost = cache(
     if (!data) return null;
 
     const row = data as Row & { blocks: Block[] };
-    return { ...toPost(row), blocks: row.blocks ?? [] };
+    const blocks = row.blocks ?? [];
+    return {
+      ...toPost(row),
+      blocks: section === "stocks" ? numberParts(blocks) : blocks,
+    };
   }
 );
+
+/** Three Companies' parts, numbered from 0: "0. 【基本情報】(기본 정보)",
+ *  "1. 【直近30日の動き】…". Done here rather than in the generator so every
+ *  article already published is numbered too, and so the article page, story
+ *  mode and the table of contents all read the same text. A leading "N. " is
+ *  what headingContent renders as a heading number. */
+function numberParts(blocks: Block[]): Block[] {
+  let n = 0;
+  return blocks.map((b) =>
+    b.type === "heading" && b.text.trimStart().startsWith("【") && !/^\d+\.\s/.test(b.text)
+      ? { ...b, text: `${n++}. ${b.text.trimStart()}` }
+      : b
+  );
+}
