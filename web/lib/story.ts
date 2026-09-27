@@ -1,4 +1,4 @@
-import type { AnnotatedBlock } from "./text";
+import type { AnnotatedBlock, RubySegment } from "./text";
 import type { PostDetail, Section } from "./types";
 
 // An issue becomes a deck of full-screen cards. Issues are already written as
@@ -35,6 +35,176 @@ export interface ContentCard {
 }
 
 export type StoryCard = CoverCard | SectionCard | ContentCard;
+
+// ── Three Companies ────────────────────────────────────────────────────────
+// A stock article is four parts under 【】 headings. Basic info is a run of
+// bullets that belongs on one card. The other parts are long paragraphs, and
+// a card holding a whole one needed scrolling on a phone, so they are cut into
+// cards of whole sentences, each card's Japanese followed by its Korean.
+
+// Roughly what fits on a phone card before it reads as a wall of text.
+const STOCK_CARD_LINES = 7;
+// Full-width characters per line on a 390px phone at the story card's body
+// sizes: 19px Japanese, and Korean, whose glyphs set a little narrower.
+const LINE_CAPACITY = { ja: 17, ko: 20 } as const;
+
+/** Estimated rendered lines. Latin letters, digits and spaces are about half
+ *  the width of a full-width character. */
+function estimateLines(text: string, lang: "ja" | "ko"): number {
+  let units = 0;
+  for (const ch of text) {
+    units += /[\u3000-\u30ff\u3400-\u9fff\uac00-\ud7a3\uff00-\uffef]/.test(ch) ? 1 : 0.55;
+  }
+  return Math.max(1, Math.ceil(units / LINE_CAPACITY[lang]));
+}
+
+// Japanese sentences end at 。！？, with any closing bracket that follows.
+const JA_SENTENCE = /[^。！？]*[。！？]+[」』）)]*|[^。！？]+$/g;
+
+function splitJa(text: string): string[] {
+  return (text.match(JA_SENTENCE) ?? []).map((t) => t.trim()).filter(Boolean);
+}
+
+/** Korean sentences end at . ! ? before a space or the end. Not after a Latin
+ *  letter, so "Nu Holdings Ltd. 는" stays one sentence, and never inside a
+ *  number like 13.59, where no space follows. */
+function splitKo(text: string): string[] {
+  const out: string[] = [];
+  let start = 0;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (".!?".includes(ch) && (i + 1 === text.length || /\s/.test(text[i + 1]))) {
+      if (ch === "." && /[A-Za-z]/.test(text[i - 1] ?? "")) continue;
+      out.push(text.slice(start, i + 1).trim());
+      start = i + 1;
+    }
+  }
+  if (text.slice(start).trim()) out.push(text.slice(start).trim());
+  return out.filter(Boolean);
+}
+
+/** Cut ruby segments into sentences at the same 。！？ marks as splitJa.
+ *  Readings sit on words, never on punctuation, so a sentence end is always
+ *  inside an unread segment. */
+function splitRuby(segments: RubySegment[]): RubySegment[][] {
+  const out: RubySegment[][] = [];
+  let current: RubySegment[] = [];
+  for (const seg of segments) {
+    if (seg.reading) {
+      current.push(seg);
+      continue;
+    }
+    for (const piece of seg.text.match(JA_SENTENCE) ?? [seg.text]) {
+      current.push({ text: piece });
+      if (/[。！？][」』）)]*$/.test(piece)) {
+        out.push(current);
+        current = [];
+      }
+    }
+  }
+  if (current.some((seg) => seg.text.trim())) out.push(current);
+  return out;
+}
+
+interface SentencePair {
+  ja: AnnotatedBlock[];
+  ko: AnnotatedBlock[];
+}
+
+/** One Japanese paragraph and its Korean translation as sentence pairs. The
+ *  Korean is written sentence for sentence; where the counts still differ,
+ *  each Korean sentence goes with the Japanese one at the same relative
+ *  position, so nothing is dropped and nothing moves ahead of its source. */
+function sentencePairs(ja: AnnotatedBlock, ko: AnnotatedBlock | undefined): SentencePair[] {
+  const text = ja.block.type === "paragraph" ? ja.block.text : "";
+  const jaTexts = splitJa(text);
+  const rubies = ja.ruby ? splitRuby(ja.ruby) : null;
+  // Readings that do not cut into the same sentences stay whole: a paragraph
+  // on one card with its furigana beats sentences without it.
+  if (jaTexts.length < 2 || (rubies && rubies.length !== jaTexts.length)) {
+    return [{ ja: [ja], ko: ko ? [ko] : [] }];
+  }
+  const pairs: SentencePair[] = jaTexts.map((t, i) => ({
+    ja: [
+      {
+        ...ja,
+        block: { type: "paragraph", text: t, ...(i === 0 && ja.block.type === "paragraph" && ja.block.audio ? { audio: ja.block.audio } : {}) },
+        ruby: rubies ? rubies[i] : undefined,
+      },
+    ],
+    ko: [],
+  }));
+  const koTexts = ko && ko.block.type === "paragraph" ? splitKo(ko.block.text) : [];
+  koTexts.forEach((t, j) => {
+    const i = Math.min(jaTexts.length - 1, Math.floor((j * jaTexts.length) / koTexts.length));
+    pairs[i].ko.push({ ...ko!, block: { type: "paragraph", text: t } });
+  });
+  return pairs;
+}
+
+function stockCards(
+  heading: string,
+  blocks: AnnotatedBlock[],
+  subtitle: string | null,
+  kicker: string | null
+): ContentCard[] {
+  const card = (b: AnnotatedBlock[]): ContentCard => ({
+    kind: "content",
+    heading,
+    subtitle,
+    kicker,
+    blocks: b,
+  });
+  const body = blocks.filter((a) => a.block.type !== "divider");
+  if (!body.length) return [];
+  // Basic info, and the source links, are one card however long.
+  if (heading.includes("基本情報") || body.every((a) => a.lang === null)) {
+    return [card(body)];
+  }
+
+  // Japanese paragraphs each followed by their Korean, in source order.
+  const pairs: SentencePair[] = [];
+  const rest: AnnotatedBlock[] = [];
+  for (let i = 0; i < body.length; i++) {
+    const a = body[i];
+    if (a.lang === "ja" && a.block.type === "paragraph") {
+      const next = body[i + 1];
+      const ko = next?.lang === "ko" && next.block.type === "paragraph" ? next : undefined;
+      pairs.push(...sentencePairs(a, ko));
+      if (ko) i++;
+    } else {
+      rest.push(a);
+    }
+  }
+  if (!pairs.length) return [card(body)];
+
+  const lines = (p: SentencePair) =>
+    p.ja.reduce((n, a) => n + estimateLines(a.block.type === "paragraph" ? a.block.text : "", "ja"), 0) +
+    p.ko.reduce((n, a) => n + estimateLines(a.block.type === "paragraph" ? a.block.text : "", "ko"), 0);
+
+  // Greedy: a sentence pair joins the card unless it would push it past the
+  // budget. A single pair over budget still gets a card of its own; sentences
+  // are never cut.
+  const cards: ContentCard[] = [];
+  let group: SentencePair[] = [];
+  let used = 0;
+  const flush = () => {
+    if (!group.length) return;
+    // Japanese first, then its Korean, the way the article reads.
+    cards.push(card([...group.flatMap((p) => p.ja), ...group.flatMap((p) => p.ko)]));
+    group = [];
+    used = 0;
+  };
+  for (const p of pairs) {
+    const n = lines(p);
+    if (group.length && used + n > STOCK_CARD_LINES) flush();
+    group.push(p);
+    used += n;
+  }
+  flush();
+  if (rest.length) cards[cards.length - 1].blocks.push(...rest);
+  return cards;
+}
 
 function formatDate(date: string | null): string | null {
   if (!date) return null;
@@ -124,6 +294,11 @@ export function buildDeck(
       continue;
     }
     if (!g.blocks.length) continue;
+
+    if (section.key === "stocks") {
+      cards.push(...stockCards(g.heading ?? "", g.blocks, g.subtitle, g.kicker));
+      continue;
+    }
 
     // China and Mandarin Basics number their headings — "1. …", "2. …" — and
     // each number is one news story or one lesson step. Splitting it into a
