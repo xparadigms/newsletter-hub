@@ -2018,6 +2018,10 @@ body:has(.story-root) main {
   --text-tertiary: rgb(255 255 255 / 58%);
   --text-faint: rgb(255 255 255 / 38%);
   --text-ruby: rgb(255 255 255 / 62%);
+  /* The pressed ふりがな and Listen chips fill with --surface. Without a dark
+     value here they took the light theme's white under white text, and the
+     ふりがな button read as a blank pill whenever furigana was on. */
+  --surface: #2c2c2e;
   --accent: #34d399;
   --accent-strong: #34d399;
   --gold: #d9bb62;
