@@ -472,7 +472,12 @@ BANNED = {
 
 
 def _japanese(lines: list[str]) -> list[str]:
-    return [line for line in lines if furigana.has_japanese_chars(line)]
+    # Not has_japanese_chars alone: a Korean bullet's ・ is in the katakana block.
+    return [
+        line
+        for line in lines
+        if furigana.has_japanese_chars(line) and not furigana.has_korean_chars(line)
+    ]
 
 
 def problems(companies: list[tuple[str, dict[str, list[str]]]]) -> list[str]:
