@@ -58,6 +58,8 @@ export const SECTIONS: Section[] = [
     description:
       "A weekly read on the watch world — auctions, releases, and the market behind them.",
     notionId: process.env.NOTION_DB_WATCH ?? "3965bc953df381bbb5ece93744153a6a",
+    // Paused: no cron generates it (web/vercel.json).
+    hideInNav: true,
   },
   {
     key: "china",

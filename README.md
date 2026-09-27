@@ -40,18 +40,22 @@ directly.
 | `finance-newsletter/` | Rails — financial infrastructure | 23:00 daily |
 | `japan-newsletter/` | Japan Daily Talk | **Paused** — not in `web/vercel.json` |
 | `startup-newsletter/` | Startup News summary | 23:00 daily |
-| `watch-newsletter/` | Watch Weekly | 23:00 Friday (Saturday KST) |
+| `stocks-newsletter/` | Three Companies | 22:00 daily |
+| `watch-newsletter/` | Watch Weekly | **Paused**, not in `web/vercel.json` |
 
 The workflows have no `schedule:` trigger. GitHub fired those about two hours
 late, so a morning reader found yesterday's issue on top. Instead the crons in
 `web/vercel.json` call the site's `/api/cron`, which dispatches each workflow
 with `scheduled=true`. Vercel's Hobby plan fires a cron somewhere inside its
 hour, so every daily issue is out before about 09:00 KST. A catch-up cron at
-01:00 UTC (02:00 Saturday for Watch) re-dispatches any section whose scheduled
+01:00 UTC re-dispatches any section whose scheduled
 run today (KST) has not succeeded or started. On a normal day it does nothing.
 
-Japan is paused by leaving it out of both crons. To resume it, add `japan` back
-to the 23:00 and 01:00 entries in `web/vercel.json` and redeploy.
+Japan and Watch are paused by leaving them out of the crons, and are hidden
+from the tab bar and footer (`hideInNav` in `web/lib/config.ts`). To resume
+Japan, add `japan` back to the 23:00 and 01:00 entries in `web/vercel.json`;
+for Watch, add `{ "path": "/api/cron?sections=watch", "schedule": "0 23 * * 5" }`
+and a Saturday catch-up. Then redeploy.
 
 ## The site (`web/`)
 

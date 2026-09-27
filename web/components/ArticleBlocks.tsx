@@ -118,10 +118,21 @@ export function linkify(text: string): React.ReactNode {
   );
 }
 
+// A paragraph written as one bullet of a 「・」 list — Three Companies' basic
+// info. Each bullet is its own paragraph so it keeps its language and its
+// furigana; this only tightens the spacing so the run reads as one list.
+function isBulletLine(text: string): boolean {
+  return text.trimStart().startsWith("・");
+}
+
 export function renderBlock(block: Block, i: number): React.ReactNode {
   switch (block.type) {
     case "paragraph":
-      return <p key={i}>{linkify(block.text)}</p>;
+      return (
+        <p key={i} className={isBulletLine(block.text) ? "bullet-line" : undefined}>
+          {linkify(block.text)}
+        </p>
+      );
     case "heading": {
       const Tag = (`h${block.level + 1}`) as "h2" | "h3" | "h4";
       return <Tag key={i}>{headingContent(block.text)}</Tag>;
@@ -199,7 +210,15 @@ export function renderAnnotated(a: AnnotatedBlock, i: number): React.ReactNode {
             <li className="has-ruby">{renderRuby(a.ruby)}</li>
           </ul>
         ) : (
-          <p className="has-ruby">{renderRuby(a.ruby)}</p>
+          <p
+            className={
+              a.block.type === "paragraph" && isBulletLine(a.block.text)
+                ? "has-ruby bullet-line"
+                : "has-ruby"
+            }
+          >
+            {renderRuby(a.ruby)}
+          </p>
         )}
       </div>
     );

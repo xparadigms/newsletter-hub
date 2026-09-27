@@ -3092,3 +3092,12 @@ html[data-furigana="on"] .story-controls .furigana-toggle {
     display: none;
   }
 }
+
+/* Three Companies' basic info: one 「・」 bullet per paragraph, set as a list. */
+.article__body p.bullet-line,
+.story-card__body p.bullet-line {
+  margin-top: 0.2em;
+  margin-bottom: 0.2em;
+  padding-left: 1em;
+  text-indent: -1em;
+}

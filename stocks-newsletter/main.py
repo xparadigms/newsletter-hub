@@ -375,12 +375,21 @@ use the research backdrop only where it explains a company's own story.
 === COMPANY ===
 TITLE: Company Name (TICKER): A Short Descriptive Subtitle In Title Case
 BASIC:
-[Japanese: one paragraph with price, market cap, 30 day change, six month \
-change, one year change, 52 week range, and one valuation or yield figure where \
-relevant. Use the PRICE DATA where it is given; otherwise the researched \
-figures. At most three sentences and 200 characters.]
+・[Japanese bullets, one figure per line, each line starting with ・ and \
+written as a short です phrase, in this order:]
+・終値は USD 137.10 です（9月25日）
+・時価総額は約 USD 4,220億 です
+・過去30日間の変化は約8%下落です
+・過去6カ月の変化は約2%下落です
+・過去1年の変化は約53%下落です
+・52週レンジは USD 114.99 から USD 313.00 です
+・PER は約21.9倍です [or one other valuation or yield figure; leave this \
+line out if there is none]
 📝 한국어 번역:
-[Korean]
+・[the same bullets in Korean, same order, one per line: ・종가는 USD 137.10이다(9월 25일)]
+[Use the PRICE DATA where it is given; otherwise the researched figures. The \
+figures above are an example of the form only. Every Japanese bullet keeps its \
+です so it reads as Japanese; a bare label like 「終値：USD 137.10」 does not.]
 WHAT:
 [Japanese: the specific events of the last 30 days with dates and figures. \
 FIVE sentences and 370 characters at most, in one or two paragraphs, each \
@@ -450,7 +459,8 @@ def write_edition(
 # of Japanese. 20% under the first edition, which averaged 240, 460, 490 and
 # 460 characters for these four parts. The model reads budgets in the prompt as
 # suggestions, so they are measured and sent back instead.
-LIMITS = {"BASIC": (3, 200), "WHAT": (5, 370), "INDUSTRY": (4, 390), "WHY": (5, 370)}
+# BASIC is bullets, one figure per line, so its "sentences" are lines.
+LIMITS = {"BASIC": (8, 260), "WHAT": (5, 370), "INDUSTRY": (4, 390), "WHY": (5, 370)}
 BANNED = {
     "ではなく": "a 「XではなくY」 contrast",
     "というより": "a 「XというよりY」 contrast",
@@ -550,14 +560,22 @@ def check_amounts(title: str, sections: dict[str, list[str]]) -> int:
     than fatal: the run should publish, and the log says what to fix.
     """
     problems = 0
-    for lines in sections.values():
-        for ja, marker, ko in zip(lines, lines[1:], lines[2:]):
-            if marker != "📝 한국어 번역:" or not furigana.has_japanese_chars(ja):
-                continue
-            amounts = lambda t: sorted((n.replace(",", ""), _UNIT[u]) for n, u in _AMOUNT.findall(t))  # noqa: E731
-            if amounts(ja) != amounts(ko):
-                problems += 1
-                print(f"  ⚠ {title[:40]}: amounts differ, JA {amounts(ja)} vs KO {amounts(ko)}")
+
+    def amounts(lines: list[str]) -> list[tuple[str, str]]:
+        return sorted(
+            (n.replace(",", ""), _UNIT[u]) for t in lines for n, u in _AMOUNT.findall(t)
+        )
+
+    # Per section rather than per paragraph pair: BASIC is a run of Japanese
+    # bullets followed by a run of Korean ones, with no pairing line by line.
+    for key, lines in sections.items():
+        # Korean first: a Korean bullet's ・ is in the katakana block, so
+        # has_japanese_chars alone would count it as Japanese.
+        ko = [t for t in lines if furigana.has_korean_chars(t)]
+        ja = [t for t in lines if furigana.has_japanese_chars(t) and t not in ko]
+        if amounts(ja) != amounts(ko):
+            problems += 1
+            print(f"  ⚠ {title[:40]} {key}: amounts differ, JA {amounts(ja)} vs KO {amounts(ko)}")
     return problems
 
 
