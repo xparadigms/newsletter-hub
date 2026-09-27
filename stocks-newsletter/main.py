@@ -347,7 +347,13 @@ institution writes them in English, in both languages: Bank of Korea, Federal \
 Reserve, Bank of Japan, Samsung Electronics. Never add a Japanese or Korean \
 name in parentheses.
 - Round percentages and mark them approximate: 約12%上昇 / 약 12% 상승.
-- Large amounts use 兆 and 億 in Japanese and 조 and 억 in Korean. These are the same units (1兆 = 1조 = one trillion, 1億 = 1억 = 100 million), so every amount has identical numerals in both languages: USD 9,650億 / USD 9,650억. Convert from billions carefully: USD 965 billion is 9,650億, never 965億.
+- Dollar amounts use US stock market notation in BOTH languages: $ and \
+K, M, B or T, e.g. $66B, $10.6M, $1.2T, and share prices as $13.59. Never \
+億, 兆, 万, 억, 조 or 만 with dollars, and never USD, ドル or 달러 spelled out: \
+USD 660億 and 660억 달러 are both wrong, $66B is right. Other dollar and euro \
+currencies work the same way with their symbol: A$42B, €3.5B, £1.2B. Korean \
+won and Japanese yen amounts may keep their own units (1,360兆ウォン, 1,360조 \
+원, 37兆円), but market cap always also gets a $ figure.
 - Attribute figures and claims to their sources in plain prose (Reutersによると).
 - Never give investment recommendations. No 買い, 売り or target prices of your own.
 - Use only facts from the research and price data you are given. Prices are \
@@ -377,19 +383,19 @@ TITLE: Company Name (TICKER): A Short Descriptive Subtitle In Title Case
 BASIC:
 ・[Japanese bullets, one figure per line, each line starting with ・ and \
 written as a short です phrase, in this order:]
-・終値は USD 137.10 です（9月25日）
-・時価総額は約 USD 4,220億 です
+・終値は $137.10 です（9月25日）
+・時価総額は約 $422B です
 ・過去30日間の変化は約8%下落です
 ・過去6カ月の変化は約2%下落です
 ・過去1年の変化は約53%下落です
-・52週レンジは USD 114.99 から USD 313.00 です
+・52週レンジは $114.99 から $313.00 です
 ・PER は約21.9倍です [or one other valuation or yield figure; leave this \
 line out if there is none]
 📝 한국어 번역:
-・[the same bullets in Korean, same order, one per line: ・종가는 USD 137.10이다(9월 25일)]
+・[the same bullets in Korean, same order, one per line: ・종가는 $137.10이다(9월 25일), ・시가총액은 약 $422B이다]
 [Use the PRICE DATA where it is given; otherwise the researched figures. The \
 figures above are an example of the form only. Every Japanese bullet keeps its \
-です so it reads as Japanese; a bare label like 「終値：USD 137.10」 does not.]
+です so it reads as Japanese; a bare label like 「終値：$137.10」 does not.]
 WHAT:
 [Japanese: the specific events of the last 30 days with dates and figures. \
 FIVE sentences and 370 characters at most, in one or two paragraphs, each \
@@ -496,6 +502,12 @@ def problems(companies: list[tuple[str, dict[str, list[str]]]]) -> list[str]:
                     f"{max_chars} characters, and cut its Korean to match."
                 )
         text = "\n".join(line for lines in sections.values() for line in lines)
+        dollars = sorted(set(m.group(0) for m in _DOLLAR_IN_LOCAL_UNITS.finditer(text)))
+        if dollars:
+            found.append(
+                f"{name}: write every dollar amount as $ with K, M, B or T in both "
+                f"languages ($66B, $10.6M, $13.59), never {', '.join(dollars[:4])}."
+            )
         for phrase, what in BANNED.items():
             if phrase in text:
                 found.append(f"{name}: remove {what} ({phrase}); state the point directly.")
@@ -552,16 +564,26 @@ def _sections(block: str) -> dict[str, list[str]]:
     return out
 
 
-_AMOUNT = re.compile(r"([0-9][0-9,.]*)\s*(兆|億|조|억)")
-_UNIT = {"兆": "T", "조": "T", "億": "H", "억": "H"}
+# Amounts the two languages must agree on: $66B-style figures, and the 兆/億
+# units kept for won and yen. Not followed by a Latin letter, so "$3Bn" or a
+# word starting with B is not read as a unit.
+_AMOUNT = re.compile(r"([0-9][0-9,.]*)\s*(兆|億|조|억|K|M|B|T)(?![A-Za-z])")
+_UNIT = {"兆": "T", "조": "T", "億": "H", "억": "H", "K": "K", "M": "M", "B": "B", "T": "T"}
+# Dollars written in Japanese or Korean units, which the edition must not do.
+_DOLLAR_IN_LOCAL_UNITS = re.compile(
+    r"(?:USD|US\$|\$)\s?[0-9][0-9,.]*\s?(?:兆|億|万|조|억|만)"
+    r"|[0-9][0-9,.]*\s?(?:兆|億|万|조|억|만)\s?(?:ドル|달러|米ドル)"
+    r"|USD\s?[0-9]"
+)
 
 
 def check_amounts(title: str, sections: dict[str, list[str]]) -> int:
-    """Warn where a Korean paragraph's 조/억 amounts differ from its Japanese.
+    """Warn where a section's Korean amounts differ from its Japanese.
 
-    The two languages share these units, so the numerals must match. The first
-    edition published USD 965億 above a correct USD 9,650억; the model had
-    converted the Korean carefully and the Japanese carelessly. Logged rather
+    Both languages write dollars as $66B and won and yen in the same 兆/億
+    units, so the numerals must match. The first edition published USD 965億
+    above a correct USD 9,650억; the model had converted the Korean carefully
+    and the Japanese carelessly. Logged rather
     than fatal: the run should publish, and the log says what to fix.
     """
     problems = 0
