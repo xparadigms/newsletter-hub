@@ -27,9 +27,9 @@ from googleapiclient.discovery import build
 # root is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import audio, issue as issue_row, llm, store  # noqa: E402
+from shared import llm, store  # noqa: E402
 from shared.http import request_with_retry  # noqa: E402
-from shared import sources  # noqa: E402
+from shared import sources, split  # noqa: E402
 from shared.trilingual import md_to_blocks as trilingual_to_blocks  # noqa: E402
 
 # ── Config ──────────────────────────────────────────────────────────────────
@@ -371,6 +371,7 @@ def _issue_title(main_title: str) -> str:
     return f"[Startup News #{ISSUE_NUMBER}] ({main_title})"
 
 
+
 def create_calendar_event(summary: str, main_title: str = "Startup News") -> str:
     """Insert a 30-min event at 09:00 KST with the given text as description.
 
@@ -685,26 +686,23 @@ def run():
 
     # Supabase first: it is what the site reads, so it is the write that must
     # land. Notion and Calendar are mirrors and neither can fail the run.
-    print("▸ Saving to Supabase...")
-    row = issue_row.build_row(
+    # One article per story, the way Three Companies publishes one per company.
+    # The Notion page and the calendar event below stay one per issue.
+    print("▸ Saving to Supabase, one article per story...")
+    web_blocks = split.to_web(all_blocks)
+    stories, closing = split.split_parts(web_blocks, **split.RULES["startup"])
+    rows = split.publish(
         section="startup",
         issue_date=date_str,
-        raw_title=raw_title,
-        notion_blocks=all_blocks,
+        series=f"Startup News #{ISSUE_NUMBER}",
+        stories=[(split.story_title("startup", st), st) for st in stories],
+        closing=(split.CLOSING_TITLES["startup"], closing),
         source_text=trilingual_md,
         source_format="trilingual_md",
         edition=EDITION,
+        fallback=(raw_title, web_blocks),
     )
-
-    try:
-        n = audio.attach_audio(row["blocks"], "ja")
-        print(f"  ✓ Audio: {n} block(s)")
-    except Exception as e:  # noqa: BLE001 — a silent issue still publishes
-        print(f"  ⚠ Audio failed (non-fatal): {e}")
-
-    stored = store.upsert_issue(row)
-    if stored.get("slug"):
-        print(f"✓ Stored: startup/{stored['slug']}")
+    stored = rows[0] if rows else {}
 
     print("▸ Mirroring to Notion...")
     try:
@@ -712,7 +710,7 @@ def run():
         if notion_url:
             print(f"✓ Notion page created: {notion_url}")
             if stored.get("slug"):
-                store.patch_issue(row["run_key"], {"notion_url": notion_url})
+                store.patch_issue(stored["run_key"], {"notion_url": notion_url})
     except Exception as e:
         print(f"  ⚠ Notion mirror failed (non-fatal): {e}")
 
@@ -728,8 +726,6 @@ def run():
     else:
         print("  ⚠ CALENDAR_ID or GCP_SA_KEY not set, skipping Calendar.")
 
-    if stored.get("slug"):
-        store.ping_revalidate("startup", stored["slug"])
 
 
 if __name__ == "__main__":

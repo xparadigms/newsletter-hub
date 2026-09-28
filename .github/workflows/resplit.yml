@@ -1,0 +1,45 @@
+name: Split a published issue into articles
+
+# One-off: turns an issue published whole (before shared/split.py) into one
+# article per story, and unpublishes the whole issue. See shared/resplit.py.
+
+on:
+  workflow_dispatch:
+    inputs:
+      section:
+        description: "startup, business or fintech"
+        type: choice
+        options: [startup, business, fintech]
+      date:
+        description: "Issue date, YYYY-MM-DD"
+        type: string
+      dry_run:
+        description: "Show the split and write nothing"
+        type: boolean
+        default: false
+
+jobs:
+  resplit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - run: npm install -g @anthropic-ai/claude-code
+      - name: Split
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          SITE_URL: ${{ secrets.SITE_URL }}
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
+          SECTION: ${{ inputs.section }}
+          DATE: ${{ inputs.date }}
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="--dry-run"; fi
+          python -m shared.resplit --section "$SECTION" --date "$DATE" $ARGS

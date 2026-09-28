@@ -85,24 +85,37 @@ def patch_issue(run_key: str, fields: dict[str, Any]) -> None:
 
 
 def recent_issues(section: str, limit: int = 3) -> list[dict[str, Any]]:
-    """The last `limit` issues, newest first, with their source text.
+    """Every row of the last `limit` issues, newest first, with source text.
 
     Feeds the on-demand editions: an extra issue is only worth reading if it
     covers stories the recent ones did not, and the source text carries both
     the headlines and the 🔗 links that identify them.
+
+    Counted in issues, not rows. Startup, Business and Rails publish one row
+    per story now (shared/split.py), so a row limit of 4 would have shrunk the
+    lookback from four issues to about one. An issue is an (issue_date,
+    edition) pair; every row of it carries the whole issue's source text and
+    its own story title.
     """
     try:
         base, key = _config()
         resp = http.request_with_retry(
             "GET",
             f"{base}/rest/v1/{TABLE}"
-            f"?section=eq.{section}&select=title,source_text"
-            f"&order=issue_date.desc,edition.desc&limit={limit}",
+            f"?section=eq.{section}&select=title,source_text,issue_date,edition"
+            f"&order=issue_date.desc,edition.desc&limit={limit * 8}",
             label="Supabase",
             headers=_headers(key),
         )
         resp.raise_for_status()
-        return resp.json()
+        rows = resp.json()
+        issues: list[tuple[Any, Any]] = []
+        for r in rows:
+            key_ = (r.get("issue_date"), r.get("edition"))
+            if key_ not in issues:
+                issues.append(key_)
+        keep = set(issues[:limit])
+        return [r for r in rows if (r.get("issue_date"), r.get("edition")) in keep]
     except Exception as e:  # noqa: BLE001 — no exclusions is worse, not fatal
         print(f"  ⚠ could not read recent issues (non-fatal): {e}")
         return []

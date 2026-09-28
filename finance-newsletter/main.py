@@ -24,7 +24,7 @@ from googleapiclient.discovery import build
 # is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import audio, furigana, issue as issue_row, llm, sources, store  # noqa: E402
+from shared import furigana, llm, sources, split, store  # noqa: E402
 from shared.http import request_with_retry  # noqa: E402
 
 # ── Config ──────────────────────────────────────────────────────────────────
@@ -775,25 +775,23 @@ def run():
     # existed. Notion is a mirror now and the site reads Supabase, so this is
     # the write that must land; a failed mirror leaves a live issue with
     # notion_page_id null rather than no issue at all.
-    print("▸ Saving to Supabase...")
-    row = issue_row.build_row(
+    # One article per Deep Read, and The Sweep with Food for Thought as the
+    # last. The Notion page and the calendar event below stay one per issue.
+    print("▸ Saving to Supabase, one article per story...")
+    web_blocks = split.to_web(all_blocks)
+    stories, closing = split.split_parts(web_blocks, **split.RULES["fintech"])
+    rows = split.publish(
         section="fintech",
         issue_date=date_str,
-        raw_title=raw_title,
-        notion_blocks=all_blocks,
+        series=f"Finance Infra #{ISSUE_NUMBER}",
+        stories=[(split.story_title("fintech", st), st) for st in stories],
+        closing=(split.CLOSING_TITLES["fintech"], closing),
         source_text=issue_text,
         source_format="plain",
         edition=EDITION,
+        fallback=(raw_title, web_blocks),
     )
-    try:
-        n = audio.attach_audio(row["blocks"], "ja")
-        print(f"  ✓ Audio: {n} block(s)")
-    except Exception as e:
-        print(f"  ⚠ Audio failed (non-fatal): {e}")
-
-    stored = store.upsert_issue(row)
-    if stored.get("slug"):
-        print(f"✓ Stored: fintech/{stored['slug']}")
+    stored = rows[0] if rows else {}
 
     print("▸ Mirroring to Notion...")
     try:
@@ -802,7 +800,7 @@ def run():
             print(f"✓ Notion page created: {notion_url}")
             if stored.get("slug"):
                 store.patch_issue(
-                    row["run_key"],
+                    stored["run_key"],
                     {"notion_page_id": notion_page_id, "notion_url": notion_url},
                 )
     except Exception as e:
@@ -816,8 +814,6 @@ def run():
     except Exception as e:
         print(f"  ⚠ Calendar failed (non-fatal): {e}")
 
-    if stored.get("slug"):
-        store.ping_revalidate("fintech", stored["slug"])
 
 
 if __name__ == "__main__":

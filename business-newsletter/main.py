@@ -32,7 +32,7 @@ import feedparser
 # is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import audio, furigana, issue as issue_row, llm, plaintext, sources, store  # noqa: E402
+from shared import furigana, llm, plaintext, sources, split, store  # noqa: E402
 
 ANTHROPIC_API_KEY = os.environ["ANTHROPIC_API_KEY"]
 TIMEZONE = os.environ.get("TIMEZONE", "Asia/Seoul")
@@ -214,6 +214,14 @@ Produce today's Business Insight issue from the material below. Today is \
 First line MUST be:
 MAIN_TITLE: [concise English title of the single best insight, ≤8 words]
 
+Then one line per insight, in the order they appear, each an English title of \
+that insight in 8 words or fewer (each insight is published as its own article \
+under this title):
+INSIGHT_TITLE_1: [title]
+INSIGHT_TITLE_2: [title]
+INSIGHT_TITLE_3: [title]
+INSIGHT_TITLE_4: [title]
+
 HEADER:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 BUSINESS INSIGHT — Issue #{issue_number}
@@ -297,7 +305,7 @@ DO NOT REPEAT these recent issues — pick different people and different ideas:
 """
 
 
-def generate_issue(items: list[dict], recent: list[str]) -> tuple[str, str]:
+def generate_issue(items: list[dict], recent: list[str]) -> tuple[str, list[str], str]:
     now_kst = datetime.now(KST)
     formatted = "\n\n".join(
         f"[{i['source']}] {i['text']}\n  URL: {i['url']}\n  Date: {i['date']}"
@@ -323,11 +331,17 @@ def generate_issue(items: list[dict], recent: list[str]) -> tuple[str, str]:
     ).strip()
 
     main_title = "Business Insight"
-    lines = text.split("\n")
-    if lines and lines[0].startswith("MAIN_TITLE:"):
-        main_title = lines[0].replace("MAIN_TITLE:", "").strip()
-        text = "\n".join(lines[1:]).strip()
-    return main_title, text
+    insight_titles: list[str] = []
+    body: list[str] = []
+    for line in text.split("\n"):
+        stripped = line.strip()
+        if stripped.startswith("MAIN_TITLE:") and main_title == "Business Insight":
+            main_title = stripped[len("MAIN_TITLE:"):].strip()
+        elif stripped.startswith("INSIGHT_TITLE_") and ":" in stripped:
+            insight_titles.append(stripped.split(":", 1)[1].strip())
+        else:
+            body.append(line)
+    return main_title, insight_titles, "\n".join(body).strip()
 
 
 def _issue_title(main_title: str) -> str:
@@ -362,7 +376,8 @@ def run():
         all_items, store.recent_issues("business", sources.RECENT_ISSUES)
     )
     print(f"▸ Generating via Claude ({len(all_items[:60])} items)...")
-    main_title, issue_text = generate_issue(all_items[:60], recent)
+    main_title, insight_titles, issue_text = generate_issue(all_items[:60], recent)
+    print(f"  Insight titles: {insight_titles}")
     issue_text = sources.attach(issue_text, all_items[:60])
     print(f"  Title: [Business Insight #{ISSUE_NUMBER}] ({main_title})")
 
@@ -386,27 +401,26 @@ def run():
     except Exception as e:  # noqa: BLE001
         print(f"  ⚠ Furigana failed (non-fatal): {e}")
 
-    row = issue_row.build_row(
+    # One article per insight, titled by its own English title. The "SECTION N"
+    # banners only numbered insights inside one page, so they are dropped.
+    print("▸ Saving to Supabase, one article per insight...")
+    web_blocks = split.to_web(blocks)
+    stories, _ = split.split_parts(web_blocks, **split.RULES["business"])
+    titled = [
+        (insight_titles[k] if k < len(insight_titles) else split.story_title("business", st), st)
+        for k, st in enumerate(stories)
+    ]
+    split.publish(
         section="business",
         issue_date=now_kst.strftime("%Y-%m-%d"),
-        raw_title=_issue_title(main_title),
-        notion_blocks=blocks,
+        series=f"Business Insight #{ISSUE_NUMBER}",
+        stories=titled,
+        closing=None,
         source_text=issue_text,
         source_format="plain",
         edition=EDITION,
+        fallback=(_issue_title(main_title), web_blocks),
     )
-
-    try:
-        n = audio.attach_audio(row["blocks"], "ja")
-        print(f"  ✓ Audio: {n} block(s)")
-    except Exception as e:  # noqa: BLE001
-        print(f"  ⚠ Audio failed (non-fatal): {e}")
-
-    print("▸ Saving to Supabase...")
-    stored = store.upsert_issue(row)
-    if stored.get("slug"):
-        print(f"✓ Stored: business/{stored['slug']}")
-        store.ping_revalidate("business", stored["slug"])
 
     print("\n" + "=" * 60)
     print(issue_text)
