@@ -23,7 +23,9 @@ export default function StoryModeToggle() {
       const href = link?.getAttribute("href");
       if (!href?.startsWith("/post/")) return;
       e.preventDefault();
-      router.push(href.replace("/post/", "/story/"));
+      router.push(href.replace("/post/", "/story/"), {
+        transitionTypes: ["nav-present"],
+      });
     };
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
@@ -38,9 +40,13 @@ export default function StoryModeToggle() {
     } catch {}
     // Switching while reading an issue takes you straight to its other form.
     if (next && pathname.startsWith("/post/")) {
-      router.push(pathname.replace("/post/", "/story/"));
+      router.push(pathname.replace("/post/", "/story/"), {
+        transitionTypes: ["nav-present"],
+      });
     } else if (!next && pathname.startsWith("/story/")) {
-      router.push(pathname.replace("/story/", "/post/"));
+      router.push(pathname.replace("/story/", "/post/"), {
+        transitionTypes: ["nav-dismiss"],
+      });
     }
   };
 

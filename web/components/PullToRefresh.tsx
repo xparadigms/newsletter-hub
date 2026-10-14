@@ -25,7 +25,7 @@ export default function PullToRefresh() {
     // what makes a drag feel sticky.
     const paint = (d: number, animate: boolean) => {
       node.style.transition = animate
-        ? "transform var(--dur-slow) var(--ease-ios), opacity var(--dur-base) var(--ease-out)"
+        ? "transform var(--dur-sheet) var(--spring), opacity var(--dur-base) var(--ease-out)"
         : "none";
       node.style.transform = `translate3d(0, ${d}px, 0)`;
       node.style.opacity = String(Math.min(1, d / 40));

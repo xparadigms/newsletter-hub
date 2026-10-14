@@ -110,6 +110,8 @@ export default function StoryViewer({
 }) {
   const router = useRouter();
   const [index, setIndex] = useState(0);
+  // Which way the last move went, so the incoming card arrives from that side.
+  const [dir, setDir] = useState<"next" | "prev">("next");
   const count = cards.length;
   // Only offer the toggle where there are readings to hide. Pinyin is ruby too,
   // but it is the point of the Chinese sections rather than a reading aid.
@@ -187,16 +189,24 @@ export default function StoryViewer({
     startTrack(queue.current[next]);
   }, [startTrack, stopAudio]);
 
+  // Closing sends the story back down over the page it rose from.
+  const close = useCallback(() => {
+    router.push(nav.closeHref, { transitionTypes: ["nav-dismiss"] });
+  }, [router, nav.closeHref]);
+
   const goNext = useCallback(() => {
+    setDir("next");
     setIndex((i) => {
       if (i < count - 1) return i + 1;
       // Past the last card, roll on to the next issue like a story feed.
-      router.push(nav.nextHref ?? nav.closeHref);
+      if (nav.nextHref) router.push(nav.nextHref);
+      else close();
       return i;
     });
-  }, [count, router, nav.nextHref, nav.closeHref]);
+  }, [count, router, nav.nextHref, close]);
 
   const goPrev = useCallback(() => {
+    setDir("prev");
     setIndex((i) => {
       if (i > 0) return i - 1;
       if (nav.prevHref) router.push(nav.prevHref);
@@ -219,11 +229,11 @@ export default function StoryViewer({
       }
       if (e.key === "ArrowRight") goNext();
       else if (e.key === "ArrowLeft") goPrev();
-      else if (e.key === "Escape") router.push(nav.closeHref);
+      else if (e.key === "Escape") close();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [goNext, goPrev, router, nav.closeHref]);
+  }, [goNext, goPrev, close]);
 
   // Advancing remounts the card, so the button's own state goes with it — the
   // element that is playing does not.
@@ -254,7 +264,7 @@ export default function StoryViewer({
     const dy = e.clientY - from.y;
     if (dy > SWIPE_DOWN && Math.abs(dy) > Math.abs(dx)) {
       // Swipe down dismisses, as in Instagram — but never mid-scroll.
-      if (bodyAtTop.current) router.push(nav.closeHref);
+      if (bodyAtTop.current) close();
       return;
     }
     if (Math.abs(dx) > SWIPE_X && Math.abs(dx) > Math.abs(dy)) {
@@ -314,7 +324,7 @@ export default function StoryViewer({
         <button
           type="button"
           className="story-topbar__close"
-          onClick={() => router.push(nav.closeHref)}
+          onClick={close}
           aria-label="Close story"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
@@ -324,7 +334,7 @@ export default function StoryViewer({
       </div>
 
       <div className="story-stage">
-        <div className="story-slide" key={index}>
+        <div className="story-slide" key={index} data-dir={dir}>
           <Card
             card={cards[index]}
             sectionKey={sectionKey}

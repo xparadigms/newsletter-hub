@@ -120,6 +120,14 @@ export default function TabBar() {
             <li key={tab.key}>
               <Link
                 href={tab.href}
+                transitionTypes={["nav-tab"]}
+                onClick={(e) => {
+                  // Tapping the tab you are already on scrolls back to the
+                  // top, as on iOS, rather than reloading the same screen.
+                  if (pathname !== tab.href) return;
+                  e.preventDefault();
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
                 className="tabbar__tab"
                 data-active={active}
                 aria-current={active ? "page" : undefined}
