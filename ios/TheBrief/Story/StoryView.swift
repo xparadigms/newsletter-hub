@@ -9,7 +9,8 @@ import SwiftUI
 // · press and hold, and the chrome steps aside while you read;
 // · swipe sideways, or run off either end, to turn to the neighbouring issue
 //   on a cube;
-// · swipe down to put the story away, swipe up to open the full article.
+// · swipe down to put the story away. Swiping up does nothing: it is how
+//   you scroll a long card, and it used to throw you out to the article.
 //
 // Listen turns a card into a "video": its sentences are read aloud, and the
 // story moves on — still reading — when they end. That is the one way a card
@@ -234,9 +235,9 @@ struct StoryView: View {
     // MARK: Gestures
 
     /// One gesture for the whole card, as in Instagram: a quick tap moves by a
-    /// card, holding clears the chrome, a sideways swipe turns the issue, a pull down
-    /// closes and a push up opens the article. Simultaneous, so the card's text
-    /// still scrolls when it runs long.
+    /// card, holding clears the chrome, a sideways swipe turns the issue and a
+    /// pull down closes. Simultaneous, so the card's text still scrolls when
+    /// it runs long.
     private func press(size: CGSize) -> some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { value in
@@ -256,7 +257,7 @@ struct StoryView: View {
             }
             .onEnded { value in
                 let held = Date().timeIntervalSince(pressStart ?? Date())
-                let dx = value.translation.width, dy = value.translation.height
+                let dx = value.translation.width
                 let axis = dragAxis
                 pressStart = nil
                 dragAxis = nil
@@ -268,9 +269,6 @@ struct StoryView: View {
                 case .vertical:
                     if dragY > 130 || (dragY > 40 && value.predictedEndTranslation.height > 400) {
                         dismiss()
-                    } else if dy < -80 && value.startLocation.y > size.height * 0.7 {
-                        // Swipe up from the bottom of the card, as for a story's link.
-                        openArticle()
                     } else {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.86)) { dragY = 0 }
                     }
