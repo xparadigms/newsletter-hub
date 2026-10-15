@@ -7,13 +7,18 @@ import { getDepth, parentPath, setDepth } from "@/lib/nav";
 const EDGE = 24; // px from the left edge that starts the gesture
 const COMMIT_RATIO = 0.35; // fraction of the viewport that commits the pop
 const COMMIT_VELOCITY = 0.5; // px/ms — a flick commits regardless of distance
-const SLIDE = "transform .28s cubic-bezier(.32,.72,0,1)";
+// Released, the page finishes on the same spring a tapped back button uses.
+const SLIDE_MS = 380;
+const SLIDE = `transform ${SLIDE_MS}ms var(--spring), box-shadow ${SLIDE_MS}ms var(--spring)`;
+// --underlay-dim is registered with @property in globals.css, which is what
+// lets a custom property transition at all.
+const DIM = `--underlay-dim ${SLIDE_MS}ms var(--spring)`;
+const EDGE_SHADOW = "-6px 0 24px rgb(0 0 0 / 14%)";
 // Where the page stops tracking the finger 1:1. Resistance past this point is
 // what tells the reader the gesture has nowhere further to go.
 const RESIST_AT = 0.5; // fraction of the viewport
-// The slide is 280ms; this only exists for the case where transitionend never
-// arrives at all.
-const COMMIT_FALLBACK = 450;
+// This only exists for the case where transitionend never arrives at all.
+const COMMIT_FALLBACK = SLIDE_MS + 200;
 // Long enough to outlast the view transition the navigation kicks off. See the
 // data-swiping note below.
 const SWIPE_FLAG_CLEAR = 700;
@@ -82,11 +87,16 @@ export default function SwipeBack() {
       const transition = animate ? SLIDE : "";
       main.style.transition = transition;
       main.style.transform = offset ? `translate3d(${offset}px,0,0)` : "";
+      // The edge shadow and the dimming beneath both fade with distance, so the
+      // page reads as lifting off the one below it and settling back down.
+      const progress = Math.min(1, offset / window.innerWidth);
+      main.style.boxShadow = offset ? EDGE_SHADOW : "";
+      underlay.style.setProperty("--underlay-dim", String(0.1 * (1 - progress)));
       // Only ever revealed here — hiding is left to clear() and reset(), so a
       // cancelled swipe keeps its backdrop for the whole slide home instead of
       // dropping it on the first frame and exposing the bare body behind.
       if (offset > 0) underlay.hidden = false;
-      underlay.style.transition = transition;
+      underlay.style.transition = animate ? `${SLIDE}, ${DIM}` : "";
       underlay.style.transform = `translate3d(${
         (offset - window.innerWidth) / 3
       }px,0,0)`;
@@ -95,6 +105,7 @@ export default function SwipeBack() {
     const clear = () => {
       main.style.transition = "";
       main.style.transform = "";
+      main.style.boxShadow = "";
       underlay.hidden = true;
       underlay.style.transition = "";
       underlay.style.transform = "";
@@ -108,9 +119,10 @@ export default function SwipeBack() {
       paint(0, true);
       window.setTimeout(() => {
         main.style.transition = "";
+        main.style.boxShadow = "";
         underlay.hidden = true;
         underlay.style.transition = "";
-      }, 300);
+      }, SLIDE_MS + 20);
     };
 
     // Hand off to the router the moment the slide actually finishes, rather

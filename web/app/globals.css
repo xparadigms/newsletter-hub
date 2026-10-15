@@ -92,12 +92,36 @@
   --page: #f2f2f7;
   --tap: rgb(0 0 0 / 5%);
 
-  /* Motion tokens — one iOS-style spring curve used everywhere. */
+  /* Motion tokens. --ease-ios is the curve for small state changes. The two
+     springs are for anything that moves across the screen: UIKit animates
+     those with springs, not curves, and a cubic-bezier cannot draw a spring's
+     long, soft settle. The fallbacks below are the nearest bezier. */
   --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --spring: cubic-bezier(0.2, 0.9, 0.25, 1);
+  --spring-bounce: cubic-bezier(0.34, 1.3, 0.64, 1);
   --dur-fast: 0.16s;
   --dur-base: 0.26s;
   --dur-slow: 0.34s;
+  /* A spring's duration is its settle time; most of the travel is over in the
+     first 40% of it. */
+  --dur-push: 0.5s;
+  --dur-sheet: 0.5s;
+  --dur-press: 0.4s;
+}
+
+/* Sampled from a critically damped spring (UIKit's default, no bounce), and
+   from one at 0.75 damping for presses and the tab bar, which overshoots by
+   under 3% — felt more than seen. */
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    --spring: linear(0, 0.057, 0.18, 0.321, 0.455, 0.573, 0.671, 0.75, 0.812, 0.86, 0.896,
+      0.924, 0.944, 0.96, 0.971, 0.979, 0.985, 0.989, 0.992, 0.994, 0.996, 0.997, 0.998,
+      0.999, 1);
+    --spring-bounce: linear(0, 0.046, 0.155, 0.292, 0.437, 0.572, 0.691, 0.79, 0.868, 0.927,
+      0.969, 0.997, 1.015, 1.024, 1.028, 1.028, 1.025, 1.022, 1.018, 1.014, 1.01, 1.007,
+      1.005, 1.003, 1.001, 1);
+  }
 }
 
 [data-theme="dark"] {
@@ -673,61 +697,185 @@ main {
 
 /* Page transitions, driven by React's <ViewTransition> in
    components/PageTransition.tsx. Direction comes from the transitionTypes each
-   link carries; untyped navigations fall back to nav-back.
+   link carries; untyped navigations fall back to a pop.
+
+   The shape is UINavigationController's. A push slides the new page in from
+   the right edge, over the old one; the old page drifts a third of the way
+   left and dims, as if it were being covered rather than shoved. A pop is the
+   same motion run backwards: the top page slides off to the right and the one
+   beneath comes forward. Both run on the critically damped spring, so the page
+   is most of the way there in the first ~200ms and spends the rest settling.
 
    Naming the page content is safe here where the old will-change was not.
    React writes view-transition-name inline for the length of the transition and
    clears it again afterwards, so the containing block it creates for
-   position:fixed descendants (.ptr, .sheet, .toc-fab) lasts ~400ms — and none
-   of those are on screen while a navigation is running. will-change was
+   position:fixed descendants (.ptr, .toc-fab) lasts ~500ms — and neither
+   of those is on screen while a navigation is running. will-change was
    permanent, which is what collapsed them. */
-::view-transition-old(.nav-forward) {
-  --slide-offset: -60px;
-  animation: var(--dur-fast) var(--ease-out) both vt-fade reverse,
-    var(--dur-slow) var(--ease-ios) both vt-slide reverse;
+
+/* A snapshot is transparent wherever the page is, and a page sliding over
+   another must hide it — so each snapshot carries the page colour. */
+::view-transition-old(.push-out),
+::view-transition-new(.push-in),
+::view-transition-old(.pop-out),
+::view-transition-new(.pop-in) {
+  background: var(--bg);
 }
 
-::view-transition-new(.nav-forward) {
-  --slide-offset: 60px;
-  animation: var(--dur-base) var(--ease-out) var(--dur-fast) both vt-fade,
-    var(--dur-slow) var(--ease-ios) both vt-slide;
+/* A page shorter than the screen would slide in as a short strip, with the
+   old page still showing beneath it. Only while a transition runs: the
+   snapshots are taken with this applied, and afterwards the page goes back to
+   its own height without a frame of it on screen. */
+:root:active-view-transition .page {
+  min-height: 100lvh;
 }
 
-::view-transition-old(.nav-back) {
-  --slide-offset: 60px;
-  animation: var(--dur-fast) var(--ease-out) both vt-fade reverse,
-    var(--dur-slow) var(--ease-ios) both vt-slide reverse;
+/* The page on top is the incoming one on a push and the outgoing one on a pop.
+   Without this the new page always painted on top, so a pop slid the old page
+   out from underneath the one it was supposed to reveal. */
+::view-transition-group(.push-in),
+::view-transition-group(.pop-out) {
+  z-index: 2;
 }
 
-::view-transition-new(.nav-back) {
-  --slide-offset: -60px;
-  animation: var(--dur-base) var(--ease-out) var(--dur-fast) both vt-fade,
-    var(--dur-slow) var(--ease-ios) both vt-slide;
+::view-transition-group(.push-out),
+::view-transition-group(.pop-in) {
+  z-index: 1;
 }
 
-/* Old content leaves quickly so it stops competing for attention; new content
-   waits for it to clear, then arrives more gently. */
-@keyframes vt-fade {
+::view-transition-new(.push-in) {
+  animation: var(--dur-push) var(--spring) both vt-cover;
+  box-shadow: var(--shadow-edge);
+}
+
+::view-transition-old(.push-out) {
+  animation: var(--dur-push) var(--spring) both vt-recede;
+}
+
+/* Separate keyframes rather than `reverse`: reversing plays the easing
+   backwards too, so a pop would start slow and land fast. */
+::view-transition-old(.pop-out) {
+  animation: var(--dur-push) var(--spring) both vt-uncover;
+  box-shadow: var(--shadow-edge);
+}
+
+::view-transition-new(.pop-in) {
+  animation: var(--dur-push) var(--spring) both vt-reveal;
+}
+
+@keyframes vt-cover {
   from {
+    translate: var(--push-distance);
+  }
+}
+
+@keyframes vt-uncover {
+  to {
+    translate: var(--push-distance);
+  }
+}
+
+@keyframes vt-recede {
+  to {
+    translate: var(--recede-distance);
+    filter: brightness(var(--recede-dim));
+  }
+}
+
+@keyframes vt-reveal {
+  from {
+    translate: var(--recede-distance);
+    filter: brightness(var(--recede-dim));
+  }
+}
+
+:root {
+  --push-distance: 100vw;
+  --recede-distance: -30vw;
+  --recede-dim: 0.9;
+  --shadow-edge: -6px 0 24px rgb(0 0 0 / 12%);
+}
+
+[data-theme="dark"] {
+  --shadow-edge: -6px 0 24px rgb(0 0 0 / 50%);
+}
+
+/* A desktop window is too wide for an edge-to-edge push to read as anything
+   but a lurch. There the pages trade places over a short distance instead. */
+@media (min-width: 1024px) {
+  :root {
+    --push-distance: 48px;
+    --recede-distance: -24px;
+    --recede-dim: 1;
+  }
+  ::view-transition-new(.push-in),
+  ::view-transition-old(.pop-out) {
+    box-shadow: none;
+  }
+  ::view-transition-old(.push-out) {
+    animation-name: vt-recede, vt-fade-out;
+  }
+  ::view-transition-old(.pop-out) {
+    animation-name: vt-uncover, vt-fade-out;
+  }
+  ::view-transition-new(.push-in) {
+    animation-name: vt-cover, vt-fade-in;
+  }
+  ::view-transition-new(.pop-in) {
+    animation-name: vt-reveal, vt-fade-in;
+  }
+}
+
+/* The nav bar's back button pops through a view transition of its own (see
+   NavBar.tsx), with no page named — so the pop is run on the whole screen.
+   Being the full viewport, both snapshots are opaque already. */
+:root:active-view-transition-type(nav-pop)::view-transition-old(root) {
+  z-index: 1;
+  animation: var(--dur-push) var(--spring) both vt-uncover;
+  box-shadow: var(--shadow-edge);
+}
+
+:root:active-view-transition-type(nav-pop)::view-transition-new(root) {
+  animation: var(--dur-push) var(--spring) both vt-reveal;
+}
+
+@media (min-width: 1024px) {
+  :root:active-view-transition-type(nav-pop)::view-transition-old(root) {
+    box-shadow: none;
+    animation-name: vt-uncover, vt-fade-out;
+  }
+  :root:active-view-transition-type(nav-pop)::view-transition-new(root) {
+    animation-name: vt-reveal, vt-fade-in;
+  }
+}
+
+/* Tabs swap in place, as they do on iOS. A quick cross-fade only softens the
+   cut; the old screen is nearly gone before the new one shows, so the two are
+   never legible on top of each other. */
+::view-transition-old(.tab-out) {
+  animation: 0.1s var(--ease-out) both vt-fade-out;
+}
+
+::view-transition-new(.tab-in) {
+  animation: 0.2s var(--ease-out) 0.05s both vt-fade-in;
+}
+
+@keyframes vt-fade-out {
+  to {
     opacity: 0;
   }
 }
 
-@keyframes vt-slide {
+@keyframes vt-fade-in {
   from {
-    translate: var(--slide-offset);
+    opacity: 0;
   }
 }
 
 /* The tab bar is fixed over every screen, so without its own group the sliding
    page would pass straight over it. Pinned above the content and never
    animated, it becomes the fixed reference point that makes the content read as
-   the thing that moved.
-
-   The nav bar is deliberately left unnamed: the search bottom sheet renders
-   inside it, and a permanent view-transition-name would make .navbar the
-   containing block for that fixed panel. It also hardly overlaps the content
-   box in practice, since a new route starts at scroll top. */
+   the thing that moved. */
 .tabbar {
   view-transition-name: tabbar;
 }
@@ -746,6 +894,61 @@ main {
   animation: none;
 }
 
+/* The nav bar needs the same treatment: a page scrolled under it is captured
+   up to the top of the screen, and once the snapshots slide for the full
+   length of a push, the old page sat painted over the bar the whole time. Its
+   title and back button cross-fade, as UINavigationBar's do. (The search sheet
+   used to render inside the bar, which ruled a name out; BottomSheet portals
+   to <body> now.) */
+.navbar {
+  view-transition-name: navbar;
+}
+
+::view-transition-group(navbar) {
+  z-index: 50;
+  animation-duration: var(--dur-base);
+}
+
+/* A story is presented, not pushed: it rises over the page you were on, which
+   stays where it is, and goes back down the same way. Neither page is named
+   for these (see PageTransition.tsx), so the whole screen moves as one
+   snapshot — and the bars have to stand down too, or they would sit on top of
+   the story as it rises. */
+:root:active-view-transition-type(nav-present, nav-dismiss) .navbar,
+:root:active-view-transition-type(nav-present, nav-dismiss) .tabbar {
+  view-transition-name: none;
+}
+
+:root:active-view-transition-type(nav-present)::view-transition-old(root) {
+  animation: none;
+}
+
+:root:active-view-transition-type(nav-present)::view-transition-new(root) {
+  animation: var(--dur-push) var(--spring) both vt-present;
+}
+
+/* Dismissing, the outgoing story has to be the one on top. */
+:root:active-view-transition-type(nav-dismiss)::view-transition-old(root) {
+  z-index: 1;
+  animation: var(--dur-push) var(--spring) both vt-dismiss;
+}
+
+:root:active-view-transition-type(nav-dismiss)::view-transition-new(root) {
+  animation: none;
+}
+
+@keyframes vt-present {
+  from {
+    translate: 0 100vh;
+  }
+}
+
+@keyframes vt-dismiss {
+  to {
+    translate: 0 100vh;
+  }
+}
+
 /* The transition overlay swallows taps for the length of the animation. */
 ::view-transition {
   pointer-events: none;
@@ -759,15 +962,39 @@ main {
   animation: none;
 }
 
+/* The swipe underlay sits behind #app-main, so the page has to be opaque for
+   the underlay to read as a page beneath it rather than show through the text. */
+#app-main {
+  background: var(--bg);
+}
+
 /* Stand-in for the previous page during a swipe. Negative z-index keeps it
-   behind #app-main while staying above the body background. */
+   behind #app-main while staying above the body background. The ::after is the
+   dimming iOS lays over the page beneath; SwipeBack fades it out as the top
+   page leaves. */
 .swipe-underlay {
   position: fixed;
-  inset: 0;
+  /* Wider than the screen on the right: it parallaxes in from the left, and a
+     page shorter than the screen would otherwise show the underlay's edge
+     below it. */
+  inset: 0 -100vw 0 0;
   z-index: -1;
   background: var(--bg);
-  border-right: 1px solid var(--border);
   pointer-events: none;
+}
+
+@property --underlay-dim {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0.1;
+}
+
+.swipe-underlay::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: var(--underlay-dim, 0.1);
 }
 
 /* Directional slides simulate movement across the viewport, which is the most
@@ -1340,6 +1567,12 @@ main {
   z-index: 70;
   background: rgb(0 0 0 / 40%);
   animation: sheet-fade var(--dur-base) var(--ease-out);
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+
+.sheet-backdrop[data-closing="true"] {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .sheet {
@@ -1356,9 +1589,28 @@ main {
   border-radius: 14px 14px 0 0;
   box-shadow: 0 -10px 40px rgb(0 0 0 / 26%);
   padding-bottom: var(--safe-bottom);
-  animation: sheet-up var(--dur-slow) var(--ease-ios);
-  transition: transform var(--dur-base) var(--ease-ios);
+  animation: sheet-up var(--dur-sheet) var(--spring);
+  transition: transform var(--dur-sheet) var(--spring);
   will-change: transform;
+}
+
+/* Leaving runs the same spring down. The 40px clears the shadow, which would
+   otherwise still show above the bottom edge once the panel is gone. */
+.sheet[data-closing="true"] {
+  transform: translate3d(0, calc(100% + 40px), 0);
+  pointer-events: none;
+}
+
+/* Pulled up past its resting point, the sheet lifts off the bottom edge. This
+   carries its surface down so the gap under it never shows the page. */
+.sheet::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: -1px;
+  right: -1px;
+  height: 80px;
+  background: inherit;
 }
 
 .sheet:focus {
@@ -1409,6 +1661,7 @@ main {
   .sheet,
   .sheet-backdrop {
     animation: none;
+    transition-duration: 0s;
   }
 }
 
@@ -1426,7 +1679,7 @@ main {
   /* Hidden until a pull begins; the gesture writes transform/opacity inline. */
   opacity: 0;
   transform: translate3d(0, 0, 0);
-  transition: transform var(--dur-slow) var(--ease-ios),
+  transition: transform var(--dur-sheet) var(--spring),
     opacity var(--dur-base) var(--ease-out);
 }
 
@@ -2119,13 +2372,23 @@ body:has(.story-root) main {
   min-height: 0;
   min-width: 0;
   display: flex;
-  animation: story-in var(--dur-base) var(--ease-ios);
+  animation: story-in var(--dur-sheet) var(--spring);
+}
+
+/* The next card comes in from the side you swiped or tapped towards. */
+.story-slide[data-dir="prev"] {
+  --story-from: -32px;
 }
 
 @keyframes story-in {
   from {
     opacity: 0;
-    transform: translate3d(0, 10px, 0) scale(0.99);
+    transform: translate3d(var(--story-from, 32px), 0, 0);
+  }
+  /* Opaque well before the slide settles: a fade that runs as long as the
+     spring leaves the text washed out for most of it. */
+  40% {
+    opacity: 1;
   }
 }
 
@@ -3104,4 +3367,135 @@ html[data-furigana="on"] .story-controls .furigana-toggle {
   margin-bottom: 0.2em;
   padding-left: 1em;
   text-indent: -1em;
+}
+
+/* =========================================================================
+   Touch feedback, the UIKit way.
+
+   A control answers the finger the instant it lands and lets go slowly: a row
+   lights at once and fades out after release, a button sinks in a few frames
+   and springs back with a hint of overshoot. One duration both ways made every
+   press feel like it was waiting on something. The press-in timing lives on
+   :active and the release timing on the base rule, because the transition
+   that runs is always the one on the state being entered.
+
+   iOS Safari only applies :active where a touch listener exists; the boot
+   script in layout.tsx adds an empty one to the document for exactly this.
+   ========================================================================= */
+
+.post-row a,
+.section-module__list a,
+.latest__item a,
+.search-results a,
+.secondary__item,
+.arrow-link,
+.navbar__back {
+  transition: background var(--dur-slow) var(--ease-out);
+}
+
+.post-row a:active,
+.section-module__list a:active,
+.latest__item a:active,
+.search-results a:active,
+.secondary__item:active,
+.arrow-link:active,
+.navbar__back:active {
+  transition-duration: 0s;
+}
+
+.theme-toggle,
+.search-toggle,
+.story-toggle,
+.toc-fab,
+.story-topbar__close,
+.generate__button,
+.enter__button,
+.furigana-toggle,
+.story-audio {
+  transition: transform var(--dur-press) var(--spring-bounce),
+    background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out);
+}
+
+.theme-toggle:active,
+.search-toggle:active,
+.story-toggle:active,
+.toc-fab:active,
+.story-topbar__close:active,
+.generate__button:active:not(:disabled),
+.enter__button:active:not(:disabled),
+.furigana-toggle:active,
+.story-audio:active {
+  transition-duration: 0.1s;
+  transition-timing-function: var(--ease-out);
+}
+
+.toc-fab:active,
+.story-topbar__close:active,
+.story-audio:active {
+  transform: scale(0.9);
+}
+
+/* ---------- tab bar ---------- */
+
+/* Tucking away and coming back ride the spring; the tab press springs back
+   like any other button. */
+.tabbar {
+  transition: transform var(--dur-sheet) var(--spring), opacity var(--dur-base) var(--ease-out);
+}
+
+.tabbar__tab {
+  transition: background var(--dur-slow) var(--spring), color var(--dur-fast) var(--ease-out),
+    transform var(--dur-press) var(--spring-bounce);
+}
+
+.tabbar__tab:active {
+  transition-duration: var(--dur-slow), var(--dur-fast), 0.1s;
+}
+
+/* On a phone the active tab is a wider pill, and moving to another tab used to
+   snap the widths. Growing one cell while the other shrinks is what reads as
+   the selection travelling across the bar. */
+@media (max-width: 1023px) {
+  .tabbar__list > li {
+    transition: flex-grow var(--dur-sheet) var(--spring-bounce);
+  }
+  /* The label appears with the pill rather than ahead of it, so the text does
+     not sit clipped in a cell that is still opening. */
+  .tabbar__tab[data-active="true"] .tabbar__label {
+    animation: tab-label-in var(--dur-slow) var(--ease-out) 0.08s both;
+  }
+}
+
+@keyframes tab-label-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- theme switch ---------- */
+
+/* ThemeToggle cross-fades the whole screen through a view transition typed
+   "theme". The bars are normally lifted into groups of their own that never
+   animate, which would make them snap while everything else faded — here they
+   stay part of the screen. */
+:root:active-view-transition-type(theme) .navbar,
+:root:active-view-transition-type(theme) .tabbar {
+  view-transition-name: none;
+}
+
+:root:active-view-transition-type(theme)::view-transition-old(root),
+:root:active-view-transition-type(theme)::view-transition-new(root) {
+  animation-duration: var(--dur-slow);
+  animation-timing-function: var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabbar,
+  .tabbar__list > li {
+    transition-duration: 0s;
+  }
+  .tabbar__tab[data-active="true"] .tabbar__label {
+    animation: none;
+  }
 }

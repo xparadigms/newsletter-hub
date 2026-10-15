@@ -1,5 +1,5 @@
 // Bump VERSION to retire old caches on the next visit.
-const VERSION = "v7";
+const VERSION = "v8";
 const STATIC_CACHE = `static-${VERSION}`;
 const PAGE_CACHE = `pages-${VERSION}`;
 const OFFLINE_URL = "/offline";
