@@ -67,7 +67,18 @@ def main() -> int:
         blocks, stories, unsegmented = china_blocks.build_blocks(row["source_text"])
         # Stored blocks carry `audio`; freshly built ones do not, so without
         # this every row reads as "changed" and --commit would PATCH the audio
-        # away. Every sentence already exists in Storage, so this is HEADs only.
+        # away. Carry each sentence's existing clip over first — the cache key
+        # changed with the voice, so a lookup alone would not find it — and let
+        # attach_audio voice only what never had one.
+        clips = {
+            "".join(w.get("text", "") for w in b.get("words", [])): b["audio"]
+            for b in row["blocks"]
+            if b.get("type") == "pinyin" and b.get("audio")
+        }
+        for b in blocks:
+            text = "".join(w.get("text", "") for w in b.get("words", []))
+            if b.get("type") == "pinyin" and text in clips:
+                b["audio"] = clips[text]
         try:
             audio.attach_audio(blocks, "zh")
         except Exception as e:  # noqa: BLE001

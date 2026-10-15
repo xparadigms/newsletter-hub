@@ -20,6 +20,7 @@ delete every key that appears in no row's blocks.
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import os
 import sys
@@ -32,41 +33,39 @@ from .furigana import is_jp_body
 Block = dict[str, Any]
 
 BUCKET = os.environ.get("TTS_BUCKET", "tts")
-SPEECH_URL = "https://api.openai.com/v1/audio/speech"
 
-# OpenAI rather than Google Cloud, because the key for it already exists. This
-# feature sat finished but silent for a week waiting on a GCP key that was never
-# minted, while OPENAI_API_KEY was right there.
-MODEL = os.environ.get("TTS_MODEL", "gpt-4o-mini-tts")
+# Microsoft's neural voices, through the Edge browser's read-aloud service
+# (the edge-tts package). Free and keyless, and for Japanese and Chinese the
+# most natural of the free options. It replaced OpenAI's speech API in October
+# 2026, when every request there started coming back 429 and issues went out
+# silent for a week.
+#
+# The service is unofficial: Microsoft could close it. If it does, sentences
+# simply get no clip — attach_audio is non-fatal — and the iOS app reads those
+# with the phone's own voice instead.
+MODEL = "edge-tts"
 
-# (voice, spoken instruction). OpenAI voices are language-agnostic — the model
-# reads whatever script it is given — so the two newsletters get different
-# voices to tell them apart by ear, and the pace is asked for in words rather
-# than set as a rate. Both are part of the cache key, so changing either
+# (voice, rate). A native voice per language, read a touch under natural pace
+# for learners. Both are part of the cache key, so changing either
 # re-synthesises instead of serving the old audio.
 VOICES = {
-    "zh": ("nova", "Speak clearly and a little slower than natural pace, for a learner."),
-    "ja": ("alloy", "Speak clearly and a little slower than natural pace, for a learner."),
+    "zh": ("zh-CN-XiaoxiaoNeural", "-10%"),
+    "ja": ("ja-JP-NanamiNeural", "-10%"),
 }
 
 # A "sentence" past this is a parser bug rather than a sentence, so skip it
 # instead of paying to read it aloud.
 MAX_CHARS = 900
 
-# Every synthesis is billable, and a runaway generator is the only way this ever
-# gets expensive. A normal issue needs 20-40.
+# Free, but a runaway generator hammering an unofficial service is how it gets
+# closed to us. A normal issue needs 20-40.
 MAX_SYNTHESES = 200
 
-# Enough to hide the latency, small enough to stay well inside OpenAI's
-# per-minute limits on the audio endpoint.
-WORKERS = 6
+# Enough to hide the latency without looking like a flood to a free service.
+WORKERS = 4
 
-
-def _api_key() -> str:
-    key = os.environ.get("OPENAI_API_KEY", "").strip()
-    if not key:
-        raise RuntimeError("OPENAI_API_KEY is not set")
-    return key
+# A synthesis normally takes about a second; past this it has hung.
+SYNTH_TIMEOUT = 60
 
 
 def _supabase() -> tuple[str, str]:
@@ -77,8 +76,8 @@ def _supabase() -> tuple[str, str]:
     return url, key
 
 
-def _cache_key(text: str, voice: str, style: str) -> str:
-    return hashlib.sha256(f"{MODEL}|{voice}|{style}|{text}".encode()).hexdigest()[:16]
+def _cache_key(text: str, voice: str, rate: str) -> str:
+    return hashlib.sha256(f"{MODEL}|{voice}|{rate}|{text}".encode()).hexdigest()[:16]
 
 
 def _speakable(blocks: list[Block], lang: str) -> Iterator[tuple[Block, str]]:
@@ -119,33 +118,28 @@ def _exists(public_url: str) -> bool:
     return resp.status_code == 200
 
 
-def _synthesize(text: str, voice: str, style: str) -> bytes:
-    body: dict[str, Any] = {
-        "model": MODEL,
-        "voice": voice,
-        "input": text,
-        "response_format": "mp3",
-    }
-    # tts-1 takes a numeric speed and rejects `instructions`; the 4o models take
-    # the instruction and ignore speed. Sending the wrong one is a 400.
-    if MODEL.startswith("tts-"):
-        body["speed"] = 0.9
-    else:
-        body["instructions"] = style
+async def _speak(text: str, voice: str, rate: str) -> bytes:
+    import edge_tts  # imported here so reuse-only callers need not install it
 
-    resp = http.request_with_retry(
-        "POST",
-        SPEECH_URL,
-        label="OpenAI TTS",
-        headers={
-            "Authorization": f"Bearer {_api_key()}",
-            "Content-Type": "application/json",
-        },
-        json=body,
-        timeout=120,
-    )
-    resp.raise_for_status()
-    return resp.content
+    audio = bytearray()
+    stream = edge_tts.Communicate(text, voice, rate=rate).stream()
+    async for chunk in stream:
+        if chunk["type"] == "audio":
+            audio += chunk["data"]
+    if not audio:
+        raise RuntimeError("edge-tts returned no audio")
+    return bytes(audio)
+
+
+def _synthesize(text: str, voice: str, rate: str) -> bytes:
+    # Each worker thread runs its own event loop; edge-tts is async-only.
+    last: Exception | None = None
+    for attempt in range(3):
+        try:
+            return asyncio.run(asyncio.wait_for(_speak(text, voice, rate), SYNTH_TIMEOUT))
+        except Exception as e:  # noqa: BLE001 — retried, then reported by the caller
+            last = e
+    raise RuntimeError(f"edge-tts failed after 3 attempts: {last}")
 
 
 def _upload(base: str, key: str, name: str, mp3: bytes) -> None:
@@ -178,17 +172,19 @@ def attach_audio(blocks: list[Block], lang: str) -> int:
     if lang not in VOICES:
         raise ValueError(f"no voice configured for {lang!r}")
 
-    voice, style = VOICES[lang]
+    voice, rate = VOICES[lang]
     base, sb_key = _supabase()
-    targets = [(b, t) for b, t in _speakable(blocks, lang) if len(t) <= MAX_CHARS]
+    # A block that already has a clip keeps it: issues voiced before the move
+    # to edge-tts keep their OpenAI audio when they are re-rendered.
+    targets = [
+        (b, t) for b, t in _speakable(blocks, lang) if len(t) <= MAX_CHARS and not b.get("audio")
+    ]
 
-    # No key is reuse-only rather than nothing: whatever is already in Storage
-    # still attaches. rerender.py leans on this — a keyless run that attached
-    # nothing would report every row as changed and --commit would PATCH the
-    # audio away.
-    has_key = bool(os.environ.get("OPENAI_API_KEY", "").strip())
+    # TTS_REUSE_ONLY=1 attaches what is already in Storage and synthesises
+    # nothing — for runs that should only look clips up, never make them.
+    has_key = os.environ.get("TTS_REUSE_ONLY", "").strip() != "1"
     if not has_key:
-        print("  ⚠ OPENAI_API_KEY not set — reusing existing audio only.")
+        print("  ⚠ TTS_REUSE_ONLY set — reusing existing audio only.")
 
     # Unique texts first. A sentence repeated inside one issue is one object in
     # Storage and must be one synthesis, and deduplicating here rather than
@@ -199,7 +195,7 @@ def attach_audio(blocks: list[Block], lang: str) -> int:
             order.append(text)
 
     def url_for(text: str) -> str:
-        name = f"{lang}/{_cache_key(text, voice, style)}.mp3"
+        name = f"{lang}/{_cache_key(text, voice, rate)}.mp3"
         return f"{base}/storage/v1/object/public/{BUCKET}/{name}"
 
     # Sequential synthesis is what timed China out: 28 sentences at roughly ten
@@ -231,8 +227,8 @@ def attach_audio(blocks: list[Block], lang: str) -> int:
 
     def make(text: str) -> tuple[str, str | None, str]:
         try:
-            name = f"{lang}/{_cache_key(text, voice, style)}.mp3"
-            _upload(base, sb_key, name, _synthesize(text, voice, style))
+            name = f"{lang}/{_cache_key(text, voice, rate)}.mp3"
+            _upload(base, sb_key, name, _synthesize(text, voice, rate))
             return text, url_for(text), ""
         except Exception as e:  # noqa: BLE001 — one sentence must not stop the issue
             return text, None, str(e)
@@ -254,9 +250,6 @@ def attach_audio(blocks: list[Block], lang: str) -> int:
             block["audio"] = done[text]
             attached += 1
 
-    # tts-1 bills per character outright; the 4o voices bill per audio token,
-    # which tracks length just as closely. Either way the characters read aloud
-    # are the number that moves the bill, so print them.
     print(
         f"  audio: {attached}/{len(targets)} blocks "
         f"({made} synthesised, {reused} reused, {missing} unsynthesised, "
