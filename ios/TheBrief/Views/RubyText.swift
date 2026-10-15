@@ -62,8 +62,12 @@ struct RubyText: UIViewRepresentable {
                     kCTRubyAnnotationSizeFactorAttributeName: underlineWords ? 0.5 : 0.55,
                     kCTForegroundColorAttributeName: rubyColor,
                 ]
+                // Pinyin is usually wider than its hanzi. No overhang makes Core
+                // Text widen the base to fit it, as the browser's ruby does;
+                // furigana may overhang the kana beside it, as print does.
                 let ruby = CTRubyAnnotationCreateWithAttributes(
-                    .auto, .auto, .before, reading as CFString, rubyAttrs as CFDictionary)
+                    underlineWords ? .center : .auto, underlineWords ? .none : .auto, .before,
+                    reading as CFString, rubyAttrs as CFDictionary)
                 attrs[NSAttributedString.Key(kCTRubyAnnotationAttributeName as String)] = ruby
                 if underlineWords {
                     attrs[.underlineStyle] = NSUnderlineStyle.single.rawValue
@@ -72,10 +76,10 @@ struct RubyText: UIViewRepresentable {
                 }
             }
             out.append(NSAttributedString(string: seg.text, attributes: attrs))
-            // A break opportunity between two words, which UILabel would
-            // otherwise not take inside an unbroken run of hanzi.
+            // A thin space between two words: it keeps their readings from
+            // running together and gives the line somewhere to break.
             if underlineWords, seg.reading != nil, i + 1 < segments.count, segments[i + 1].reading != nil {
-                out.append(NSAttributedString(string: "\u{200B}", attributes: base))
+                out.append(NSAttributedString(string: "\u{2009}", attributes: base))
             }
         }
         return out
