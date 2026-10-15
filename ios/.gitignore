@@ -5,3 +5,7 @@ build/
 *.xcarchive
 *.ipa
 export/
+
+# Asset catalogs are described by Contents.json; the root *.json rule must not drop them.
+!**/*.xcassets/**/Contents.json
+!**/*.xcassets/Contents.json
