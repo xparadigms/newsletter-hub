@@ -7,7 +7,7 @@ enum Route: Hashable {
 }
 
 enum AppTab: Hashable {
-    case today, sections, search
+    case today, sections, search, profile
 }
 
 @MainActor
@@ -17,6 +17,7 @@ final class Router {
     var today: [Route] = []
     var sections: [Route] = []
     var search: [Route] = []
+    var profile: [Route] = []
     /// The issue open in story mode, presented full screen over everything.
     var story: Post?
     /// Set when a story is opened from the tray: finishing one section's issue
@@ -57,6 +58,7 @@ final class Router {
         case .today: return today
         case .sections: return sections
         case .search: return search
+        case .profile: return profile
         }
     }
 
@@ -65,6 +67,7 @@ final class Router {
         case .today: today.removeLast()
         case .sections: sections.removeLast()
         case .search: search.removeLast()
+        case .profile: profile.removeLast()
         }
     }
 
@@ -75,6 +78,7 @@ final class Router {
             case .today: today.removeAll()
             case .sections: sections.removeAll()
             case .search: search.removeAll()
+            case .profile: profile.removeAll()
             }
         }
         tab = next
@@ -107,6 +111,7 @@ final class Router {
         case .today: today.append(route)
         case .sections: sections.append(route)
         case .search: search.append(route)
+        case .profile: profile.append(route)
         }
     }
 }

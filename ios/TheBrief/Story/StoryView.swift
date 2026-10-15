@@ -207,6 +207,9 @@ struct StoryView: View {
             }
             .accessibilityLabel("Open the article")
             if let deck {
+                SaveButton(post: deck.post)
+                    .font(.system(size: 21))
+                    .frame(width: 40, height: 40)
                 ShareLink(item: URL(string: "https://heechang-newsletter.vercel.app/post/\(deck.post.section.rawValue)/\(deck.post.id)")!) {
                     Image(systemName: "paperplane").font(.system(size: 21))
                         .frame(width: 40, height: 40)
