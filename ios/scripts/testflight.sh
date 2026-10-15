@@ -5,12 +5,23 @@
 #   ios/scripts/testflight.sh            # team read from Xcode's signed-in account
 #   TEAM_ID=ABCDE12345 ios/scripts/testflight.sh
 #
-# Needs: Xcode signed in to your Apple Developer account (Settings > Accounts),
-# and an app record in App Store Connect for com.heechangkang.thebrief.
-# Signing is automatic: -allowProvisioningUpdates lets Xcode create the App ID,
+# Needs an app record in App Store Connect for com.heechangkang.thebrief, and
+# either Xcode signed in to the developer account (Settings > Accounts) or an
+# App Store Connect API key:
+#
+#   ASC_KEY_PATH=~/Downloads/AuthKey_XXXXXXXXXX.p8 ASC_KEY_ID=XXXXXXXXXX \
+#   ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx TEAM_ID=N7DWY66V6B \
+#     ios/scripts/testflight.sh
+#
+# Signing is automatic: -allowProvisioningUpdates lets Xcode create the
 # certificate and profile on the first run.
 set -eu
 cd "$(dirname "$0")/.."
+
+AUTH=""
+if [ -n "${ASC_KEY_PATH:-}" ]; then
+  AUTH="-authenticationKeyPath $ASC_KEY_PATH -authenticationKeyID $ASC_KEY_ID -authenticationKeyIssuerID $ASC_ISSUER_ID"
+fi
 
 if [ -z "${TEAM_ID:-}" ]; then
   TEAM_ID=$(defaults read com.apple.dt.Xcode IDEProvisioningTeamByIdentifier 2>/dev/null \
@@ -32,7 +43,7 @@ mkdir -p build
 
 xcodebuild -project TheBrief.xcodeproj -scheme TheBrief -configuration Release \
   -destination 'generic/platform=iOS' -archivePath "$ARCHIVE" \
-  -allowProvisioningUpdates \
+  -allowProvisioningUpdates $AUTH \
   DEVELOPMENT_TEAM="$TEAM_ID" CURRENT_PROJECT_VERSION="$BUILD" \
   archive > build/archive.log 2>&1 || {
     grep -E "error:|warning: .*signing" build/archive.log | head -20 >&2
@@ -57,6 +68,6 @@ PLIST
 
 xcodebuild -exportArchive -archivePath "$ARCHIVE" \
   -exportOptionsPlist build/ExportOptions.plist -exportPath build/export \
-  -allowProvisioningUpdates
+  -allowProvisioningUpdates $AUTH
 
 echo "Uploaded build $BUILD. It appears in App Store Connect > TestFlight after processing."
