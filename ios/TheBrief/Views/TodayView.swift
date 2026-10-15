@@ -88,7 +88,8 @@ private struct StoryTray: View {
         let ordered = entries.filter { store.hasUnseen($0.0.key) } + entries.filter { !store.hasUnseen($0.0.key) }
         ScrollView(.horizontal) {
             HStack(alignment: .top, spacing: 14) {
-                ForEach(ordered, id: \.1.routeID) { section, post in
+                ForEach(ordered, id: \.1.routeID) { entry in
+                    let (section, post) = entry
                     Button {
                         router.playStories(from: post, queue: ordered.map(\.1))
                     } label: {
