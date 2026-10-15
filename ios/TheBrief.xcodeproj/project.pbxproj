@@ -11,6 +11,7 @@
 		9D520FC42EC38071C188A5B0 /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F368B2724AF7D7514C09E96; };
 		0F2C4F2E05202061CDA01851 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51710E7867669877101A804; };
 		E66B2AED9D798A5706A4F7D3 /* TheBriefApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2472B4D4BCA045D31C7A996; };
+		4917C2FC6EA448B04F5AD9DE /* GenerateClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0193A33DE00711162E60EBD5; };
 		E31EC17F048F8AD585B3B9E8 /* Store.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80478E1AFF48AB564D844D7F; };
 		C70A3BBAF30731BBA83F7B13 /* SupabaseClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47001986C1F89ADCAA48DF3E; };
 		373DC80E4AFD44C85FB72C8A /* Post.swift in Sources */ = {isa = PBXBuildFile; fileRef = 38209E7008BABB4000D5F7AA; };
@@ -23,6 +24,7 @@
 		35DA9779A44B2B491F825EC7 /* ArticleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1CBFC09F0A3BC0829F111CC; };
 		F0E0C9C36D3A389FDF79BDDD /* BlockViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED2106AE223872F0FDCC2353; };
 		7DCA05A317BE77DD563DB5E6 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7B85ECAA754C8A268AFA797; };
+		C235D410F8B73EE8F3F38CE0 /* GenerateControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CEC76505B558D0538732EFA; };
 		9317087135D3FBDB78FFECF7 /* RubyText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93AF21B1EBD9B4BD12720EA3; };
 		55A1499E5069D5020A64BEF2 /* SectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E4F38FB8FE91EFC981AF313; };
 		A5BE1A7AF9BBB12225CE7E46 /* TodayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82605ECDAD398D00D0BEF052; };
@@ -37,6 +39,7 @@
 		3F368B2724AF7D7514C09E96 /* Router.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Router.swift; sourceTree = "<group>"; };
 		E51710E7867669877101A804 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
 		F2472B4D4BCA045D31C7A996 /* TheBriefApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TheBriefApp.swift; sourceTree = "<group>"; };
+		0193A33DE00711162E60EBD5 /* GenerateClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateClient.swift; sourceTree = "<group>"; };
 		80478E1AFF48AB564D844D7F /* Store.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Store.swift; sourceTree = "<group>"; };
 		47001986C1F89ADCAA48DF3E /* SupabaseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClient.swift; sourceTree = "<group>"; };
 		38209E7008BABB4000D5F7AA /* Post.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Post.swift; sourceTree = "<group>"; };
@@ -49,6 +52,7 @@
 		D1CBFC09F0A3BC0829F111CC /* ArticleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArticleView.swift; sourceTree = "<group>"; };
 		ED2106AE223872F0FDCC2353 /* BlockViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockViews.swift; sourceTree = "<group>"; };
 		F7B85ECAA754C8A268AFA797 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		9CEC76505B558D0538732EFA /* GenerateControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateControls.swift; sourceTree = "<group>"; };
 		93AF21B1EBD9B4BD12720EA3 /* RubyText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RubyText.swift; sourceTree = "<group>"; };
 		6E4F38FB8FE91EFC981AF313 /* SectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionsView.swift; sourceTree = "<group>"; };
 		82605ECDAD398D00D0BEF052 /* TodayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodayView.swift; sourceTree = "<group>"; };
@@ -84,6 +88,7 @@
 				F2472B4D4BCA045D31C7A996 /* TheBriefApp.swift */,
 			); path = App; sourceTree = "<group>"; };
 		D745FE588A2530348F53CFB1 /* Data */ = {isa = PBXGroup; children = (
+				0193A33DE00711162E60EBD5 /* GenerateClient.swift */,
 				80478E1AFF48AB564D844D7F /* Store.swift */,
 				47001986C1F89ADCAA48DF3E /* SupabaseClient.swift */,
 			); path = Data; sourceTree = "<group>"; };
@@ -104,6 +109,7 @@
 				D1CBFC09F0A3BC0829F111CC /* ArticleView.swift */,
 				ED2106AE223872F0FDCC2353 /* BlockViews.swift */,
 				F7B85ECAA754C8A268AFA797 /* Components.swift */,
+				9CEC76505B558D0538732EFA /* GenerateControls.swift */,
 				93AF21B1EBD9B4BD12720EA3 /* RubyText.swift */,
 				6E4F38FB8FE91EFC981AF313 /* SectionsView.swift */,
 				82605ECDAD398D00D0BEF052 /* TodayView.swift */,
@@ -173,6 +179,7 @@
 				9D520FC42EC38071C188A5B0 /* Router.swift in Sources */,
 				0F2C4F2E05202061CDA01851 /* Settings.swift in Sources */,
 				E66B2AED9D798A5706A4F7D3 /* TheBriefApp.swift in Sources */,
+				4917C2FC6EA448B04F5AD9DE /* GenerateClient.swift in Sources */,
 				E31EC17F048F8AD585B3B9E8 /* Store.swift in Sources */,
 				C70A3BBAF30731BBA83F7B13 /* SupabaseClient.swift in Sources */,
 				373DC80E4AFD44C85FB72C8A /* Post.swift in Sources */,
@@ -185,6 +192,7 @@
 				35DA9779A44B2B491F825EC7 /* ArticleView.swift in Sources */,
 				F0E0C9C36D3A389FDF79BDDD /* BlockViews.swift in Sources */,
 				7DCA05A317BE77DD563DB5E6 /* Components.swift in Sources */,
+				C235D410F8B73EE8F3F38CE0 /* GenerateControls.swift in Sources */,
 				9317087135D3FBDB78FFECF7 /* RubyText.swift in Sources */,
 				55A1499E5069D5020A64BEF2 /* SectionsView.swift in Sources */,
 				A5BE1A7AF9BBB12225CE7E46 /* TodayView.swift in Sources */,
