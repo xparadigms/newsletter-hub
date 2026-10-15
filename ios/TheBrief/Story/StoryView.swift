@@ -379,7 +379,7 @@ struct StoryView: View {
         }
     }
 
-    private func toggleListening(_ urls: [String]) {
+    private func toggleListening(_ urls: [Utterance]) {
         if listening {
             listening = false
             audio.stop()
@@ -396,9 +396,27 @@ struct StoryView: View {
         router.push(.post(target))
     }
 
-    private var cardAudio: [String] {
+    /// What Listen reads on this card: the source-language sentences, the same
+    /// ones the generators make clips for (shared/audio.py) — Japanese
+    /// paragraphs, Chinese pinyin blocks. Korean and English are not read.
+    private var cardAudio: [Utterance] {
         guard cards.indices.contains(index), let c = cards[index].content else { return [] }
-        return c.blocks.filter { mode.shows($0.lang, multi: true) }.compactMap { Annotate.blockAudio($0.block) }
+        return c.blocks.compactMap { a -> Utterance? in
+            switch (a.lang, a.block) {
+            case let (.ja?, .paragraph(text, audio)):
+                return utterance(audio, text, "ja-JP")
+            case let (.zh?, .pinyin(words, audio)):
+                return utterance(audio, words.map(\.text).joined(), "zh-CN")
+            default:
+                return nil
+            }
+        }
+    }
+
+    private func utterance(_ audio: String?, _ text: String, _ language: String) -> Utterance? {
+        if let audio, let url = URL(string: audio) { return .clip(url) }
+        let spoken = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return spoken.isEmpty ? nil : .speech(spoken, language: language)
     }
 }
 
