@@ -5,6 +5,18 @@
 	<!-- Only HTTPS to Supabase: no export-compliance questions on each upload. -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<!-- thebrief://post/<section>/<slug> opens an issue. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.heechangkang.thebrief</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>thebrief</string>
+			</array>
+		</dict>
+	</array>
 	<!-- Read-aloud continues with the screen locked. -->
 	<key>UIBackgroundModes</key>
 	<array>

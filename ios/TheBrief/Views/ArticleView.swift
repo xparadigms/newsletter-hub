@@ -68,7 +68,10 @@ struct ArticleView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        // The fetched copy when there is one: a post opened from a link
+        // arrives with nothing but its slug.
+        let post = issue?.detail.post ?? self.post
+        return VStack(alignment: .leading, spacing: 12) {
             Eyebrow([post.series, Format.longDate(post.date), issue.map { "\($0.minutes) min read" }]
                 .compactMap { $0 }.joined(separator: " · "))
             Text(post.title)

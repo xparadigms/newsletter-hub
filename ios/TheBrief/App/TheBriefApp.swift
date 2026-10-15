@@ -50,6 +50,7 @@ struct RootView: View {
             .tabItem { Label("Search", systemImage: "magnifyingglass") }
             .tag(AppTab.search)
         }
+        .onOpenURL { router.open($0, store: store) }
         .fullScreenCover(item: $router.story) { post in
             StoryView(post: post)
         }
