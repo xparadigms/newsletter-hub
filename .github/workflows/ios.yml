@@ -1,0 +1,56 @@
+name: iOS app
+
+# Builds the app on GitHub's Macs on every push that touches it, so a compile
+# error shows up here rather than on someone's laptop. On main, with the App
+# Store Connect key in the repo's secrets, the build also goes to TestFlight —
+# no Mac needed. Run it by hand from the Actions tab to upload on demand.
+#
+# Secrets: ASC_KEY_P8 (the AuthKey_XXXX.p8 file's contents), ASC_KEY_ID,
+# ASC_ISSUER_ID, APPLE_TEAM_ID.
+
+on:
+  push:
+    paths: ["ios/**", ".github/workflows/ios.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 45
+    env:
+      HAS_KEY: ${{ secrets.ASC_KEY_P8 != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pick the newest released Xcode
+        run: |
+          ls -d /Applications/Xcode*.app
+          XCODE=$(ls -d /Applications/Xcode_*.app | grep -iv beta | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          xcodebuild -version
+
+      - name: Build
+        working-directory: ios
+        run: |
+          set -o pipefail
+          python3 generate_project.py
+          xcodebuild -project TheBrief.xcodeproj -scheme TheBrief -configuration Release \
+            -destination 'generic/platform=iOS' -derivedDataPath build/dd \
+            CODE_SIGNING_ALLOWED=NO build 2>&1 | tee build/build.log | grep -E "error:|warning: .*deprecated|BUILD" || true
+          grep -q "BUILD SUCCEEDED" build/build.log
+
+      - name: Upload to TestFlight
+        if: env.HAS_KEY == 'true' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          export ASC_KEY_PATH="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
+          printf '%s\n' "$ASC_KEY_P8" > "$ASC_KEY_PATH"
+          ios/scripts/testflight.sh || { tail -60 ios/build/archive.log 2>/dev/null; exit 1; }
