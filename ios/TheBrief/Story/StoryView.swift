@@ -41,13 +41,21 @@ struct StoryView: View {
     /// Listen was pressed and stays on across cards until stopped.
     @State private var listening = false
 
+    private var windowInsets: UIEdgeInsets {
+        let scene = UIApplication.shared.connectedScenes.first { $0.activationState == .foregroundActive } as? UIWindowScene
+        return scene?.keyWindow?.safeAreaInsets ?? UIEdgeInsets(top: 59, left: 0, bottom: 34, right: 0)
+    }
+
     private var mode: LangMode { LangMode(rawValue: langs) ?? .jaKo }
     private var section: NewsSection { Sections.get(deck?.post.section ?? post.section) }
     private var cards: [StoryCard] { deck?.cards ?? [] }
 
     var body: some View {
         GeometryReader { geo in
-            let insets = geo.safeAreaInsets
+            // The window's, not the reader's: this view ignores the safe area
+            // so its black can reach the screen edges, which zeroes the
+            // reader's insets — and put the card under the Dynamic Island.
+            let insets = windowInsets
             VStack(spacing: 0) {
                 ZStack {
                     if let deck {
