@@ -13,7 +13,9 @@
 #   ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx TEAM_ID=N7DWY66V6B \
 #     ios/scripts/testflight.sh
 #
-# Signing is automatic: -allowProvisioningUpdates lets Xcode create the
+# The archive is built unsigned and signed for distribution at export: an
+# archive signed for development needs a registered device, and the upload
+# needs none. -allowProvisioningUpdates lets Xcode create the distribution
 # certificate and profile on the first run.
 set -eu
 cd "$(dirname "$0")/.."
@@ -45,6 +47,7 @@ xcodebuild -project TheBrief.xcodeproj -scheme TheBrief -configuration Release \
   -destination 'generic/platform=iOS' -archivePath "$ARCHIVE" \
   -allowProvisioningUpdates $AUTH \
   DEVELOPMENT_TEAM="$TEAM_ID" CURRENT_PROJECT_VERSION="$BUILD" \
+  CODE_SIGNING_ALLOWED=NO \
   archive > build/archive.log 2>&1 || {
     grep -E "error:|warning: .*signing" build/archive.log | head -20 >&2
     echo "Archive failed; full log in ios/build/archive.log" >&2
