@@ -176,7 +176,7 @@ private struct FeedPost: View {
             VStack(alignment: .leading, spacing: 14) {
                 Eyebrow("\(section.number) / \(section.label)", color: .white.opacity(0.7))
                 Text(post.title)
-                    .font(.system(size: 30, weight: .heavy))
+                    .font(.system(size: 32, weight: .heavy))
                     .tracking(-0.6)
                     .foregroundStyle(.white)
                     .minimumScaleFactor(0.6)
@@ -192,7 +192,7 @@ private struct FeedPost: View {
                 .opacity(burst ? 1 : 0)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .aspectRatio(4 / 5, contentMode: .fit)
+        .aspectRatio(1, contentMode: .fit)
         .contentShape(Rectangle())
         .onTapGesture(count: 2) { saveWithBurst() }
         .onTapGesture { open() }
