@@ -2,6 +2,7 @@ import SwiftUI
 import AVFoundation
 
 @main
+@MainActor
 struct TheBriefApp: App {
     @State private var store = Store()
     @State private var router = Router()
