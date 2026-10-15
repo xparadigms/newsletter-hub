@@ -30,7 +30,8 @@ final class AudioReader {
 
     init() {
         synthesizer.delegate = speechDone
-        speechDone.finished = { [weak self] in self?.advance() }
+        // The delegate hops to the main queue before calling this.
+        speechDone.finished = { [weak self] in MainActor.assumeIsolated { self?.advance() } }
     }
 
     func play(_ items: [Utterance]) {
