@@ -8,6 +8,14 @@ import Observation
 @Observable
 final class Store {
     private(set) var posts: [SectionKey: [Post]] = [:]
+    /// Issues opened as an article or a story — what takes a section's ring
+    /// off in the story tray.
+    private(set) var seen: Set<String> = Set(UserDefaults.standard.stringArray(forKey: "seen") ?? [])
+    /// Issues saved from the feed, newest save first.
+    private(set) var saved: [Post] = {
+        guard let data = UserDefaults.standard.data(forKey: "saved") else { return [] }
+        return (try? JSONDecoder().decode([Post].self, from: data)) ?? []
+    }()
     private(set) var isLoading = false
     private(set) var error: String?
     private var details: [String: PostDetail] = [:]
@@ -30,6 +38,26 @@ final class Store {
     var hasContent: Bool { posts.values.contains { !$0.isEmpty } }
 
     func posts(in section: SectionKey) -> [Post] { posts[section] ?? [] }
+
+    func markSeen(_ post: Post) {
+        guard !seen.contains(post.routeID) else { return }
+        seen.insert(post.routeID)
+        // Only the recent past matters for rings; keep the list from growing forever.
+        UserDefaults.standard.set(Array(seen.suffix(600)), forKey: "seen")
+    }
+
+    /// A section's ring stays lit until its newest issue has been opened.
+    func hasUnseen(_ section: SectionKey) -> Bool {
+        guard let newest = posts(in: section).first else { return false }
+        return !seen.contains(newest.routeID)
+    }
+
+    func isSaved(_ post: Post) -> Bool { saved.contains { $0.routeID == post.routeID } }
+
+    func toggleSaved(_ post: Post) {
+        if isSaved(post) { saved.removeAll { $0.routeID == post.routeID } } else { saved.insert(post, at: 0) }
+        if let data = try? JSONEncoder().encode(saved) { UserDefaults.standard.set(data, forKey: "saved") }
+    }
 
     /// Newest first across every section (web/lib/feed.ts flattenLatest).
     func latest(_ limit: Int) -> [Post] {

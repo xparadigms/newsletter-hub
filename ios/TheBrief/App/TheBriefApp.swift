@@ -35,7 +35,7 @@ struct RootView: View {
             NavigationStack(path: $router.today) {
                 TodayView().routes()
             }
-            .tabItem { Label("Today", systemImage: "newspaper") }
+            .tabItem { Label("Home", systemImage: "house") }
             .tag(AppTab.today)
 
             NavigationStack(path: $router.sections) {
@@ -51,7 +51,7 @@ struct RootView: View {
             .tag(AppTab.search)
         }
         .onOpenURL { router.open($0, store: store) }
-        .fullScreenCover(item: $router.story) { post in
+        .fullScreenCover(item: $router.story, onDismiss: { router.storyQueue = [] }) { post in
             StoryView(post: post)
         }
         // Opens on the saved lists at once, then brings them up to date.

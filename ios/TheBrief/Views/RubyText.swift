@@ -16,6 +16,7 @@ struct RubyText: UIViewRepresentable {
     var underlineWords = false
     var language = "ja"
     var color: UIColor = .label
+    var ruleColor = UIColor(red: 0.78, green: 0.66, blue: 0.32, alpha: 0.6)
 
     func makeUIView(context: Context) -> CoreTextView {
         CoreTextView()
@@ -45,7 +46,6 @@ struct RubyText: UIViewRepresentable {
         style.minimumLineHeight = fontSize * 2.05
 
         let rubyColor = (showReadings ? UIColor.secondaryLabel : UIColor.clear).resolvedColor(with: traits).cgColor
-        let ruleColor = UIColor(red: 0.78, green: 0.66, blue: 0.32, alpha: 0.6)
         // Core Text reads its own colour keys, which take CGColor.
         let base: [NSAttributedString.Key: Any] = [
             .font: font,

@@ -64,7 +64,10 @@ struct ArticleView: View {
         }
         .navigationTitle(section.label)
         .navigationBarTitleDisplayMode(.inline)
-        .task { await load() }
+        .task {
+            store.markSeen(post)
+            await load()
+        }
     }
 
     private var header: some View {

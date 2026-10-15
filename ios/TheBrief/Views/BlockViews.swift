@@ -3,6 +3,18 @@ import SwiftUI
 // Rendering of an issue's blocks, shared by the article and story mode — the
 // native counterpart of web/components/ArticleBlocks.tsx.
 
+/// Set on story cards, which want a looser rhythm between paragraphs.
+private struct StoryCardKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var storyCard: Bool {
+        get { self[StoryCardKey.self] }
+        set { self[StoryCardKey.self] = newValue }
+    }
+}
+
 enum Reading {
     static let base: CGFloat = 19
     static let small: CGFloat = 16
@@ -48,6 +60,7 @@ struct AnnotatedBlockView: View {
     var section: NewsSection
     var compact = false
     @AppStorage(SettingsKey.furigana) private var furigana = true
+    @Environment(\.storyCard) private var storyCard
 
     var body: some View {
         if item.kicker, case let .paragraph(text, _) = item.block {
@@ -62,7 +75,7 @@ struct AnnotatedBlockView: View {
                 RubyText(segments: ruby, fontSize: Reading.base, showReadings: furigana, language: "ja",
                          color: .label.withAlphaComponent(0.88))
             }
-            .padding(.top, isBulletLine(item.block.paragraphText) ? 0 : (compact ? 2 : 8))
+            .padding(.top, isBulletLine(item.block.paragraphText) ? 0 : (storyCard ? 14 : compact ? 2 : 8))
         } else if case let .heading(level, text) = item.block {
             headingText(text)
                 .font(.system(size: level <= 1 ? Reading.base * 1.34 : level == 2 ? Reading.base * 1.15 : Reading.base,
@@ -89,6 +102,9 @@ struct BlockView: View {
     var section: NewsSection
     var compact = false
     var size: CGFloat = Reading.base
+    @Environment(\.storyCard) private var storyCard
+
+    private var gap: CGFloat { storyCard ? 14 : compact ? 2 : 10 }
 
     var body: some View {
         switch block {
@@ -98,7 +114,7 @@ struct BlockView: View {
                 .lineSpacing(size * 0.45)
                 .foregroundStyle(.primary.opacity(0.88))
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.top, isBulletLine(text) ? 0 : (compact ? 2 : 10))
+                .padding(.top, isBulletLine(text) ? 0 : gap)
                 .textSelection(.enabled)
         case let .heading(_, text):
             headingText(text).font(.system(size: size * 1.1, weight: .bold))
@@ -114,7 +130,7 @@ struct BlockView: View {
             .font(.system(size: size))
             .foregroundStyle(.primary.opacity(0.88))
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, compact ? 2 : 10)
+            .padding(.top, gap)
         case let .quote(text):
             HStack(spacing: 14) {
                 Rectangle().fill(Color.brandAccent).frame(width: 3)
@@ -164,8 +180,9 @@ struct BlockView: View {
         case let .pinyin(words, _):
             RubyText(segments: words.map { RubySegment(text: $0.text, reading: $0.pinyin) },
                      fontSize: Reading.zh, showReadings: true, underlineWords: true, language: "zh-Hans",
-                     color: .label.withAlphaComponent(0.9))
-                .padding(.top, compact ? 2 : 10)
+                     color: .label.withAlphaComponent(0.9),
+                     ruleColor: UIColor(red: 0.78, green: 0.66, blue: 0.32, alpha: 0.6))
+                .padding(.top, gap)
         case .divider:
             Divider().padding(.vertical, compact ? 8 : 22)
         }
