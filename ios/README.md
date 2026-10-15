@@ -9,8 +9,10 @@ and read-aloud are all drawn natively.
 The app reads the same Supabase `newsletter` table the website reads, with the
 same publishable key (`TheBrief/Data/SupabaseClient.swift`). That key is meant
 to ship in clients: row-level security limits it to reading published issues.
-The site's password gate does not apply to the app, and the app cannot press
-Generate, which needs that password.
+Reading needs no password. Generate and "Write about a company" do: they go
+through the site's `/api/generate`, so the app asks for the site password once,
+keeps it in the Keychain, and signs in with it whenever the site's cookie is
+missing (`TheBrief/Data/GenerateClient.swift`). The site's daily cap applies.
 
 Lists and every opened issue are cached on the device, so the app opens to the
 last thing it saw and opened issues read offline.
