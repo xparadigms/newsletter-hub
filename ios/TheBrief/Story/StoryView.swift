@@ -79,8 +79,9 @@ struct StoryView: View {
             await runTimer()
         }
         .onChange(of: index) { cardChanged() }
+        .onChange(of: isPaused) { _, paused in paused ? clock.pause() : clock.resume() }
         .onChange(of: scenePhase) { _, phase in
-            if phase != .active { clock.pause() } else if !holding { clock.resume() }
+            if phase != .active { clock.pause() } else if !isPaused { clock.resume() }
         }
         .onAppear { audio.onFinish = { if listening { go(1) } } }
         .onDisappear { audio.stop() }
@@ -105,7 +106,7 @@ struct StoryView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         .contentShape(Rectangle())
-        .simultaneousGesture(press(width: size.width))
+        .simultaneousGesture(press(size: size))
     }
 
     private var loadingFace: some View {
@@ -161,7 +162,6 @@ struct StoryView: View {
                             .font(.system(size: 18))
                             .frame(width: 36, height: 36)
                     }
-                    .simultaneousGesture(TapGesture().onEnded { clock.pause() })
                 }
                 closeButton
             }
@@ -239,7 +239,7 @@ struct StoryView: View {
     /// card, holding pauses, a sideways swipe turns the issue, a pull down
     /// closes and a push up opens the article. Simultaneous, so the card's text
     /// still scrolls when it runs long.
-    private func press(width: CGFloat) -> some Gesture {
+    private func press(size: CGSize) -> some Gesture {
         DragGesture(minimumDistance: 0)
             .onChanged { value in
                 if pressStart == nil {
@@ -270,14 +270,18 @@ struct StoryView: View {
                 case .vertical:
                     if dragY > 130 || (dragY > 40 && value.predictedEndTranslation.height > 400) {
                         dismiss()
-                    } else if dy < -80 && atTop {
+                    } else if dy < -80 && value.startLocation.y > size.height * 0.7 {
+                        // Swipe up from the bottom of the card, as for a story's link.
                         openArticle()
                     } else {
                         withAnimation(.spring(response: 0.35, dampingFraction: 0.86)) { dragY = 0 }
                     }
                 case nil:
-                    // A tap, not a hold: move by a card.
-                    if held < 0.22 { go(value.location.x < width * 0.3 ? -1 : 1) }
+                    // A tap, not a hold: move by a card. The header's own buttons
+                    // sit above the first 76 points and must not also page.
+                    if held < 0.22 && value.startLocation.y > 76 {
+                        go(value.location.x < size.width * 0.3 ? -1 : 1)
+                    }
                 }
             }
     }
@@ -288,7 +292,7 @@ struct StoryView: View {
         guard let deck else { return }
         let next = index + step
         if deck.cards.indices.contains(next) {
-            index = next
+            setIndex(next)
             return
         }
         turnIssue(step)
@@ -300,7 +304,7 @@ struct StoryView: View {
         guard let deck else { return }
         let adj = store.adjacent(to: deck.post)
         guard let target = step > 0 ? adj.next : adj.prev else {
-            if step > 0 { dismiss() } else { index = 0; clock.restart(duration: duration(for: 0)) }
+            if step > 0 { dismiss() } else { setIndex(0) }
             return
         }
         forward = step > 0
@@ -319,6 +323,7 @@ struct StoryView: View {
                 index = 0
             }
             clock.restart(duration: duration(for: 0))
+            if isPaused { clock.pause() }
         }
         if let cached = store.cachedDetail(target) {
             show(cached)
@@ -348,9 +353,16 @@ struct StoryView: View {
         }
     }
 
+    /// The clock restarts here, before the index moves, so the timer task the
+    /// new index starts never reads the finished card's clock.
+    private func setIndex(_ i: Int) {
+        clock.restart(duration: duration(for: i))
+        if isPaused { clock.pause() }
+        index = i
+    }
+
     private func cardChanged() {
         atTop = true
-        clock.restart(duration: duration(for: index))
         if listening {
             let urls = cardAudio
             if urls.isEmpty { audio.stop() } else { audio.play(urls) }
@@ -468,8 +480,8 @@ final class StoryClock {
 }
 
 private struct SegmentBar: View {
-    enum State { case done, active, todo }
-    let state: State
+    enum Phase { case done, active, todo }
+    let state: Phase
     let clock: StoryClock
 
     var body: some View {
@@ -565,7 +577,6 @@ private struct StoryCardView: View {
                 Text(c.title)
                     .font(.system(size: 38, weight: .heavy))
                     .tracking(-1)
-                    .lineSpacing(-2)
                     .foregroundStyle(.white)
                     .padding(.top, 14)
                     .minimumScaleFactor(0.7)
