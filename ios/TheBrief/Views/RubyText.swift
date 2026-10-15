@@ -4,10 +4,10 @@ import CoreText
 
 /// Text with readings set above it: furigana over kanji, pinyin over hanzi.
 ///
-/// SwiftUI's Text cannot draw ruby, but Core Text can, and UILabel renders its
-/// ruby annotations — so this wraps a UILabel. Hiding the readings makes them
-/// transparent rather than removing them, the way the site does it, so the
-/// lines keep their breaks and the text does not jump when toggled.
+/// SwiftUI's Text cannot draw ruby, but Core Text can, so this lays the text
+/// out with a CTFramesetter and draws it itself. Hiding the readings makes
+/// them transparent rather than removing them, the way the site does it, so
+/// the lines keep their breaks and the text does not jump when toggled.
 struct RubyText: UIViewRepresentable {
     let segments: [RubySegment]
     var fontSize: CGFloat = 19
@@ -17,26 +17,19 @@ struct RubyText: UIViewRepresentable {
     var language = "ja"
     var color: UIColor = .label
 
-    func makeUIView(context: Context) -> UILabel {
-        let label = UILabel()
-        label.numberOfLines = 0
-        label.lineBreakMode = .byWordWrapping
-        label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-        label.setContentHuggingPriority(.defaultHigh, for: .vertical)
-        return label
+    func makeUIView(context: Context) -> CoreTextView {
+        CoreTextView()
     }
 
-    func updateUIView(_ label: UILabel, context: Context) {
+    func updateUIView(_ view: CoreTextView, context: Context) {
         let traits = UITraitCollection(userInterfaceStyle: context.environment.colorScheme == .dark ? .dark : .light)
-        label.attributedText = attributed(traits: traits)
+        view.text = attributed(traits: traits)
     }
 
-    func sizeThatFits(_ proposal: ProposedViewSize, uiView label: UILabel, context: Context) -> CGSize? {
+    func sizeThatFits(_ proposal: ProposedViewSize, uiView view: CoreTextView, context: Context) -> CGSize? {
         let width = proposal.width ?? UIScreen.main.bounds.width - 40
         guard width > 0, width.isFinite else { return nil }
-        label.preferredMaxLayoutWidth = width
-        let size = label.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
-        return CGSize(width: width, height: ceil(size.height))
+        return CGSize(width: width, height: view.height(for: width))
     }
 
     private func font() -> UIFont {
@@ -50,13 +43,13 @@ struct RubyText: UIViewRepresentable {
         // Room above every line for the reading row, whether or not this line
         // has one, so lines keep an even rhythm (the site's line-height: 2.35).
         style.minimumLineHeight = fontSize * 2.05
-        style.lineBreakStrategy = .standard
 
         let rubyColor = (showReadings ? UIColor.secondaryLabel : UIColor.clear).resolvedColor(with: traits).cgColor
         let ruleColor = UIColor(red: 0.78, green: 0.66, blue: 0.32, alpha: 0.6)
+        // Core Text reads its own colour keys, which take CGColor.
         let base: [NSAttributedString.Key: Any] = [
             .font: font,
-            .foregroundColor: color.resolvedColor(with: traits),
+            NSAttributedString.Key(kCTForegroundColorAttributeName as String): color.resolvedColor(with: traits).cgColor,
             .paragraphStyle: style,
             NSAttributedString.Key(kCTLanguageAttributeName as String): language,
         ]
@@ -74,7 +67,8 @@ struct RubyText: UIViewRepresentable {
                 attrs[NSAttributedString.Key(kCTRubyAnnotationAttributeName as String)] = ruby
                 if underlineWords {
                     attrs[.underlineStyle] = NSUnderlineStyle.single.rawValue
-                    attrs[.underlineColor] = ruleColor
+                    attrs[NSAttributedString.Key(kCTUnderlineColorAttributeName as String)] =
+                        ruleColor.resolvedColor(with: traits).cgColor
                 }
             }
             out.append(NSAttributedString(string: seg.text, attributes: attrs))
@@ -85,5 +79,43 @@ struct RubyText: UIViewRepresentable {
             }
         }
         return out
+    }
+}
+
+/// Draws an attributed string with Core Text, ruby annotations included.
+final class CoreTextView: UIView {
+    var text = NSAttributedString() {
+        didSet {
+            guard text != oldValue else { return }
+            framesetter = CTFramesetterCreateWithAttributedString(text)
+            setNeedsDisplay()
+        }
+    }
+    private var framesetter = CTFramesetterCreateWithAttributedString(NSAttributedString())
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        isOpaque = false
+        backgroundColor = .clear
+        contentMode = .redraw
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) is not used") }
+
+    func height(for width: CGFloat) -> CGFloat {
+        let size = CTFramesetterSuggestFrameSizeWithConstraints(
+            framesetter, CFRange(location: 0, length: text.length), nil,
+            CGSize(width: width, height: .greatestFiniteMagnitude), nil)
+        return ceil(size.height) + 2
+    }
+
+    override func draw(_ rect: CGRect) {
+        guard let ctx = UIGraphicsGetCurrentContext() else { return }
+        ctx.textMatrix = .identity
+        ctx.translateBy(x: 0, y: bounds.height)
+        ctx.scaleBy(x: 1, y: -1)
+        let path = CGPath(rect: bounds, transform: nil)
+        let frame = CTFramesetterCreateFrame(framesetter, CFRange(location: 0, length: text.length), path, nil)
+        CTFrameDraw(frame, ctx)
     }
 }
