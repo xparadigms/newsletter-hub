@@ -310,8 +310,16 @@ struct StoryView: View {
     /// the newest one, the story closes.
     private func turnIssue(_ step: Int) {
         guard let deck else { return }
-        let adj = store.adjacent(to: deck.post)
-        guard let target = step > 0 ? adj.next : adj.prev else {
+        let target: Post?
+        if let i = router.storyQueue.firstIndex(where: { $0.routeID == deck.post.routeID }) {
+            // From the tray: on to the next section, or back to the previous one.
+            let j = i + step
+            target = router.storyQueue.indices.contains(j) ? router.storyQueue[j] : nil
+        } else {
+            let adj = store.adjacent(to: deck.post)
+            target = step > 0 ? adj.next : adj.prev
+        }
+        guard let target else {
             if step > 0 { dismiss() } else { setIndex(0) }
             return
         }
@@ -323,6 +331,7 @@ struct StoryView: View {
         failed = false
         let section = Sections.get(target.section)
         func show(_ detail: PostDetail) {
+            store.markSeen(target)
             let next = Deck(detail: detail, section: section)
             if animated {
                 withAnimation(.easeInOut(duration: 0.42)) { deck = next; index = 0 }
@@ -360,8 +369,14 @@ struct StoryView: View {
     /// them is instant — the cube has something to show.
     private func prefetchNeighbours() {
         guard let deck else { return }
-        let adj = store.adjacent(to: deck.post)
-        for p in [adj.next, adj.prev].compactMap({ $0 }) where store.cachedDetail(p) == nil {
+        var neighbours: [Post?]
+        if let i = router.storyQueue.firstIndex(where: { $0.routeID == deck.post.routeID }) {
+            neighbours = [i + 1, i - 1].map { router.storyQueue.indices.contains($0) ? router.storyQueue[$0] : nil }
+        } else {
+            let adj = store.adjacent(to: deck.post)
+            neighbours = [adj.next, adj.prev]
+        }
+        for p in neighbours.compactMap({ $0 }) where store.cachedDetail(p) == nil {
             Task { _ = try? await store.detail(p) }
         }
     }
@@ -520,7 +535,7 @@ private struct SegmentBar: View {
 /// A dark card, so the text and its readings carry the contrast. The section
 /// shows only as a faint wash of its colour at the top, enough to tell one
 /// newsletter from another as the cube turns.
-private struct SectionBackground: View {
+struct SectionBackground: View {
     let section: NewsSection
 
     var body: some View {

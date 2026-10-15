@@ -19,6 +19,14 @@ final class Router {
     var search: [Route] = []
     /// The issue open in story mode, presented full screen over everything.
     var story: Post?
+    /// Set when a story is opened from the tray: finishing one section's issue
+    /// moves on to the next section's, as Instagram moves between accounts.
+    var storyQueue: [Post] = []
+
+    func playStories(from post: Post, queue: [Post]) {
+        storyQueue = queue
+        story = post
+    }
 
     /// Tapping the tab you are already on pops to its root, as on iOS.
     func select(_ next: AppTab) {

@@ -6,6 +6,11 @@ struct SectionsView: View {
 
     var body: some View {
         List {
+            if !store.saved.isEmpty {
+                Section("Saved") {
+                    ForEach(store.saved) { PostRow(post: $0, showSection: true) }
+                }
+            }
             Section {
                 ForEach(Sections.nav) { row($0) }
             }
