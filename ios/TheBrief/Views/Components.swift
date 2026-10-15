@@ -2,6 +2,7 @@ import SwiftUI
 
 /// A link to an issue. With story mode on it opens the full-screen story
 /// instead of pushing the article — a reading preference, as on the site.
+@MainActor
 struct PostLink<Label: View>: View {
     let post: Post
     @ViewBuilder var label: () -> Label
@@ -19,6 +20,7 @@ struct PostLink<Label: View>: View {
 }
 
 /// Small uppercase monospaced label, the site's `.label`.
+@MainActor
 struct Eyebrow: View {
     let text: String
     var color: Color = .secondary
@@ -34,6 +36,7 @@ struct Eyebrow: View {
     }
 }
 
+@MainActor
 struct PostRow: View {
     let post: Post
     var showSection = false
@@ -61,6 +64,7 @@ struct PostRow: View {
 }
 
 /// Story mode, language, furigana and appearance — the site's nav bar toggles.
+@MainActor
 struct SettingsMenu: View {
     @AppStorage(SettingsKey.storyMode) private var storyMode = false
     @AppStorage(SettingsKey.langs) private var langs = LangMode.jaKo.rawValue
@@ -86,6 +90,7 @@ struct SettingsMenu: View {
     }
 }
 
+@MainActor
 struct ErrorBanner: View {
     let message: String
     var body: some View {

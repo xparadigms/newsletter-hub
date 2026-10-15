@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 struct SectionsView: View {
     @Environment(Store.self) private var store
 
@@ -41,6 +42,7 @@ struct SectionsView: View {
     }
 }
 
+@MainActor
 struct SectionView: View {
     let section: NewsSection
     @Environment(Store.self) private var store
@@ -90,6 +92,7 @@ struct SectionView: View {
     }
 }
 
+@MainActor
 struct SearchView: View {
     @Environment(Store.self) private var store
     @State private var query = ""

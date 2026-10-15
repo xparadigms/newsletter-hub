@@ -2,6 +2,7 @@ import SwiftUI
 
 /// The front page: the newest issue as the lead, the next few beneath it, and
 /// each section's latest issues.
+@MainActor
 struct TodayView: View {
     @Environment(Store.self) private var store
 
@@ -62,6 +63,7 @@ struct TodayView: View {
     }
 }
 
+@MainActor
 private struct LeadCard: View {
     let post: Post
 

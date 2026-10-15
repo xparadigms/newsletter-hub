@@ -19,6 +19,7 @@ struct PreparedIssue {
     }
 }
 
+@MainActor
 struct ArticleView: View {
     let post: Post
     @Environment(Store.self) private var store

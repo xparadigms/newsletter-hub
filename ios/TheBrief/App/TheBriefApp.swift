@@ -24,6 +24,7 @@ struct TheBriefApp: App {
     }
 }
 
+@MainActor
 struct RootView: View {
     @Environment(Store.self) private var store
     @Environment(Router.self) private var router

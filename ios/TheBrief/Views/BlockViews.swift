@@ -42,6 +42,7 @@ private func isBulletLine(_ text: String) -> Bool {
     text.drop { $0.isWhitespace }.hasPrefix("・")
 }
 
+@MainActor
 struct AnnotatedBlockView: View {
     let item: AnnotatedBlock
     var section: NewsSection
@@ -81,6 +82,7 @@ struct AnnotatedBlockView: View {
     }
 }
 
+@MainActor
 struct BlockView: View {
     let block: Block
     var lang: Lang? = nil

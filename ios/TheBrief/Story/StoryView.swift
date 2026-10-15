@@ -3,6 +3,7 @@ import SwiftUI
 /// An issue as a deck of full-screen cards (web/components/story/StoryViewer).
 /// Tap the right two-thirds or swipe left for the next card, the left third or
 /// swipe right for the previous one, and drag down to put the story away.
+@MainActor
 struct StoryView: View {
     let post: Post
     @Environment(Store.self) private var store
@@ -238,6 +239,7 @@ struct StoryView: View {
     }
 }
 
+@MainActor
 private struct StoryCardView: View {
     let card: StoryCard
     let issue: PreparedIssue?
