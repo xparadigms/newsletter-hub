@@ -10,7 +10,7 @@ struct ProfileView: View {
     enum Shelf: String, CaseIterable, Identifiable {
         case saved, read
         var id: String { rawValue }
-        var symbol: String { self == .saved ? "bookmark" : "clock.arrow.circlepath" }
+        var symbol: String { self == .saved ? "bookmark" : "clock" }
     }
 
     /// Everything opened, newest first. Only issues still in the loaded lists
