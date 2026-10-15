@@ -340,6 +340,11 @@ struct StoryView: View {
                 if deck == nil { failed = true }
             }
         }
+        #if DEBUG
+        // `simctl launch … -storyIndex N` starts on card N, for screenshots.
+        let start = UserDefaults.standard.integer(forKey: "storyIndex")
+        if !animated, start > 0, start < cards.count { setIndex(start) }
+        #endif
         prefetchNeighbours()
     }
 
