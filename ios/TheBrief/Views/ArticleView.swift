@@ -143,6 +143,7 @@ struct ArticleView: View {
             }
             Button { router.story = post } label: { Image(systemName: "rectangle.portrait.on.rectangle.portrait") }
                 .accessibilityLabel("Story mode")
+            SaveButton(post: post)
             ShareLink(item: URL(string: "https://heechang-newsletter.vercel.app/post/\(post.section.rawValue)/\(post.id)")!)
         }
     }

@@ -46,8 +46,15 @@ Open `ios/TheBrief.xcodeproj` and run the `TheBrief` scheme. iOS 17 or later.
 ## TestFlight
 
 The app record is "The Brief by Heechang" (bundle ID `com.heechangkang.thebrief`,
-team `N7DWY66V6B`). Builds are signed and uploaded with an App Store Connect API
-key, so Xcode needs no signed-in account:
+team `N7DWY66V6B`), uploaded with an App Store Connect API key.
+
+**From GitHub, no Mac needed.** `.github/workflows/ios.yml` builds the app on
+GitHub's Macs on every push that touches `ios/`, and on `main` it also uploads
+the build to TestFlight. It needs one repository secret, `ASC_KEY_P8`: the
+contents of `AuthKey_42Z98QR7J4.p8`. To ship by hand, run the workflow from the
+Actions tab.
+
+**From a Mac:**
 
 ```sh
 ASC_KEY_PATH=~/Downloads/AuthKey_42Z98QR7J4.p8 ASC_KEY_ID=42Z98QR7J4 \
@@ -55,9 +62,9 @@ ASC_ISSUER_ID=4b0444d7-b87e-4112-8b16-653ff28b5bb9 TEAM_ID=N7DWY66V6B \
   ios/scripts/testflight.sh
 ```
 
-It archives unsigned, signs for App Store distribution at export (an archive
-signed for development would need a registered iPhone), stamps a build number
-from the time, and uploads. The TestFlight group "Internal" has access to every
-build, so each upload reaches its testers once Apple finishes processing it —
-usually a few minutes. Internal testers must be users on the App Store Connect
-team; anyone else needs an external group and Beta App Review.
+Either way it archives unsigned, signs for App Store distribution at export (an
+archive signed for development would need a registered iPhone), stamps a build
+number from the time, and uploads. The TestFlight group "Internal" has access
+to every build, so each upload reaches its testers once Apple finishes
+processing it — usually a few minutes. Internal testers must be users on the
+App Store Connect team; anyone else needs an external group and Beta App Review.

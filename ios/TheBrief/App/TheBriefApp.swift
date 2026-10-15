@@ -49,6 +49,12 @@ struct RootView: View {
             }
             .tabItem { Label("Search", systemImage: "magnifyingglass") }
             .tag(AppTab.search)
+
+            NavigationStack(path: $router.profile) {
+                ProfileView().routes()
+            }
+            .tabItem { Label("Profile", systemImage: "person.crop.circle") }
+            .tag(AppTab.profile)
         }
         .onOpenURL { router.open($0, store: store) }
         .fullScreenCover(item: $router.story, onDismiss: { router.storyClosed() }) { post in
