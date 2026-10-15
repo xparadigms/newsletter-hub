@@ -2,17 +2,18 @@ import SwiftUI
 
 // Story mode, built the way Instagram Stories behaves:
 //
-// · each issue is one "account": its cards sit on a rounded card in the
-//   section's colours, under a row of segment bars that fill as a timer runs;
+// · each issue is one "account": its cards sit on a rounded card under a row
+//   of segment bars. Cards move only when you tap — there is no timer;
 // · tap the right side for the next card, the left for the previous one —
 //   cards cut, they do not slide;
-// · press and hold to pause, and the chrome steps aside while you read;
+// · press and hold, and the chrome steps aside while you read;
 // · swipe sideways, or run off either end, to turn to the neighbouring issue
 //   on a cube;
 // · swipe down to put the story away, swipe up to open the full article.
 //
-// Listen turns a card into a "video": the timer stops, the card's sentences
-// are read aloud, and the story moves on — still reading — when they end.
+// Listen turns a card into a "video": its sentences are read aloud, and the
+// story moves on — still reading — when they end. That is the one way a card
+// advances by itself, and only because you pressed Listen.
 
 @MainActor
 struct StoryView: View {
@@ -20,7 +21,6 @@ struct StoryView: View {
     @Environment(Store.self) private var store
     @Environment(Router.self) private var router
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.scenePhase) private var scenePhase
     @AppStorage(SettingsKey.langs) private var langs = LangMode.jaKo.rawValue
     @AppStorage(SettingsKey.furigana) private var furigana = true
 
@@ -30,7 +30,6 @@ struct StoryView: View {
     /// Direction of the last turn between issues, for the cube.
     @State private var forward = true
 
-    @State private var clock = StoryClock()
     @State private var holding = false
     @State private var pressStart: Date?
     @State private var dragAxis: Axis?
@@ -83,14 +82,7 @@ struct StoryView: View {
         .presentationBackground(.clear)
         .statusBarHidden()
         .task { await open(post) }
-        .task(id: TimerKey(card: cards.isEmpty ? nil : index, issue: deck?.post.routeID, paused: isPaused)) {
-            await runTimer()
-        }
         .onChange(of: index) { cardChanged() }
-        .onChange(of: isPaused) { _, paused in paused ? clock.pause() : clock.resume() }
-        .onChange(of: scenePhase) { _, phase in
-            if phase != .active { clock.pause() } else if !isPaused { clock.resume() }
-        }
         .onAppear { audio.onFinish = { if listening { go(1) } } }
         .onDisappear { audio.stop() }
     }
@@ -139,7 +131,7 @@ struct StoryView: View {
         VStack(spacing: 10) {
             HStack(spacing: 4) {
                 ForEach(deck.cards.indices, id: \.self) { i in
-                    SegmentBar(state: i < index ? .done : i == index ? .active : .todo, clock: clock)
+                    SegmentBar(filled: i <= index)
                 }
             }
             HStack(spacing: 10) {
@@ -241,10 +233,8 @@ struct StoryView: View {
 
     // MARK: Gestures
 
-    private var isPaused: Bool { holding || listening || audio.playing }
-
     /// One gesture for the whole card, as in Instagram: a quick tap moves by a
-    /// card, holding pauses, a sideways swipe turns the issue, a pull down
+    /// card, holding clears the chrome, a sideways swipe turns the issue, a pull down
     /// closes and a push up opens the article. Simultaneous, so the card's text
     /// still scrolls when it runs long.
     private func press(size: CGSize) -> some Gesture {
@@ -339,8 +329,6 @@ struct StoryView: View {
                 deck = next
                 index = 0
             }
-            clock.restart(duration: duration(for: 0))
-            if isPaused { clock.pause() }
         }
         if let cached = store.cachedDetail(target) {
             show(cached)
@@ -381,11 +369,7 @@ struct StoryView: View {
         }
     }
 
-    /// The clock restarts here, before the index moves, so the timer task the
-    /// new index starts never reads the finished card's clock.
     private func setIndex(_ i: Int) {
-        clock.restart(duration: duration(for: i))
-        if isPaused { clock.pause() }
         index = i
     }
 
@@ -414,40 +398,6 @@ struct StoryView: View {
         router.push(.post(target))
     }
 
-    // MARK: Timer
-
-    private func runTimer() async {
-        guard deck != nil, !isPaused else { return }
-        let remaining = clock.remaining
-        try? await Task.sleep(nanoseconds: UInt64(remaining * 1_000_000_000))
-        guard !Task.isCancelled else { return }
-        go(1)
-    }
-
-    private struct TimerKey: Equatable {
-        let card: Int?
-        let issue: String?
-        let paused: Bool
-    }
-
-    /// Long enough to read the card at a learner's pace: Instagram's five
-    /// seconds for a picture, more for every line of text.
-    private func duration(for i: Int) -> Double {
-        guard cards.indices.contains(i) else { return 5 }
-        switch cards[i] {
-        case .cover: return 6
-        case .section: return 3.5
-        case let .content(c):
-            var units = 0.0
-            for b in c.blocks where mode.shows(b.lang, multi: deck?.issue.multi ?? true) {
-                for s in Annotate.blockText(b.block).unicodeScalars {
-                    units += s.value >= 0x2E80 ? 1 : 0.3
-                }
-            }
-            return min(60, max(6, 3 + units / 9))
-        }
-    }
-
     private var cardAudio: [String] {
         guard cards.indices.contains(index), let c = cards[index].content else { return [] }
         return c.blocks.filter { mode.shows($0.lang, multi: true) }.compactMap { Annotate.blockAudio($0.block) }
@@ -467,68 +417,14 @@ struct Deck {
     }
 }
 
-/// The running time of the card on screen. The segment bar redraws from it
-/// every frame without the rest of the story re-rendering.
-@MainActor
-@Observable
-final class StoryClock {
-    private(set) var duration: Double = 6
-    private(set) var paused = false
-    /// Bumped on every restart, so the bars know to start from empty.
-    private(set) var generation = 0
-    @ObservationIgnored private var startedAt = Date()
-    @ObservationIgnored private var banked: Double = 0
-
-    func restart(duration: Double) {
-        self.duration = duration
-        banked = 0
-        startedAt = Date()
-        paused = false
-        generation += 1
-    }
-
-    func pause() {
-        guard !paused else { return }
-        banked += Date().timeIntervalSince(startedAt)
-        paused = true
-    }
-
-    func resume() {
-        guard paused else { return }
-        startedAt = Date()
-        paused = false
-    }
-
-    func fraction(at now: Date) -> Double {
-        let elapsed = paused ? banked : banked + now.timeIntervalSince(startedAt)
-        return min(1, max(0, elapsed / duration))
-    }
-
-    var remaining: Double { max(0, duration * (1 - fraction(at: Date()))) }
-}
-
 private struct SegmentBar: View {
-    enum Phase { case done, active, todo }
-    let state: Phase
-    let clock: StoryClock
+    let filled: Bool
 
     var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                Capsule().fill(.white.opacity(0.35))
-                switch state {
-                case .done: Capsule().fill(.white)
-                case .todo: EmptyView()
-                case .active:
-                    TimelineView(.animation(paused: clock.paused)) { ctx in
-                        Capsule().fill(.white)
-                            .frame(width: geo.size.width * clock.fraction(at: ctx.date))
-                    }
-                    .id(clock.generation)
-                }
-            }
-        }
-        .frame(height: 2.5)
+        Capsule()
+            .fill(.white.opacity(filled ? 1 : 0.35))
+            .frame(height: 2.5)
+            .animation(.easeOut(duration: 0.15), value: filled)
     }
 }
 
