@@ -55,7 +55,16 @@ struct RootView: View {
             StoryView(post: post)
         }
         // Opens on the saved lists at once, then brings them up to date.
-        .task { await store.refresh() }
+        .task {
+            #if DEBUG
+            // `simctl launch … -openURL thebrief://…` opens a screen directly,
+            // without the system's "Open in The Brief?" prompt.
+            if let link = UserDefaults.standard.string(forKey: "openURL"), let url = URL(string: link) {
+                router.open(url, store: store)
+            }
+            #endif
+            await store.refresh()
+        }
     }
 }
 
