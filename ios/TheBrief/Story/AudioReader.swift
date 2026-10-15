@@ -7,6 +7,8 @@ import Observation
 @Observable
 final class AudioReader {
     private(set) var playing = false
+    /// Called when a card's last clip ends on its own — not on stop().
+    var onFinish: (() -> Void)?
     private var player: AVQueuePlayer?
     private var observers: [NSObjectProtocol] = []
 
@@ -19,7 +21,10 @@ final class AudioReader {
         let center = NotificationCenter.default
         observers.append(center.addObserver(forName: AVPlayerItem.didPlayToEndTimeNotification, object: last,
                                             queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { self?.stop() }
+            MainActor.assumeIsolated {
+                self?.stop()
+                self?.onFinish?()
+            }
         })
         for item in items {
             observers.append(center.addObserver(forName: AVPlayerItem.failedToPlayToEndTimeNotification, object: item,
