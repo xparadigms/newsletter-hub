@@ -17,6 +17,11 @@ struct StoryView: View {
     @State private var index = 0
     @State private var forward = true
     @State private var dragY: CGFloat = 0
+    /// Decided once per drag: a sideways drag pages, a downward one dismisses.
+    @State private var dragAxis: Axis?
+    /// Whether the card's text is scrolled to its top. Dragging down is also
+    /// how you scroll back up, so the story only follows the finger from there.
+    @State private var atTop = true
     @State private var failed = false
     @State private var audio = AudioReader()
 
@@ -47,7 +52,7 @@ struct StoryView: View {
         .offset(y: max(0, dragY))
         .scaleEffect(1 - min(0.08, max(0, dragY) / 4000))
         .clipShape(RoundedRectangle(cornerRadius: dragY > 0 ? 40 : 0, style: .continuous))
-        .gesture(dismissDrag)
+        .simultaneousGesture(drag)
         .statusBarHidden()
         .task(id: current) { await load() }
         .onChange(of: index) { audio.stop() }
@@ -141,7 +146,7 @@ struct StoryView: View {
         GeometryReader { geo in
             ZStack {
                 if cards.indices.contains(index) {
-                    StoryCardView(card: cards[index], issue: issue, section: section, mode: mode)
+                    StoryCardView(card: cards[index], issue: issue, section: section, mode: mode) { atTop = $0 }
                         .id(index)
                         .transition(.asymmetric(
                             insertion: .offset(x: forward ? 32 : -32).combined(with: .opacity),
@@ -161,34 +166,32 @@ struct StoryView: View {
             .onTapGesture(coordinateSpace: .local) { point in
                 if point.x < geo.size.width * 0.32 { go(-1) } else { go(1) }
             }
-            .simultaneousGesture(swipe)
         }
         .padding(.horizontal, 20)
         .padding(.top, 4)
     }
 
-    private var swipe: some Gesture {
-        DragGesture(minimumDistance: 24)
-            .onEnded { value in
-                let dx = value.translation.width, dy = value.translation.height
-                guard abs(dx) > 48, abs(dx) > abs(dy) else { return }
-                go(dx < 0 ? 1 : -1)
-            }
-    }
-
-    /// Follows the finger down, and puts the story away past a threshold or on
-    /// a flick — the way a full-screen sheet behaves.
-    private var dismissDrag: some Gesture {
-        DragGesture(minimumDistance: 16)
+    /// One gesture for both directions, so neither can swallow the other.
+    /// Sideways pages through the cards; downward follows the finger and puts
+    /// the story away past a threshold or on a flick, the way a full-screen
+    /// sheet behaves.
+    private var drag: some Gesture {
+        DragGesture(minimumDistance: 12)
             .onChanged { value in
-                guard abs(value.translation.height) > abs(value.translation.width) else { return }
-                dragY = value.translation.height
+                let dx = value.translation.width, dy = value.translation.height
+                if dragAxis == nil { dragAxis = abs(dx) > abs(dy) ? .horizontal : .vertical }
+                if dragAxis == .vertical && atTop { dragY = max(0, dy) }
             }
             .onEnded { value in
-                let fling = value.predictedEndTranslation.height
-                if dragY > 140 || (dragY > 40 && fling > 400) {
+                let dx = value.translation.width
+                defer { dragAxis = nil }
+                if dragAxis == .horizontal {
+                    if abs(dx) > 48 || abs(value.predictedEndTranslation.width) > 160 { go(dx < 0 ? 1 : -1) }
+                    return
+                }
+                if dragY > 140 || (dragY > 40 && value.predictedEndTranslation.height > 400) {
                     dismiss()
-                } else {
+                } else if dragY > 0 {
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.86)) { dragY = 0 }
                 }
             }
@@ -203,6 +206,7 @@ struct StoryView: View {
         let next = index + step
         if cards.indices.contains(next) {
             forward = step > 0
+            atTop = true
             withAnimation(.spring(response: 0.42, dampingFraction: 0.9)) { index = next }
             UIImpactFeedbackGenerator(style: .soft).impactOccurred(intensity: 0.5)
             return
@@ -245,6 +249,7 @@ private struct StoryCardView: View {
     let issue: PreparedIssue?
     let section: NewsSection
     let mode: LangMode
+    var onTopChange: (Bool) -> Void = { _ in }
 
     var body: some View {
         switch card {
@@ -305,8 +310,18 @@ private struct StoryCardView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 16)
+                .background(GeometryReader { g in
+                    Color.clear.preference(key: CardTopKey.self, value: g.frame(in: .named("card")).minY)
+                })
             }
+            .coordinateSpace(name: "card")
             .scrollBounceBehavior(.basedOnSize)
+            .onPreferenceChange(CardTopKey.self) { onTopChange($0 >= -1) }
         }
     }
+}
+
+private struct CardTopKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = nextValue() }
 }
