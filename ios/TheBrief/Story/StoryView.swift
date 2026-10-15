@@ -517,32 +517,32 @@ private struct SegmentBar: View {
     }
 }
 
-/// The section's colours, darkened toward the bottom where the text ends.
+/// A dark card, so the text and its readings carry the contrast. The section
+/// shows only as a faint wash of its colour at the top, enough to tell one
+/// newsletter from another as the cube turns.
 private struct SectionBackground: View {
     let section: NewsSection
 
     var body: some View {
-        let (a, b) = section.storyColors
         ZStack {
-            LinearGradient(colors: [a, b], startPoint: .topLeading, endPoint: .bottomTrailing)
-            LinearGradient(colors: [.clear, .black.opacity(0.35)], startPoint: .center, endPoint: .bottom)
+            Color(white: 0.075)
+            LinearGradient(colors: [section.storyTint.opacity(0.22), .clear], startPoint: .top, endPoint: .center)
         }
     }
 }
 
 extension NewsSection {
-    /// Deep enough that white text and its readings stay comfortable to read.
-    var storyColors: (Color, Color) {
+    var storyTint: Color {
         func c(_ r: Double, _ g: Double, _ b: Double) -> Color { Color(red: r, green: g, blue: b) }
         switch key {
-        case .startup: return (c(0.85, 0.33, 0.20), c(0.45, 0.08, 0.30))
-        case .business: return (c(0.20, 0.32, 0.86), c(0.30, 0.10, 0.52))
-        case .fintech: return (c(0.05, 0.52, 0.45), c(0.03, 0.20, 0.32))
-        case .japan: return (c(0.78, 0.16, 0.30), c(0.30, 0.05, 0.20))
-        case .watch: return (c(0.52, 0.42, 0.26), c(0.16, 0.13, 0.09))
-        case .china: return (c(0.78, 0.13, 0.12), c(0.34, 0.03, 0.08))
-        case .mandarin: return (c(0.86, 0.45, 0.10), c(0.50, 0.12, 0.10))
-        case .stocks: return (c(0.08, 0.48, 0.32), c(0.03, 0.14, 0.20))
+        case .startup: return c(0.95, 0.42, 0.24)
+        case .business: return c(0.30, 0.45, 0.98)
+        case .fintech: return c(0.10, 0.75, 0.62)
+        case .japan: return c(0.92, 0.25, 0.40)
+        case .watch: return c(0.80, 0.66, 0.38)
+        case .china: return c(0.92, 0.22, 0.20)
+        case .mandarin: return c(0.98, 0.58, 0.16)
+        case .stocks: return c(0.12, 0.72, 0.46)
         }
     }
 }

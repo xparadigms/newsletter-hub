@@ -3,8 +3,7 @@ import SwiftUI
 // Rendering of an issue's blocks, shared by the article and story mode — the
 // native counterpart of web/components/ArticleBlocks.tsx.
 
-/// Set on story cards: looser rhythm between paragraphs, and pinyin rules in
-/// white so they read on the section's coloured background.
+/// Set on story cards, which want a looser rhythm between paragraphs.
 private struct StoryCardKey: EnvironmentKey {
     static let defaultValue = false
 }
@@ -182,7 +181,7 @@ struct BlockView: View {
             RubyText(segments: words.map { RubySegment(text: $0.text, reading: $0.pinyin) },
                      fontSize: Reading.zh, showReadings: true, underlineWords: true, language: "zh-Hans",
                      color: .label.withAlphaComponent(0.9),
-                     ruleColor: storyCard ? UIColor(white: 1, alpha: 0.4) : UIColor(red: 0.78, green: 0.66, blue: 0.32, alpha: 0.6))
+                     ruleColor: UIColor(red: 0.78, green: 0.66, blue: 0.32, alpha: 0.6))
                 .padding(.top, gap)
         case .divider:
             Divider().padding(.vertical, compact ? 8 : 22)
