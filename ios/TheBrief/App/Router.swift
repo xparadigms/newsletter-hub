@@ -28,6 +28,46 @@ final class Router {
         story = post
     }
 
+    /// Set by the story's own article button, the one deliberate way from a
+    /// story to the full text.
+    private var keepArticleOnClose = false
+
+    /// The fullScreenCover's onDismiss. A story is put away back to the list it
+    /// came from: if it was opened over an article — the article's Story
+    /// button, or a link at its foot in story mode — the article goes too.
+    func storyClosed() {
+        storyQueue = []
+        if !keepArticleOnClose, case .post? = currentPath.last { popCurrent() }
+        keepArticleOnClose = false
+    }
+
+    /// From the story to an issue's full text. An article already under the
+    /// story is replaced rather than stacked on.
+    func openArticle(_ post: Post) {
+        keepArticleOnClose = true
+        if case let .post(top)? = currentPath.last {
+            if top.routeID == post.routeID { return }
+            popCurrent()
+        }
+        push(.post(post))
+    }
+
+    private var currentPath: [Route] {
+        switch tab {
+        case .today: return today
+        case .sections: return sections
+        case .search: return search
+        }
+    }
+
+    private func popCurrent() {
+        switch tab {
+        case .today: today.removeLast()
+        case .sections: sections.removeLast()
+        case .search: search.removeLast()
+        }
+    }
+
     /// Tapping the tab you are already on pops to its root, as on iOS.
     func select(_ next: AppTab) {
         if next == tab {

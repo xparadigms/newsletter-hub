@@ -389,11 +389,13 @@ struct StoryView: View {
         }
     }
 
+    /// The bottom bar's article button — the one way from a story to its full
+    /// text. Swiping down never goes there.
     private func openArticle() {
         guard let deck else { return }
         let target = deck.post
         dismiss()
-        router.push(.post(target))
+        router.openArticle(target)
     }
 
     /// What Listen reads on this card: the source-language sentences, the same
