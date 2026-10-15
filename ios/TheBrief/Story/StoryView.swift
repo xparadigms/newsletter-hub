@@ -34,9 +34,9 @@ struct StoryView: View {
     private var mode: LangMode { LangMode(rawValue: langs) ?? .jaKo }
 
     var body: some View {
-        ZStack {
-            Color(red: 0.043, green: 0.043, blue: 0.047).ignoresSafeArea()
-
+        // Laid out edge to edge and padded by hand, so the dark card — not the
+        // safe area — is what gets rounded and moved while dragging down.
+        GeometryReader { geo in
             VStack(spacing: 0) {
                 progress
                 topBar
@@ -47,11 +47,18 @@ struct StoryView: View {
                     .foregroundStyle(.white.opacity(0.38))
                     .padding(.vertical, 8)
             }
+            .padding(.top, geo.safeAreaInsets.top)
+            .padding(.bottom, geo.safeAreaInsets.bottom)
+            .frame(width: geo.size.width, height: geo.size.height)
+            .background(Color(red: 0.043, green: 0.043, blue: 0.047))
+            .clipShape(RoundedRectangle(cornerRadius: dragY > 0 ? 44 : 0, style: .continuous))
+            .scaleEffect(1 - min(0.08, dragY / 4000))
+            .offset(y: dragY)
         }
+        .ignoresSafeArea()
         .environment(\.colorScheme, .dark)
-        .offset(y: max(0, dragY))
-        .scaleEffect(1 - min(0.08, max(0, dragY) / 4000))
-        .clipShape(RoundedRectangle(cornerRadius: dragY > 0 ? 40 : 0, style: .continuous))
+        // What shows around the card as it is dragged down is the app beneath.
+        .presentationBackground(.clear)
         .simultaneousGesture(drag)
         .statusBarHidden()
         .task(id: current) { await load() }
@@ -236,7 +243,7 @@ struct StoryView: View {
     private func prepare(_ detail: PostDetail) {
         let prepared = PreparedIssue(detail, section: section)
         let built = StoryDeck.build(prepared.annotated, post: detail.post, section: section, minutes: prepared.minutes)
-        if issue?.detail.post.id != detail.post.id { index = 0; forward = true }
+        if issue?.detail.post.id != detail.post.id { index = 0; forward = true; atTop = true }
         issue = prepared
         cards = built
         if index >= cards.count { index = 0 }
