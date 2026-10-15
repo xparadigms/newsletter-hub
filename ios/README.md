@@ -43,20 +43,19 @@ Open `ios/TheBrief.xcodeproj` and run the `TheBrief` scheme. iOS 17 or later.
 
 ## TestFlight
 
-One-time setup:
-
-1. Xcode > Settings > Accounts: sign in with the Apple ID on the developer account.
-2. [App Store Connect](https://appstoreconnect.apple.com/apps) > Apps > + > New App:
-   platform iOS, bundle ID `com.heechangkang.thebrief` (it appears in the list once
-   the first archive has registered it, or register it under Certificates,
-   Identifiers & Profiles), any free name, SKU `thebrief`.
-
-Then, for every build:
+The app record is "The Brief by Heechang" (bundle ID `com.heechangkang.thebrief`,
+team `N7DWY66V6B`). Builds are signed and uploaded with an App Store Connect API
+key, so Xcode needs no signed-in account:
 
 ```sh
-ios/scripts/testflight.sh
+ASC_KEY_PATH=~/Downloads/AuthKey_42Z98QR7J4.p8 ASC_KEY_ID=42Z98QR7J4 \
+ASC_ISSUER_ID=4b0444d7-b87e-4112-8b16-653ff28b5bb9 TEAM_ID=N7DWY66V6B \
+  ios/scripts/testflight.sh
 ```
 
-It archives with automatic signing, stamps a build number from the time, and
-uploads. The build shows under TestFlight after Apple processes it, and
-internal testers (you) can install it from the TestFlight app.
+It archives unsigned, signs for App Store distribution at export (an archive
+signed for development would need a registered iPhone), stamps a build number
+from the time, and uploads. The TestFlight group "Internal" has access to every
+build, so each upload reaches its testers once Apple finishes processing it —
+usually a few minutes. Internal testers must be users on the App Store Connect
+team; anyone else needs an external group and Beta App Review.
