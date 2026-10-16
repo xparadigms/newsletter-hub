@@ -61,3 +61,11 @@ their own once the lists refresh.
 - `Summary` (rich text, where present) → list/deck summary
 - Page blocks → paragraphs, headings, lists, quotes, code, images, dividers,
   callouts, and toggles (children fetched one level deep)
+
+## Deploying
+
+The Vercel project `heechang-newsletter` is connected to this repository with
+`web` as its root directory: every push to `main` deploys to production, and
+every other branch gets a preview URL. Deploying with the CLI from `web/` no
+longer works as it used to — the root directory is now resolved against the
+upload — so let Git do it.
