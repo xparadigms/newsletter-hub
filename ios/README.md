@@ -7,8 +7,13 @@ and read-aloud are all drawn natively.
 ## How it gets content
 
 The app reads the same Supabase `newsletter` table the website reads, with the
-same publishable key (`TheBrief/Data/SupabaseClient.swift`). That key is meant
-to ship in clients: row-level security limits it to reading published issues.
+same publishable key. Row-level security limits that key to reading published
+issues, but the issues sit behind the site's password and this repository is
+public, so the key is not in the source: it is passed in at build time as the
+`SUPABASE_PUBLISHABLE_KEY` build setting — a GitHub secret in CI, an argument to
+`xcodebuild` or `ios/scripts/testflight.sh` locally — and read back from
+Info.plist (`TheBrief/Data/SupabaseClient.swift`). To run from Xcode, add it
+under the target's Build Settings (User-Defined) without committing it.
 Reading needs no password. Generate and "Write about a company" do: they go
 through the site's `/api/generate`, so the app asks for the site password once,
 keeps it in the Keychain, and signs in with it whenever the site's cookie is
@@ -50,8 +55,8 @@ team `N7DWY66V6B`), uploaded with an App Store Connect API key.
 
 **From GitHub, no Mac needed.** `.github/workflows/ios.yml` builds the app on
 GitHub's Macs on every push that touches `ios/`, and on `main` it also uploads
-the build to TestFlight. It needs one repository secret, `ASC_KEY_P8`: the
-contents of `AuthKey_42Z98QR7J4.p8`. To ship by hand, run the workflow from the
+the build to TestFlight. It needs two repository secrets: `SUPABASE_PUBLISHABLE_KEY`
+and `ASC_KEY_P8`, the contents of `AuthKey_42Z98QR7J4.p8`. To ship by hand, run the workflow from the
 Actions tab.
 
 **From a Mac:**

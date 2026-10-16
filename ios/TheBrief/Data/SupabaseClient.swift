@@ -2,13 +2,16 @@ import Foundation
 
 /// Read-only access to the `newsletter` table, the same rows the website reads.
 ///
-/// The key is Supabase's publishable key: it is meant to ship inside clients,
-/// and row-level security limits it to reading published issues.
+/// The key is Supabase's publishable key, which row-level security limits to
+/// reading published issues. It is not in the source: the repository is
+/// public and the issues sit behind the site's password, so the key is filled
+/// in at build time from the SUPABASE_PUBLISHABLE_KEY build setting (a GitHub
+/// secret in CI) and read back here from Info.plist.
 struct SupabaseClient: Sendable {
     static let shared = SupabaseClient()
 
     private let base = URL(string: "https://tgepceqzussfzlpshakp.supabase.co/rest/v1/newsletter")!
-    private let key = "sb_publishable_-gXSYgHIcPMUzWesdfDnGA_Acv0qiLw"
+    private let key = (Bundle.main.object(forInfoDictionaryKey: "SupabasePublishableKey") as? String) ?? ""
 
     /// Everything a list needs. Never `blocks`: that is ~40KB a row.
     private static let listColumns = "slug,section,title,series,issue_date,summary"
