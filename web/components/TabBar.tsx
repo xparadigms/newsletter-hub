@@ -3,67 +3,56 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { NAV_SECTIONS } from "@/lib/config";
-import type { SectionKey } from "@/lib/types";
 
-// Simple, legible glyphs in the SF Symbols spirit: outline when inactive, the
-// same shape filled when active.
-//
-// A record rather than a chain of `name === "…" &&` tests: with the chain, a
-// section whose key had no branch rendered an empty 22×22 svg — a blank icon
-// above a correct label, with no type error and no runtime error. Here a
-// missing key fails the build.
-const GLYPHS: Record<SectionKey | "home", React.ReactNode> = {
+// The app's four tabs, as in the iOS app. The sections themselves live one
+// level down, under Sections — eight of them never fitted a phone-width bar.
+const ICONS: Record<string, React.ReactNode> = {
   home: <path d="M3.5 10.5 12 4l8.5 6.5V20a1 1 0 0 1-1 1H4.5a1 1 0 0 1-1-1z" />,
-  startup: <path d="M12 3c3 2.2 4.6 5.2 4.6 8.6L18 14v3l-3-1.2h-6L6 17v-3l1.4-2.4C7.4 8.2 9 5.2 12 3Z" />,
-  fintech: <path d="M4 19V9m5 10V5m5 14v-7m5 7V8" />,
-  japan: <path d="M12 21c4-3.4 7-6.9 7-10.5A7 7 0 1 0 5 10.5C5 14.1 8 17.6 12 21Z" />,
-  watch: (
+  sections: (
     <>
-      <circle cx="12" cy="12" r="6" />
-      <path d="M12 9.5V12l1.7 1.2" fill="none" />
+      <rect x="4" y="4" width="7" height="7" rx="1.5" />
+      <rect x="13" y="4" width="7" height="7" rx="1.5" />
+      <rect x="4" y="13" width="7" height="7" rx="1.5" />
+      <rect x="13" y="13" width="7" height="7" rx="1.5" />
     </>
   ),
-  // A gate: reads at 22px both as an outline and filled.
-  china: <path d="M4 20.5h16M6 20.5v-8h12v8M4 12.5l8-5 8 5M9.75 20.5v-4.5h4.5v4.5" />,
-  // An open book: this one is a lesson, not a news desk.
-  mandarin: <path d="M12 6.5v13M12 6.5C10.5 5 8 4.5 4 4.8v12.6c4-.3 6.5.2 8 1.6M12 6.5c1.5-1.5 4-2 8-1.7v12.6c-4-.3-6.5.2-8 1.6" />,
-  // A lamp: this section carries ideas rather than a day's events.
-  business: <path d="M9.5 18.5h5M10 21h4M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3Z" />,
-  // Three candlesticks: three companies a day.
-  stocks: (
+  search: (
     <>
-      <path d="M6 4v3M6 17v3M12 7v3M12 18v2.5M18 3.5V6M18 15v3" fill="none" />
-      <rect x="4" y="7" width="4" height="10" rx="1" />
-      <rect x="10" y="10" width="4" height="8" rx="1" />
-      <rect x="16" y="6" width="4" height="9" rx="1" />
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m20 20-4.2-4.2" fill="none" />
+    </>
+  ),
+  profile: (
+    <>
+      <circle cx="12" cy="8.5" r="3.8" />
+      <path d="M4.5 20c.9-3.6 3.9-5.6 7.5-5.6s6.6 2 7.5 5.6" />
     </>
   ),
 };
 
-function Glyph({ name, active }: { name: SectionKey | "home"; active: boolean }) {
-  const stroke = {
-    fill: active ? "currentColor" : "none",
-    stroke: "currentColor",
-    strokeWidth: 1.7,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-  };
+function TabIcon({ name, active }: { name: string; active: boolean }) {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden {...stroke}>
-      {GLYPHS[name]}
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      aria-hidden
+      fill={active && name !== "search" ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth={active ? 2.1 : 1.7}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      {ICONS[name]}
     </svg>
   );
 }
 
-const TABS: { key: string; href: string; label: string; glyph: SectionKey | "home" }[] = [
-  { key: "home", href: "/", label: "Today", glyph: "home" },
-  ...NAV_SECTIONS.map((s) => ({
-    key: s.key,
-    href: `/section/${s.key}`,
-    label: s.label,
-    glyph: s.key,
-  })),
+const TABS = [
+  { key: "home", href: "/", label: "Home" },
+  { key: "sections", href: "/sections", label: "Sections" },
+  { key: "search", href: "/search", label: "Search" },
+  { key: "profile", href: "/profile", label: "Profile" },
 ];
 
 // Scrolling down past this tucks the bar away; any upward scroll brings it
@@ -104,18 +93,19 @@ export default function TabBar() {
     setMinimized(false);
   }, [pathname]);
 
-  const isActive = (href: string) => {
-    if (href === "/") return pathname === "/";
-    // Keep the owning tab lit while reading one of its articles.
-    const key = href.split("/").pop()!;
-    return pathname === href || pathname.startsWith(`/post/${key}/`);
+  const isActive = (key: string) => {
+    if (key === "home") return pathname === "/";
+    // Sections owns everything below it: a section's list and its issues.
+    if (key === "sections")
+      return pathname === "/sections" || pathname.startsWith("/section/") || pathname.startsWith("/post/");
+    return pathname === `/${key}`;
   };
 
   return (
     <nav className="tabbar" aria-label="Sections" data-minimized={minimized}>
       <ul className="tabbar__list">
         {TABS.map((tab) => {
-          const active = isActive(tab.href);
+          const active = isActive(tab.key);
           return (
             <li key={tab.key}>
               <Link
@@ -132,7 +122,7 @@ export default function TabBar() {
                 data-active={active}
                 aria-current={active ? "page" : undefined}
               >
-                <Glyph name={tab.glyph} active={active} />
+                <TabIcon name={tab.key} active={active} />
                 <span className="tabbar__label">{tab.label}</span>
               </Link>
             </li>

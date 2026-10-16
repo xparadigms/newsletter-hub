@@ -3,7 +3,6 @@
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, ViewTransition } from "react";
 import { PAGE_ENTER, PAGE_EXIT } from "@/components/PageTransition";
-import Search from "@/components/Search";
 import StoryModeToggle from "@/components/StoryModeToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 import { getSection, SITE } from "@/lib/config";
@@ -24,6 +23,9 @@ function titleFor(pathname: string): { title: string; back: string | null } {
     const key = pathname.split("/")[2] ?? "";
     return { title: getSection(key)?.title ?? SITE.name, back: null };
   }
+  if (pathname === "/sections") return { title: "Sections", back: null };
+  if (pathname === "/search") return { title: "Search", back: null };
+  if (pathname === "/profile") return { title: "Profile", back: null };
   if (pathname === "/offline") return { title: "Offline", back: "Back" };
   return { title: SITE.name, back: null };
 }
@@ -132,7 +134,6 @@ export default function NavBar() {
           {isArticle ? articleTitle : title}
         </span>
         <div className="navbar__side navbar__side--end">
-          <Search />
           <StoryModeToggle />
           <ThemeToggle />
         </div>
@@ -154,7 +155,8 @@ export function LargeTitle() {
   const { title } = titleFor(pathname);
   return (
     <ViewTransition key={pathname} enter={PAGE_ENTER} exit={PAGE_EXIT} default="none">
-      <div className="largetitle">
+      {/* Home's title is the masthead, set like Instagram's wordmark. */}
+      <div className="largetitle" data-home={pathname === "/" ? "" : undefined}>
         <h1 className="largetitle__text">{title}</h1>
       </div>
     </ViewTransition>

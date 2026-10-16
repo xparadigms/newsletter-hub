@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { clearStoryQueue } from "@/components/home/stories";
 
 // Story mode is a reading preference, not a route: with it on, opening any
 // issue anywhere in the app lands in the full-screen story instead of the
@@ -23,6 +24,7 @@ export default function StoryModeToggle() {
       const href = link?.getAttribute("href");
       if (!href?.startsWith("/post/")) return;
       e.preventDefault();
+      clearStoryQueue();
       router.push(href.replace("/post/", "/story/"), {
         transitionTypes: ["nav-present"],
       });

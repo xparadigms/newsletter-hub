@@ -8,6 +8,7 @@ import TabBar from "@/components/TabBar";
 import { NAV_SECTIONS, SITE } from "@/lib/config";
 import { dataConnected } from "@/lib/posts";
 import "./globals.css";
+import "./instagram.css";
 
 const archivo = Archivo({
   subsets: ["latin"],

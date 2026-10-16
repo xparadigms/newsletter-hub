@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { headingContent, renderAnnotated } from "@/components/ArticleBlocks";
@@ -7,6 +8,13 @@ import { blockAudio } from "@/lib/text";
 import type { SectionKey } from "@/lib/types";
 import FuriganaToggle from "@/components/FuriganaToggle";
 import LangToggle from "@/components/LangToggle";
+import MarkRead from "@/components/home/MarkRead";
+import SaveButton from "@/components/home/SaveButton";
+import SectionAvatar from "@/components/home/SectionAvatar";
+import { queueNeighbour, storyReturn } from "@/components/home/stories";
+import { SITE } from "@/lib/config";
+import { formatShortDate } from "@/lib/feed";
+import type { ShelfPost } from "@/lib/library";
 import type { StoryCard } from "@/lib/story";
 
 export interface StoryNav {
@@ -101,13 +109,17 @@ export default function StoryViewer({
   title,
   sectionKey,
   sourceLang,
+  post,
 }: {
   cards: StoryCard[];
   nav: StoryNav;
+  /** The section's name, shown beside its avatar. */
   title: string;
   sectionKey: SectionKey;
   sourceLang: "ja" | "zh";
+  post: ShelfPost;
 }) {
+  const here = `/story/${post.section}/${post.id}`;
   const router = useRouter();
   const [index, setIndex] = useState(0);
   // Which way the last move went, so the incoming card arrives from that side.
@@ -189,30 +201,42 @@ export default function StoryViewer({
     startTrack(queue.current[next]);
   }, [startTrack, stopAudio]);
 
-  // Closing sends the story back down over the page it rose from.
+  // Closing sends the story back down to the page it was opened from — Home,
+  // a section, the profile — and never onto an issue's full text.
   const close = useCallback(() => {
-    router.push(nav.closeHref, { transitionTypes: ["nav-dismiss"] });
+    router.push(storyReturn() ?? nav.closeHref, { transitionTypes: ["nav-dismiss"] });
   }, [router, nav.closeHref]);
+
+  // Past either end of the deck: opened from the tray, on to the next or back
+  // to the previous section, as Instagram moves between accounts; otherwise
+  // the neighbouring issue of this section. Past the newest, close.
+  const turn = useCallback(
+    (step: 1 | -1) => {
+      const queued = queueNeighbour(here, step);
+      const target = queued !== undefined ? queued : step > 0 ? nav.nextHref : nav.prevHref;
+      if (target) router.replace(target);
+      else if (step > 0) close();
+    },
+    [here, nav.nextHref, nav.prevHref, router, close]
+  );
 
   const goNext = useCallback(() => {
     setDir("next");
     setIndex((i) => {
       if (i < count - 1) return i + 1;
-      // Past the last card, roll on to the next issue like a story feed.
-      if (nav.nextHref) router.push(nav.nextHref);
-      else close();
+      turn(1);
       return i;
     });
-  }, [count, router, nav.nextHref, close]);
+  }, [count, turn]);
 
   const goPrev = useCallback(() => {
     setDir("prev");
     setIndex((i) => {
       if (i > 0) return i - 1;
-      if (nav.prevHref) router.push(nav.prevHref);
+      turn(-1);
       return i;
     });
-  }, [router, nav.prevHref]);
+  }, [turn]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -306,86 +330,103 @@ export default function StoryViewer({
     else goPrev();
   };
 
+  const share = async () => {
+    const url = `${SITE.url}/post/${post.section}/${post.id}`;
+    try {
+      if (navigator.share) await navigator.share({ title: post.title, url });
+      else await navigator.clipboard.writeText(url);
+    } catch {}
+  };
+
   return (
     <div
       className="story-root"
+      data-section={sectionKey}
       onPointerDown={onPointerDown}
       onPointerUp={onPointerUp}
     >
-      <div className="story-progress" aria-hidden>
-        {cards.map((_, i) => (
-          <span key={i} className="story-progress__seg" data-state={i < index ? "done" : i === index ? "active" : "todo"} />
-        ))}
+      <MarkRead post={post} />
+
+      {/* The card, as an Instagram story: a rounded dark frame holding the
+          segment bars, the header and the content. */}
+      <div className="story-frame">
+        <div className="story-chrome">
+          <div className="story-progress" aria-hidden>
+            {cards.map((_, i) => (
+              <span key={i} className="story-progress__seg" data-state={i <= index ? "done" : "todo"} />
+            ))}
+          </div>
+
+          <div className="story-topbar">
+            <SectionAvatar section={sectionKey} size={32} />
+            <span className="story-who">
+              <span className="story-who__line">
+                <span className="story-who__name">{title}</span>
+                <span className="story-who__date">{formatShortDate(post.date)}</span>
+              </span>
+              <span className="story-who__title">{post.title}</span>
+            </span>
+            <button type="button" className="story-topbar__close" onClick={close} aria-label="Close story">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                <path d="M18 6 6 18M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          <div className="story-langs">
+            <LangToggle source={sourceLang === "zh" ? "中文" : "日本語"} />
+          </div>
+        </div>
+
+        <div className="story-stage">
+          <div className="story-slide" key={index} data-dir={dir}>
+            <Card card={cards[index]} sectionKey={sectionKey} sourceLang={sourceLang} />
+          </div>
+
+          {/* Inside the stage, not the root: as siblings of the fixed root these
+              spanned the whole viewport and covered the top bar, so tapping the
+              language toggle advanced the card instead of switching language.
+              Scoping them here makes that structurally impossible rather than a
+              z-index race. The card body still sits above them at z-index 2. */}
+          <button type="button" data-zone className="story-zone story-zone--prev" onClick={zone("prev")} aria-label="Previous card" />
+          <button type="button" data-zone className="story-zone story-zone--next" onClick={zone("next")} aria-label="Next card" />
+        </div>
       </div>
 
-      <div className="story-topbar">
-        <span className="story-topbar__title">{title}</span>
-        <LangToggle source={sourceLang === "zh" ? "中文" : "日本語"} />
-        <button
-          type="button"
-          className="story-topbar__close"
-          onClick={close}
-          aria-label="Close story"
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
-            <path d="M18 6 6 18M6 6l12 12" />
+      {/* Instagram's reply row, holding the reading controls. Literal
+          <button>s and links with no data-zone, so the pointerup escape hatch
+          bails on them and the swipe layer is neutralised over the bar for
+          free. Listen is driven by the card on screen: the queue is rebuilt
+          from `index` on every render, so it always reads what is visible. */}
+      <div className="story-bar">
+        {hasRuby && <FuriganaToggle />}
+        {cardAudio.length > 0 && (
+          <button
+            type="button"
+            className="story-audio"
+            aria-pressed={playing}
+            aria-label={playing ? "Stop reading" : "Read this card aloud"}
+            onClick={() => (playing ? stopAudio() : playCard(cardAudio))}
+          >
+            <SpeakerIcon playing={playing} />
+            <span>{playing ? "Stop" : "Listen"}</span>
+          </button>
+        )}
+        <span className="story-bar__spacer" />
+        <Link href={`/post/${post.section}/${post.id}`} className="icon-button" aria-label="Open the article">
+          <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.8"
+               strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 3h8l4 4v14H6z" /><path d="M14 3v4h4M9 12h6M9 16h6" />
+          </svg>
+        </Link>
+        <SaveButton post={post} />
+        <button type="button" className="icon-button" onClick={share} aria-label="Share">
+          <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
+            <path d="M21 3 3 10.5l7.2 2.6L21 3Zm0 0-7.6 18-3.2-7.9" />
           </svg>
         </button>
       </div>
 
-      <div className="story-stage">
-        <div className="story-slide" key={index} data-dir={dir}>
-          <Card
-            card={cards[index]}
-            sectionKey={sectionKey}
-            sourceLang={sourceLang}
-          />
-        </div>
-
-        {/* Inside the stage, not the root: as siblings of the fixed root these
-            spanned the whole viewport and covered the top bar, so tapping the
-            language toggle advanced the card instead of switching language.
-            Scoping them here makes that structurally impossible rather than a
-            z-index race. The card body still sits above them at z-index 2. */}
-        <button type="button" data-zone className="story-zone story-zone--prev" onClick={zone("prev")} aria-label="Previous card" />
-        <button type="button" data-zone className="story-zone story-zone--next" onClick={zone("next")} aria-label="Next card" />
-      </div>
-
-      {/* Both reading controls, under the card rather than in it. They are
-          literal <button>s with no data-zone, so the pointerup escape hatch
-          bails on them and the swipe layer is neutralised over the bar for
-          free. Listen is driven by the card on screen: the queue is rebuilt
-          from `index` on every render, so it always reads what is visible. */}
-      {(hasRuby || cardAudio.length > 0) && (
-        <div className="story-controls">
-          {hasRuby && <FuriganaToggle />}
-          {cardAudio.length > 0 && (
-            <button
-              type="button"
-              className="story-audio"
-              aria-pressed={playing}
-              aria-label={playing ? "Stop reading" : "Read this card aloud"}
-              onClick={() => (playing ? stopAudio() : playCard(cardAudio))}
-            >
-              <SpeakerIcon playing={playing} />
-              <span className="label">{playing ? "Stop" : "Listen"}</span>
-            </button>
-          )}
-        </div>
-      )}
-
-      <audio
-        ref={audioRef}
-        preload="none"
-        onEnded={advanceTrack}
-        onError={advanceTrack}
-      />
-
-      <div className="story-foot">
-        <span className="story-counter label">
-          {index + 1} / {count}
-        </span>
-      </div>
+      <audio ref={audioRef} preload="none" onEnded={advanceTrack} onError={advanceTrack} />
     </div>
   );
 }
