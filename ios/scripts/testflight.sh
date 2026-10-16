@@ -34,6 +34,13 @@ if [ -z "$TEAM_ID" ]; then
   exit 1
 fi
 
+# The database's read key is not in the source (the repository is public);
+# it goes into the build here. See TheBrief/Data/SupabaseClient.swift.
+if [ -z "${SUPABASE_PUBLISHABLE_KEY:-}" ]; then
+  echo "Set SUPABASE_PUBLISHABLE_KEY (Supabase > Project Settings > API Keys)." >&2
+  exit 1
+fi
+
 # Every upload needs a build number higher than the last; the time is one.
 BUILD=${BUILD:-$(date -u +%Y%m%d%H%M)}
 ARCHIVE=build/TheBrief.xcarchive
@@ -47,7 +54,7 @@ xcodebuild -project TheBrief.xcodeproj -scheme TheBrief -configuration Release \
   -destination 'generic/platform=iOS' -archivePath "$ARCHIVE" \
   -allowProvisioningUpdates $AUTH \
   DEVELOPMENT_TEAM="$TEAM_ID" CURRENT_PROJECT_VERSION="$BUILD" \
-  CODE_SIGNING_ALLOWED=NO \
+  CODE_SIGNING_ALLOWED=NO SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
   archive > build/archive.log 2>&1 || {
     grep -E "error:|warning: .*signing" build/archive.log | head -20 >&2
     echo "Archive failed; full log in ios/build/archive.log" >&2

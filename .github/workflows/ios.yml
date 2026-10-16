@@ -5,8 +5,9 @@ name: iOS app
 # Store Connect key in the repo's secrets, the build also goes to TestFlight —
 # no Mac needed. Run it by hand from the Actions tab to upload on demand.
 #
-# One secret: ASC_KEY_P8, the contents of the App Store Connect API key file
-# (AuthKey_42Z98QR7J4.p8). The key's ID, its issuer and the team are not
+# Two secrets: SUPABASE_PUBLISHABLE_KEY, the database's read key, which is kept
+# out of the public source; and ASC_KEY_P8, the contents of the App Store
+# Connect API key file (AuthKey_42Z98QR7J4.p8). The key's ID, its issuer and the team are not
 # secrets — they identify the key, they cannot sign with it — so they sit below.
 
 on:
@@ -36,19 +37,22 @@ jobs:
 
       - name: Build
         working-directory: ios
+        env:
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
         run: |
           set -o pipefail
           mkdir -p build
           python3 generate_project.py
           xcodebuild -project TheBrief.xcodeproj -scheme TheBrief -configuration Release \
             -destination 'generic/platform=iOS' -derivedDataPath build/dd \
-            CODE_SIGNING_ALLOWED=NO build 2>&1 | tee build/build.log | grep -E "error:|warning: .*deprecated|BUILD" || true
+            CODE_SIGNING_ALLOWED=NO SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" build 2>&1 | tee build/build.log | grep -E "error:|warning: .*deprecated|BUILD" || true
           grep -q "BUILD SUCCEEDED" build/build.log
 
       - name: Upload to TestFlight
         if: env.HAS_KEY == 'true' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
         env:
           ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
           ASC_KEY_ID: 42Z98QR7J4
           ASC_ISSUER_ID: 4b0444d7-b87e-4112-8b16-653ff28b5bb9
           TEAM_ID: N7DWY66V6B
