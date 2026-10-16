@@ -68,7 +68,8 @@ export default async function StoryPage({
       cards={deck}
       sectionKey={section.key}
       sourceLang={section.sourceLang ?? "ja"}
-      title={section.label}
+      title={section.title}
+      post={{ id: post.id, section: post.section, title: post.title, date: post.date, series: post.series }}
       nav={{
         // "next" in a story feed means the next issue chronologically, which is
         // the newer neighbour.

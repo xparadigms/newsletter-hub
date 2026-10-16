@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { renderAnnotated } from "@/components/ArticleBlocks";
 import FuriganaToggle from "@/components/FuriganaToggle";
 import LangToggle from "@/components/LangToggle";
+import MarkRead from "@/components/home/MarkRead";
+import SaveButton from "@/components/home/SaveButton";
 import PageTransition from "@/components/PageTransition";
 import TableOfContents from "@/components/TableOfContents";
 import { getSection, SECTIONS, SITE } from "@/lib/config";
@@ -112,6 +114,7 @@ export default async function PostPage({
   const toc = buildToc(annotated);
   const { prev, next } = findAdjacent(sectionPosts, post.id);
   const date = formatDate(post.date);
+  const shelf = { id: post.id, section: post.section, title: post.title, date: post.date, series: post.series };
 
   return (
     <PageTransition>
@@ -127,7 +130,11 @@ export default async function PostPage({
               </span>
               {(hasJa || hasKo || hasZh) && <LangToggle source={section.sourceLang === "zh" ? "中文" : "日本語"} />}
             </div>
-            <h1>{post.title}</h1>
+            <div className="article__title-row">
+              <h1>{post.title}</h1>
+              <SaveButton post={shelf} />
+            </div>
+            <MarkRead post={shelf} />
             {/* data-multi gates the default "hide English" rule so English-only
                 issues never render blank. */}
             <div
