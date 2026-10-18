@@ -70,6 +70,46 @@ final class Store {
         }.prefix(limit))
     }
 
+    /// Rolled once per launch (and again when the app comes back from the
+    /// background), so Home's order changes every time it is opened but holds
+    /// still while you scroll.
+    private(set) var shuffleSeed = UInt64.random(in: 1...UInt64.max)
+
+    func reshuffle() { shuffleSeed = UInt64.random(in: 1...UInt64.max) }
+
+    /// Home's feed: newest day first, as before, but within a day the sections
+    /// come in a fresh random order each launch — Startup no longer always
+    /// leads — and take turns, one issue each, so a section that published
+    /// eight articles does not fill the screen. A section's own issues keep
+    /// their order, so part 1 still comes before part 2.
+    func feed(_ limit: Int) -> [Post] {
+        var rng = SeededGenerator(seed: shuffleSeed)
+        var out: [Post] = []
+        var byDate: [String: [SectionKey: [Post]]] = [:]
+        for key in Sections.feedOrder {
+            for post in posts[key] ?? [] {
+                byDate[post.date ?? "", default: [:]][key, default: []].append(post)
+            }
+        }
+        for date in byDate.keys.sorted(by: >) {
+            var buckets = byDate[date]!
+            let order = buckets.keys.sorted { $0.rawValue < $1.rawValue }.shuffled(using: &rng)
+            while out.count < limit, buckets.values.contains(where: { !$0.isEmpty }) {
+                for key in order where !(buckets[key]?.isEmpty ?? true) {
+                    out.append(buckets[key]!.removeFirst())
+                }
+            }
+            if out.count >= limit { break }
+        }
+        return Array(out.prefix(limit))
+    }
+
+    /// The same launch's random order, for anything else that wants it.
+    func shuffled<T>(_ items: [T], salt: UInt64) -> [T] {
+        var rng = SeededGenerator(seed: shuffleSeed ^ salt)
+        return items.shuffled(using: &rng)
+    }
+
     /// Lists are sorted newest first, so "next" is the newer neighbour.
     func adjacent(to post: Post) -> (prev: Post?, next: Post?) {
         let list = posts(in: post.section)
@@ -127,5 +167,20 @@ final class Store {
             if let cached = cachedDetail(post) { return cached }
             throw error
         }
+    }
+}
+
+/// SplitMix64: a tiny deterministic generator, so one seed always gives the
+/// same order — the feed does not reshuffle every time SwiftUI redraws it.
+struct SeededGenerator: RandomNumberGenerator {
+    private var state: UInt64
+    init(seed: UInt64) { state = seed }
+
+    mutating func next() -> UInt64 {
+        state &+= 0x9E37_79B9_7F4A_7C15
+        var z = state
+        z = (z ^ (z >> 30)) &* 0xBF58_476D_1CE4_E5B9
+        z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
+        return z ^ (z >> 31)
     }
 }

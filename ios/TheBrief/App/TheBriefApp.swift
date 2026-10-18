@@ -28,6 +28,8 @@ struct TheBriefApp: App {
 struct RootView: View {
     @Environment(Store.self) private var store
     @Environment(Router.self) private var router
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var wasInBackground = false
 
     var body: some View {
         @Bindable var router = router
@@ -57,6 +59,14 @@ struct RootView: View {
             .tag(AppTab.profile)
         }
         .onOpenURL { router.open($0, store: store) }
+        // Coming back to the app counts as opening it again: a new order.
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .background { wasInBackground = true }
+            if phase == .active, wasInBackground {
+                wasInBackground = false
+                store.reshuffle()
+            }
+        }
         .fullScreenCover(item: $router.story, onDismiss: { router.storyClosed() }) { post in
             StoryView(post: post)
         }

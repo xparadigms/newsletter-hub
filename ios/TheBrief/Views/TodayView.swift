@@ -9,7 +9,7 @@ struct TodayView: View {
     @Environment(Router.self) private var router
 
     var body: some View {
-        let feed = store.latest(40)
+        let feed = store.feed(40)
         ScrollView {
             LazyVStack(spacing: 0) {
                 StoryTray()
@@ -85,7 +85,9 @@ private struct StoryTray: View {
         let entries: [(NewsSection, Post)] = Sections.nav.compactMap { s in
             store.posts(in: s.key).first.map { (s, $0) }
         }
-        let ordered = entries.filter { store.hasUnseen($0.0.key) } + entries.filter { !store.hasUnseen($0.0.key) }
+        // Shuffled each launch too, with unread sections still in front.
+        let mixed = store.shuffled(entries, salt: 0x7472_6179)
+        let ordered = mixed.filter { store.hasUnseen($0.0.key) } + mixed.filter { !store.hasUnseen($0.0.key) }
         ScrollView(.horizontal) {
             HStack(alignment: .top, spacing: 14) {
                 ForEach(ordered, id: \.1.routeID) { entry in
