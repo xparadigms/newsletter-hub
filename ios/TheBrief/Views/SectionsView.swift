@@ -213,37 +213,152 @@ struct SectionView: View {
     }
 }
 
+/// The Search tab, as Instagram's Explore: with nothing typed, a grid of
+/// issues drawn at random from the whole archive — a fresh draw each time the
+/// tab is opened, things you have not read first. Typing searches every title.
 @MainActor
 struct SearchView: View {
     @Environment(Store.self) private var store
+    @Environment(Router.self) private var router
     @State private var query = ""
 
     var body: some View {
         let q = query.trimmingCharacters(in: .whitespaces).lowercased()
-        let results: [Post] = q.isEmpty ? [] : Array(store.latest(Int.max).filter { post in
-            post.title.lowercased().contains(q)
-                || (post.series ?? "").lowercased().contains(q)
-                || Sections.get(post.section).label.lowercased().contains(q)
-        }.prefix(50))
-
-        List {
+        Group {
             if q.isEmpty {
-                Section("Sections") {
-                    ForEach(Sections.nav) { section in
-                        NavigationLink(value: Route.section(section.key)) {
-                            Label(section.title, systemImage: section.symbol)
-                        }
+                GeometryReader { geo in
+                    ScrollView {
+                        ExploreGrid(posts: store.explore(90), width: geo.size.width)
+                            .padding(.bottom, 90)
+                    }
+                    .refreshable {
+                        store.rerollExplore()
+                        await store.refresh()
                     }
                 }
-            } else if results.isEmpty {
-                ContentUnavailableView.search(text: query)
             } else {
-                ForEach(results) { PostRow(post: $0, showSection: true) }
+                let results = Array(store.latest(Int.max).filter { post in
+                    post.title.lowercased().contains(q)
+                        || (post.series ?? "").lowercased().contains(q)
+                        || Sections.get(post.section).label.lowercased().contains(q)
+                }.prefix(50))
+                List {
+                    if results.isEmpty {
+                        ContentUnavailableView.search(text: query)
+                    } else {
+                        ForEach(results) { PostRow(post: $0, showSection: true) }
+                    }
+                }
+                .listStyle(.plain)
             }
         }
-        .listStyle(.insetGrouped)
-        .navigationTitle("Search")
+        .navigationTitle("Explore")
+        .navigationBarTitleDisplayMode(.inline)
         .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always),
                     prompt: "Search every issue")
+        // A new draw whenever the tab is opened — not when coming back from an
+        // issue opened here, which would lose your place.
+        .onChange(of: router.tab) { _, tab in
+            if tab == .search { store.rerollExplore() }
+        }
+    }
+}
+
+/// Instagram's Explore layout: blocks of five — one tall tile beside four
+/// squares — with the tall one switching sides from block to block.
+@MainActor
+struct ExploreGrid: View {
+    let posts: [Post]
+    let width: CGFloat
+    private let gap: CGFloat = 2
+
+    var body: some View {
+        let unit = (width - gap * 2) / 3
+        let blocks = stride(from: 0, to: posts.count, by: 5).map { Array(posts[$0..<min($0 + 5, posts.count)]) }
+        LazyVStack(spacing: gap) {
+            ForEach(Array(blocks.enumerated()), id: \.offset) { i, block in
+                if block.count == 5 {
+                    let tall = ExploreTile(post: block[0], tall: true).frame(width: unit, height: unit * 2 + gap)
+                    let squares = VStack(spacing: gap) {
+                        HStack(spacing: gap) {
+                            ExploreTile(post: block[1]).frame(width: unit, height: unit)
+                            ExploreTile(post: block[2]).frame(width: unit, height: unit)
+                        }
+                        HStack(spacing: gap) {
+                            ExploreTile(post: block[3]).frame(width: unit, height: unit)
+                            ExploreTile(post: block[4]).frame(width: unit, height: unit)
+                        }
+                    }
+                    HStack(spacing: gap) {
+                        if i.isMultiple(of: 2) { squares; tall } else { tall; squares }
+                    }
+                } else {
+                    HStack(spacing: gap) {
+                        ForEach(block) { ExploreTile(post: $0).frame(width: unit, height: unit) }
+                        Spacer(minLength: 0)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@MainActor
+struct ExploreTile: View {
+    let post: Post
+    var tall = false
+    @Environment(Store.self) private var store
+    @Environment(Router.self) private var router
+    @AppStorage(SettingsKey.storyMode) private var storyMode = false
+
+    var body: some View {
+        let section = Sections.get(post.section)
+        Button {
+            if storyMode { router.playStories(from: post, queue: []) } else { router.push(.post(post)) }
+        } label: {
+            ZStack(alignment: .topLeading) {
+                SectionBackground(section: section)
+                VStack(alignment: .leading, spacing: tall ? 10 : 5) {
+                    Spacer(minLength: 0)
+                    Text(post.title)
+                        .font(.system(size: tall ? 17 : 12.5, weight: .bold))
+                        .foregroundStyle(.white)
+                        .lineLimit(tall ? 7 : 5)
+                        .multilineTextAlignment(.leading)
+                    if tall, let summary = post.summary, !summary.isEmpty {
+                        Text(summary)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.white.opacity(0.75))
+                            .lineLimit(6)
+                    }
+                    // Where Instagram shows views: whose it is, and when.
+                    HStack(spacing: 4) {
+                        Image(systemName: section.symbol)
+                        Text("\(section.label) · \(Format.shortDate(post.date))")
+                    }
+                    .font(.system(size: 10.5, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .lineLimit(1)
+                }
+                .padding(tall ? 12 : 9)
+                if !store.seen.contains(post.routeID) {
+                    Circle().fill(Color.brandAccent).frame(width: 7, height: 7)
+                        .padding(9)
+                        .frame(maxWidth: .infinity, alignment: .topTrailing)
+                        .accessibilityLabel("Unread")
+                }
+            }
+            .clipped()
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button { router.push(.post(post)) } label: { Label("Read Article", systemImage: "doc.plaintext") }
+            Button { router.playStories(from: post, queue: []) } label: { Label("Play Story", systemImage: "play.rectangle") }
+            Button { router.push(.section(post.section)) } label: { Label("Go to \(section.title)", systemImage: section.symbol) }
+            Button { withAnimation { store.toggleSaved(post) } } label: {
+                store.isSaved(post) ? Label("Remove from Saved", systemImage: "bookmark.slash") : Label("Save", systemImage: "bookmark")
+            }
+        }
     }
 }

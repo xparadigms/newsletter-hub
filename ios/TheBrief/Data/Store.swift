@@ -117,6 +117,59 @@ final class Store {
         return (i + 1 < list.count ? list[i + 1] : nil, i > 0 ? list[i - 1] : nil)
     }
 
+    // MARK: Timeline
+
+    struct SectionHistory: Identifiable {
+        let section: NewsSection
+        let first: String
+        let count: Int
+        /// The newest issue's date — for a paused section, when it stopped.
+        let last: String?
+        var id: SectionKey { section.key }
+    }
+
+    private(set) var timeline: [SectionHistory]?
+
+    /// Each section's first issue and size, fetched once a launch.
+    func loadTimeline() async {
+        if timeline != nil { return }
+        let client = self.client
+        let found = await withTaskGroup(of: (SectionKey, String?, Int)?.self) { group in
+            for key in SectionKey.allCases {
+                group.addTask {
+                    guard let h = try? await client.history(of: key) else { return nil }
+                    return (key, h.first, h.count)
+                }
+            }
+            var out: [(SectionKey, String?, Int)] = []
+            for await r in group { if let r { out.append(r) } }
+            return out
+        }
+        timeline = found.compactMap { key, first, count in
+            guard let first else { return nil }
+            return SectionHistory(section: Sections.get(key), first: first, count: count,
+                                  last: posts(in: key).first?.date)
+        }
+        .sorted { $0.first < $1.first }
+    }
+
+    // MARK: Explore
+
+    /// Rolled each time Explore is opened: a new selection of issues.
+    private(set) var exploreSeed = UInt64.random(in: 1...UInt64.max)
+
+    func rerollExplore() { exploreSeed = UInt64.random(in: 1...UInt64.max) }
+
+    /// Explore's grid: a random draw from the whole archive, every section and
+    /// every month, issues you have not opened first.
+    func explore(_ limit: Int) -> [Post] {
+        var rng = SeededGenerator(seed: exploreSeed)
+        let all = SectionKey.allCases.flatMap { posts[$0] ?? [] }
+        let unread = all.filter { !seen.contains($0.routeID) }.shuffled(using: &rng)
+        let read = all.filter { seen.contains($0.routeID) }.shuffled(using: &rng)
+        return Array((unread + read).prefix(limit))
+    }
+
     func refresh() async {
         isLoading = true
         defer { isLoading = false }
