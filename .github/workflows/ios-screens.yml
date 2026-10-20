@@ -1,0 +1,63 @@
+name: iOS screenshots
+
+# Runs the app in a simulator on GitHub's Mac and saves screenshots of the
+# given screens, so a layout can be checked without a Mac at hand. The
+# screens are thebrief:// links (see Router.open); the Debug build opens them
+# from the -openURL launch argument.
+
+on:
+  workflow_dispatch:
+    inputs:
+      screens:
+        description: "Space-separated thebrief:// links"
+        default: "thebrief://section/stocks"
+  push:
+    paths: [".github/workflows/ios-screens.yml"]
+
+jobs:
+  shots:
+    runs-on: macos-26
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pick Xcode and a Pro Max simulator
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_*.app | grep -iv beta | sort -V | tail -1)
+          sudo xcode-select -s "$XCODE"
+          DEVICE=$(xcrun simctl list devices available | grep -E "iPhone [0-9]+ Pro Max" | tail -1 | sed -E 's/^ *([^(]+) \(([0-9A-F-]+)\).*/\2/')
+          echo "DEVICE=$DEVICE" >> "$GITHUB_ENV"
+          xcrun simctl list devices available | grep -E "Pro Max"
+      - name: Build for the simulator
+        working-directory: ios
+        env:
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          set -o pipefail
+          mkdir -p build
+          xcodebuild -project TheBrief.xcodeproj -scheme TheBrief -configuration Debug \
+            -destination "id=$DEVICE" -derivedDataPath build/dd \
+            SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" build 2>&1 | tail -3
+      - name: Screenshots
+        env:
+          SCREENS: ${{ inputs.screens || 'thebrief://section/stocks' }}
+        run: |
+          mkdir -p shots
+          xcrun simctl boot "$DEVICE"
+          xcrun simctl bootstatus "$DEVICE" -b
+          xcrun simctl install "$DEVICE" ios/build/dd/Build/Products/Debug-iphonesimulator/TheBrief.app
+          # Home first, with the app's own first load.
+          xcrun simctl launch "$DEVICE" com.heechangkang.thebrief
+          sleep 15
+          xcrun simctl io "$DEVICE" screenshot shots/00-home.png
+          n=1
+          for url in $SCREENS; do
+            xcrun simctl terminate "$DEVICE" com.heechangkang.thebrief || true
+            xcrun simctl launch "$DEVICE" com.heechangkang.thebrief -openURL "$url"
+            sleep 10
+            xcrun simctl io "$DEVICE" screenshot "shots/0$n-$(echo "$url" | tr -c 'a-z0-9' '-').png"
+            n=$((n+1))
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: shots/
