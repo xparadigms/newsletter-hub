@@ -56,6 +56,32 @@ struct SupabaseClient: Sendable {
         throw lastError
     }
 
+    /// When a section's first issue came out, and how many it has published —
+    /// for the timeline on The Brief's profile. Lists stop at 500, so neither
+    /// can be read off them.
+    func history(of section: SectionKey) async throws -> (first: String?, count: Int) {
+        var components = URLComponents(url: base, resolvingAgainstBaseURL: false)!
+        components.queryItems = [
+            URLQueryItem(name: "select", value: "issue_date"),
+            URLQueryItem(name: "section", value: "eq.\(section.rawValue)"),
+            URLQueryItem(name: "order", value: "issue_date.asc,published_at.asc"),
+            URLQueryItem(name: "limit", value: "1"),
+        ]
+        var request = URLRequest(url: components.url!)
+        request.setValue(key, forHTTPHeaderField: "apikey")
+        // Asks PostgREST for the total too, in Content-Range: "0-0/273".
+        request.setValue("count=exact", forHTTPHeaderField: "Prefer")
+        request.timeoutInterval = 20
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+        let rows = try JSONDecoder().decode([[String: String?]].self, from: data)
+        let range = http.value(forHTTPHeaderField: "Content-Range") ?? ""
+        let count = Int(range.split(separator: "/").last ?? "") ?? 0
+        return ((rows.first?["issue_date"] ?? nil), count)
+    }
+
     func posts(in section: SectionKey) async throws -> [Post] {
         try await get([
             URLQueryItem(name: "select", value: Self.listColumns),

@@ -1,16 +1,31 @@
 import SwiftUI
 
 /// The reader's own page, laid out like an Instagram profile: who, a row of
-/// counts, then a grid — the issues saved, or the ones read.
+/// counts, then a grid of the issues saved or read — or The Brief's timeline,
+/// when each newsletter began.
 @MainActor
 struct ProfileView: View {
     @Environment(Store.self) private var store
+    @Environment(Router.self) private var router
     @State private var showing: Shelf = .saved
 
     enum Shelf: String, CaseIterable, Identifiable {
-        case saved, read
+        case saved, read, timeline
         var id: String { rawValue }
-        var symbol: String { self == .saved ? "bookmark" : "clock" }
+        func symbol(selected: Bool) -> String {
+            switch self {
+            case .saved: return selected ? "bookmark.fill" : "bookmark"
+            case .read: return selected ? "clock.fill" : "clock"
+            case .timeline: return selected ? "calendar.badge.clock" : "calendar"
+            }
+        }
+        var label: String {
+            switch self {
+            case .saved: return "Saved"
+            case .read: return "Read"
+            case .timeline: return "Timeline"
+            }
+        }
     }
 
     /// Everything opened, newest first. Only issues still in the loaded lists
@@ -25,7 +40,9 @@ struct ProfileView: View {
             VStack(spacing: 0) {
                 header
                 shelfPicker
-                if posts.isEmpty {
+                if showing == .timeline {
+                    BriefTimeline()
+                } else if posts.isEmpty {
                     empty.padding(.top, 50)
                 } else {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 2), count: 3), spacing: 2) {
@@ -33,6 +50,10 @@ struct ProfileView: View {
                     }
                 }
             }
+        }
+        .onAppear {
+            if let name = router.requestedShelf, let shelf = Shelf(rawValue: name) { showing = shelf }
+            router.requestedShelf = nil
         }
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.inline)
@@ -86,7 +107,7 @@ struct ProfileView: View {
                     withAnimation(.easeOut(duration: 0.15)) { showing = shelf }
                 } label: {
                     VStack(spacing: 10) {
-                        Image(systemName: showing == shelf ? shelf.symbol + ".fill" : shelf.symbol)
+                        Image(systemName: shelf.symbol(selected: showing == shelf))
                             .font(.system(size: 20))
                             .foregroundStyle(showing == shelf ? Color.primary : Color.secondary)
                         Rectangle()
@@ -98,7 +119,7 @@ struct ProfileView: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel(shelf == .saved ? "Saved" : "Read")
+                .accessibilityLabel(shelf.label)
             }
         }
         .overlay(alignment: .bottom) { Divider() }
@@ -188,5 +209,92 @@ struct SaveButton: View {
                 .contentTransition(.symbolEffect(.replace))
         }
         .accessibilityLabel(saved ? "Remove from Saved" : "Save")
+    }
+}
+
+/// When each newsletter began, oldest first, as a vertical timeline: the
+/// launch, how many issues since, and for a paused one, when it stopped.
+@MainActor
+private struct BriefTimeline: View {
+    @Environment(Store.self) private var store
+    @Environment(Router.self) private var router
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let entries = store.timeline {
+                ForEach(Array(entries.enumerated()), id: \.element.id) { i, entry in
+                    row(entry, isFirst: i == 0)
+                }
+                today
+            } else {
+                ProgressView().frame(maxWidth: .infinity).padding(.top, 40)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 18)
+        .padding(.bottom, 40)
+        .task { await store.loadTimeline() }
+    }
+
+    private func row(_ entry: Store.SectionHistory, isFirst: Bool) -> some View {
+        let s = entry.section
+        return Button { router.push(.section(s.key)) } label: {
+            HStack(alignment: .top, spacing: 14) {
+                // The rail: the date's dot on a line running down the page.
+                VStack(spacing: 0) {
+                    Rectangle().fill(isFirst ? .clear : Color.secondary.opacity(0.3)).frame(width: 1.5, height: 10)
+                    SectionAvatar(section: s, size: 34, unseen: false)
+                    Rectangle().fill(Color.secondary.opacity(0.3)).frame(width: 1.5).frame(maxHeight: .infinity)
+                }
+                .frame(width: 40)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text((Format.longDate(entry.first) ?? entry.first).uppercased())
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(Color.brandAccent)
+                    Text("\(s.title) started")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.primary)
+                    Text(s.description)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(3)
+                        .multilineTextAlignment(.leading)
+                    HStack(spacing: 6) {
+                        Text("\(entry.count) issues")
+                        if s.hideInNav, let last = entry.last {
+                            Text("·")
+                            Text("Paused since \(Format.longDate(last) ?? last)")
+                        }
+                    }
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.secondary)
+                }
+                .padding(.top, 10)
+                .padding(.bottom, 22)
+                Spacer(minLength: 0)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var today: some View {
+        let total = store.timeline?.reduce(0) { $0 + $1.count } ?? 0
+        return HStack(alignment: .top, spacing: 14) {
+            VStack(spacing: 0) {
+                Rectangle().fill(Color.secondary.opacity(0.3)).frame(width: 1.5, height: 10)
+                Circle().fill(Color.brandAccent).frame(width: 12, height: 12).padding(11)
+            }
+            .frame(width: 40)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("TODAY")
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(Color.brandAccent)
+                Text("\(total) issues across \(store.timeline?.count ?? 0) newsletters")
+                    .font(.system(size: 16, weight: .semibold))
+            }
+            .padding(.top, 10)
+        }
     }
 }

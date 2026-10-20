@@ -49,7 +49,7 @@ struct RootView: View {
             NavigationStack(path: $router.search) {
                 SearchView().routes()
             }
-            .tabItem { Label("Search", systemImage: "magnifyingglass") }
+            .tabItem { Label("Explore", systemImage: "magnifyingglass") }
             .tag(AppTab.search)
 
             NavigationStack(path: $router.profile) {
@@ -65,6 +65,7 @@ struct RootView: View {
             if phase == .active, wasInBackground {
                 wasInBackground = false
                 store.reshuffle()
+                store.rerollExplore()
             }
         }
         .fullScreenCover(item: $router.story, onDismiss: { router.storyClosed() }) { post in
