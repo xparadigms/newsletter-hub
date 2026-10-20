@@ -86,8 +86,18 @@ final class Router {
 
     /// thebrief://section/<key>, thebrief://post/<section>/<slug> and
     /// thebrief://story/<section>/<slug> — the site's paths, under the app's scheme.
+    /// Which shelf Profile should show, when a link asks for one.
+    var requestedShelf: String?
+
     func open(_ url: URL, store: Store) {
         let parts = [url.host ?? ""] + url.pathComponents.filter { $0 != "/" }
+        // thebrief://explore and thebrief://profile[/saved|read|timeline]
+        if parts[0] == "explore" { tab = .search; return }
+        if parts[0] == "profile" {
+            tab = .profile
+            requestedShelf = parts.count > 1 ? parts[1] : nil
+            return
+        }
         guard parts.count >= 2, let key = SectionKey(rawValue: parts[1]) else { return }
         if parts[0] == "section" {
             tab = .sections

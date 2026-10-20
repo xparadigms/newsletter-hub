@@ -6,6 +6,7 @@ import SwiftUI
 @MainActor
 struct ProfileView: View {
     @Environment(Store.self) private var store
+    @Environment(Router.self) private var router
     @State private var showing: Shelf = .saved
 
     enum Shelf: String, CaseIterable, Identifiable {
@@ -40,7 +41,7 @@ struct ProfileView: View {
                 header
                 shelfPicker
                 if showing == .timeline {
-                    TimelineView()
+                    BriefTimeline()
                 } else if posts.isEmpty {
                     empty.padding(.top, 50)
                 } else {
@@ -49,6 +50,10 @@ struct ProfileView: View {
                     }
                 }
             }
+        }
+        .onAppear {
+            if let name = router.requestedShelf, let shelf = Shelf(rawValue: name) { showing = shelf }
+            router.requestedShelf = nil
         }
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.inline)
@@ -210,7 +215,7 @@ struct SaveButton: View {
 /// When each newsletter began, oldest first, as a vertical timeline: the
 /// launch, how many issues since, and for a paused one, when it stopped.
 @MainActor
-private struct TimelineView: View {
+private struct BriefTimeline: View {
     @Environment(Store.self) private var store
     @Environment(Router.self) private var router
 
