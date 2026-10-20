@@ -29,7 +29,7 @@ struct ProfileView: View {
                     empty.padding(.top, 50)
                 } else {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 2), count: 3), spacing: 2) {
-                        ForEach(posts) { GridTile(post: $0, savedShelf: showing == .saved) }
+                        ForEach(posts) { PostTile(post: $0, savedShelf: showing == .saved) }
                     }
                 }
             }
@@ -121,11 +121,12 @@ struct ProfileView: View {
     }
 }
 
-/// A square in the profile grid: the issue's headline on its section's card.
+/// A square in a profile grid — yours or a section's: the issue's headline on
+/// its section's card.
 @MainActor
-private struct GridTile: View {
+struct PostTile: View {
     let post: Post
-    let savedShelf: Bool
+    var savedShelf = false
     @Environment(Store.self) private var store
     @Environment(Router.self) private var router
     @AppStorage(SettingsKey.storyMode) private var storyMode = false

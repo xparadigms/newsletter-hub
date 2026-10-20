@@ -144,12 +144,19 @@ private struct FeedPost: View {
                 SectionAvatar(section: section, size: 30, unseen: !store.seen.contains(post.routeID))
             }
             .buttonStyle(.plain)
-            VStack(alignment: .leading, spacing: 0) {
-                Text(section.title).font(.system(size: 14, weight: .semibold))
-                if let series = post.series, !series.isEmpty {
-                    Text(series).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(1)
+            // The name opens the section's profile; the ringed avatar beside
+            // it plays the story — the same split as Instagram.
+            Button { router.push(.section(post.section)) } label: {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(section.title).font(.system(size: 14, weight: .semibold))
+                    if let series = post.series, !series.isEmpty {
+                        Text(series).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(1)
+                    }
                 }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel("\(section.title) profile")
             Spacer()
             Menu {
                 Button { router.push(.post(post)) } label: { Label("Read Article", systemImage: "doc.plaintext") }
