@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import CompanyRequest from "@/components/CompanyRequest";
 import GenerateButton from "@/components/GenerateButton";
+import { SectionProfileHead, SectionShelf } from "@/components/home/SectionProfile";
 import PageTransition from "@/components/PageTransition";
 import PostList from "@/components/PostList";
 import PullToRefresh from "@/components/PullToRefresh";
@@ -43,33 +44,51 @@ export default async function SectionPage({
 
   const posts = await getPosts(section.key);
   const groups = groupByMonth(posts);
+  const tiles = posts.map((p) => ({
+    id: p.id,
+    section: p.section,
+    title: p.title,
+    date: p.date,
+    series: p.series,
+    summary: p.summary,
+  }));
+  const newestDate = posts[0]?.date
+    ? new Date(`${posts[0].date}T00:00:00`).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : null;
 
-  // Fill the article cache for this section's newest issues once the list has
-
+  // Laid out like an Instagram profile, as in the iOS app: avatar and counts,
+  // the description as the bio, Play Story and Share, Generate, then every
+  // issue as a grid — or as the old list by month.
   return (
     <PageTransition>
       <PullToRefresh />
-      {/* The nav bar's large title carries the section name and the page's h1. */}
-      <div className="page-head">
-        <div className="container">
-          <p>{section.description}</p>
+      <div className="profile">
+        <SectionProfileHead
+          section={section.key}
+          title={section.title}
+          description={section.description}
+          latest={newestDate}
+          newest={tiles[0] ?? null}
+          total={posts.length}
+        />
+        <div className="profile__generate">
           <GenerateButton section={section.key} />
           {section.key === "stocks" && <CompanyRequest />}
         </div>
-      </div>
-      <section className="section section--flat">
-        <div className="container">
-          {groups.length === 0 && (
-            <p className="section__desc">Nothing published here yet.</p>
-          )}
-          {groups.map((group) => (
+        <SectionShelf
+          posts={tiles}
+          list={groups.map((group) => (
             <div key={group.month} className="month-group">
               <span className="label month-label">{group.month}</span>
               <PostList posts={group.posts} />
             </div>
           ))}
-        </div>
-      </section>
+        />
+      </div>
     </PageTransition>
   );
 }

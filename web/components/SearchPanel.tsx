@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import PostTile, { type TilePost } from "@/components/home/PostTile";
 import PrefetchLink from "@/components/PrefetchLink";
-import { getSection, NAV_SECTIONS } from "@/lib/config";
+import { getSection } from "@/lib/config";
 import { formatShortDate } from "@/lib/feed";
+import { useLibrary } from "@/lib/library";
 
 interface Entry {
   i: string; // id
@@ -16,9 +18,14 @@ interface Entry {
 const CACHE_KEY = "search-index-v2";
 const LIMIT = 50;
 
-// The Search tab. The whole archive's titles come down once (~25KB, cached for
-// the visit) and are filtered here, so typing never waits on the network.
-export default function SearchPanel() {
+// The Explore tab, as Instagram's: with nothing typed, a grid drawn at random
+// from the whole archive on every visit, things not yet read first. Typing
+// searches every title — the archive's titles come down once (~25KB, cached
+// for the visit) and are filtered here, so it never waits on the network.
+export default function SearchPanel({ explore }: { explore: TilePost[] }) {
+  const { isRead } = useLibrary();
+  // Unread first; the draw itself is already random, from the server.
+  const grid = [...explore.filter((p) => !isRead(p)), ...explore.filter((p) => isRead(p))];
   const [query, setQuery] = useState("");
   const [index, setIndex] = useState<Entry[] | null>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -77,19 +84,22 @@ export default function SearchPanel() {
       </label>
 
       {!query.trim() ? (
-        <>
-          <span className="label inset-list__header">Sections</span>
-          <ul className="inset-list">
-            {NAV_SECTIONS.map((s) => (
-              <li key={s.key}>
-                <PrefetchLink href={`/section/${s.key}`} className="search-row" transitionTypes={["nav-forward"]}>
-                  <span className="search-row__title">{s.title}</span>
-                  <span className="post-row__arrow" aria-hidden />
-                </PrefetchLink>
+        <ul className="explore">
+          {grid.map((p, i) => {
+            // Instagram's blocks of five: one tall tile beside four squares,
+            // switching sides from block to block.
+            const block = Math.floor(i / 5);
+            const tall = i % 5 === 0;
+            const style = tall
+              ? { gridRow: `${block * 2 + 1} / span 2`, gridColumn: block % 2 === 0 ? 3 : 1 }
+              : undefined;
+            return (
+              <li key={`${p.section}/${p.id}`} style={style} data-tall={tall || undefined}>
+                <PostTile post={p} tall={tall} showSection unreadDot />
               </li>
-            ))}
-          </ul>
-        </>
+            );
+          })}
+        </ul>
       ) : (
         <ul className="inset-list">
           {results.map((e) => (

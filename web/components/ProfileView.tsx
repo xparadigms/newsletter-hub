@@ -1,16 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
+import PostTile from "@/components/home/PostTile";
 import { BookmarkIcon } from "@/components/home/SaveButton";
-import { clearStoryQueue, storyModeOn } from "@/components/home/stories";
-import { Glyph } from "@/components/SectionGlyph";
-import { NAV_SECTIONS } from "@/lib/config";
-import { formatShortDate } from "@/lib/feed";
-import { routeId, useLibrary, type ShelfPost } from "@/lib/library";
+import SectionAvatar from "@/components/home/SectionAvatar";
+import { getSection, NAV_SECTIONS } from "@/lib/config";
+import { routeId, useLibrary } from "@/lib/library";
+import type { SectionKey } from "@/lib/types";
 
-type ShelfName = "saved" | "read";
+type ShelfName = "saved" | "read" | "timeline";
+
+export interface TimelineEntry {
+  section: SectionKey;
+  first: string; // long date
+  count: number;
+  /** For a paused newsletter, its last issue's date. */
+  pausedSince: string | null;
+}
+
+function CalendarIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden fill="none" stroke="currentColor"
+         strokeWidth={filled ? 2.2 : 1.8} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" fill={filled ? "currentColor" : "none"} />
+      <path d="M3.5 10h17M8 3v4M16 3v4" stroke={filled ? "var(--bg)" : "currentColor"} />
+    </svg>
+  );
+}
 
 function ClockIcon({ filled }: { filled: boolean }) {
   return (
@@ -23,11 +40,12 @@ function ClockIcon({ filled }: { filled: boolean }) {
 }
 
 /** The reader's page, laid out like an Instagram profile: who, a row of counts,
- *  then a grid of the issues saved — or read. Both lists live in this browser. */
-export default function ProfileView() {
+ *  then a grid of the issues saved or read — both lists live in this browser —
+ *  or The Brief's timeline, when each newsletter began. */
+export default function ProfileView({ timeline }: { timeline: TimelineEntry[] }) {
   const { saved, read } = useLibrary();
   const [shelf, setShelf] = useState<ShelfName>("saved");
-  const posts = shelf === "saved" ? saved : read;
+  const posts = shelf === "saved" ? saved : shelf === "read" ? read : [];
 
   return (
     <div className="profile">
@@ -50,22 +68,30 @@ export default function ProfileView() {
       </header>
 
       <div className="profile__tabs" role="tablist">
-        {(["saved", "read"] as const).map((name) => (
+        {(["saved", "read", "timeline"] as const).map((name) => (
           <button
             key={name}
             type="button"
             role="tab"
             aria-selected={shelf === name}
-            aria-label={name === "saved" ? "Saved" : "Read"}
+            aria-label={name === "saved" ? "Saved" : name === "read" ? "Read" : "Timeline"}
             className="profile__tab"
             onClick={() => setShelf(name)}
           >
-            {name === "saved" ? <BookmarkIcon filled={shelf === name} /> : <ClockIcon filled={shelf === name} />}
+            {name === "saved" ? (
+              <BookmarkIcon filled={shelf === name} />
+            ) : name === "read" ? (
+              <ClockIcon filled={shelf === name} />
+            ) : (
+              <CalendarIcon filled={shelf === name} />
+            )}
           </button>
         ))}
       </div>
 
-      {posts.length === 0 ? (
+      {shelf === "timeline" ? (
+        <Timeline entries={timeline} />
+      ) : posts.length === 0 ? (
         <div className="profile__empty">
           <p className="profile__empty-title">{shelf === "saved" ? "Nothing saved yet" : "Nothing read yet"}</p>
           <p>
@@ -78,7 +104,7 @@ export default function ProfileView() {
         <ul className="grid">
           {posts.map((p) => (
             <li key={routeId(p)}>
-              <Tile post={p} />
+              <PostTile post={p} />
             </li>
           ))}
         </ul>
@@ -87,25 +113,40 @@ export default function ProfileView() {
   );
 }
 
-function Tile({ post }: { post: ShelfPost }) {
-  const router = useRouter();
-  const href = `/post/${post.section}/${post.id}`;
+/** When each newsletter began, oldest first: the launch, how many issues
+ *  since, and for a paused one, when it stopped. */
+function Timeline({ entries }: { entries: TimelineEntry[] }) {
+  const total = entries.reduce((n, e) => n + e.count, 0);
   return (
-    <Link
-      href={href}
-      className="grid__tile"
-      data-section={post.section}
-      transitionTypes={["nav-forward"]}
-      onClick={(e) => {
-        if (!storyModeOn()) return;
-        e.preventDefault();
-        clearStoryQueue();
-        router.push(`/story/${post.section}/${post.id}`, { transitionTypes: ["nav-present"] });
-      }}
-    >
-      <Glyph name={post.section} active={false} size={14} />
-      <span className="grid__title">{post.title}</span>
-      <span className="grid__date">{formatShortDate(post.date)}</span>
-    </Link>
+    <ol className="timeline">
+      {entries.map((e) => {
+        const s = getSection(e.section)!;
+        return (
+          <li key={e.section} className="timeline__item">
+            <Link href={`/section/${e.section}`} className="timeline__link" transitionTypes={["nav-forward"]}>
+              <SectionAvatar section={e.section} size={34} />
+              <span className="timeline__body">
+                <span className="timeline__date">{e.first}</span>
+                <span className="timeline__title">{s.title} started</span>
+                <span className="timeline__desc">{s.description}</span>
+                <span className="timeline__meta">
+                  {e.count} issues
+                  {e.pausedSince && ` · Paused since ${e.pausedSince}`}
+                </span>
+              </span>
+            </Link>
+          </li>
+        );
+      })}
+      <li className="timeline__item timeline__item--today">
+        <span className="timeline__now" aria-hidden />
+        <span className="timeline__body">
+          <span className="timeline__date">Today</span>
+          <span className="timeline__title">
+            {total} issues across {entries.length} newsletters
+          </span>
+        </span>
+      </li>
+    </ol>
   );
 }

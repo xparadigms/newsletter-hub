@@ -119,6 +119,41 @@ export async function getAllPosts(): Promise<Record<SectionKey, Post[]>> {
   ) as Record<SectionKey, Post[]>;
 }
 
+export interface SectionHistory {
+  section: SectionKey;
+  /** The first issue's date. */
+  first: string;
+  /** Every published issue — lists stop at 500, so this is counted. */
+  count: number;
+}
+
+async function fetchTimeline(): Promise<SectionHistory[]> {
+  if (!supabase) return [];
+  const rows = await Promise.all(
+    sectionKeys().map(async (key) => {
+      const { data, count, error } = await supabase
+        .from("newsletter")
+        .select("issue_date", { count: "exact" })
+        .eq("section", key)
+        .order("issue_date", { ascending: true })
+        .order("published_at", { ascending: true })
+        .limit(1);
+      if (error) throw new Error(`timeline for ${key}: ${error.message}`);
+      const first = (data?.[0] as { issue_date?: string } | undefined)?.issue_date;
+      return first ? { section: key, first, count: count ?? 0 } : null;
+    })
+  );
+  return rows
+    .filter((r): r is SectionHistory => r !== null)
+    .sort((a, b) => a.first.localeCompare(b.first));
+}
+
+/** When each newsletter began, for the timeline on The Brief's profile. */
+export const getTimeline = unstable_cache(fetchTimeline, ["timeline", "v1"], {
+  revalidate: 3600,
+  tags: [POSTS_TAG],
+});
+
 // One indexed row, so no cross-request cache: the Notion version needed
 // `revalidate: false` because assembling an issue cost ~45 API calls and ~4
 // seconds. The route-level ISR cache is enough now, and React cache() still

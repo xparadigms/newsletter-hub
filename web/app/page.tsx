@@ -3,10 +3,12 @@ import StoryTray, { type TrayEntry } from "@/components/home/StoryTray";
 import PageTransition from "@/components/PageTransition";
 import PullToRefresh from "@/components/PullToRefresh";
 import { getSection, NAV_SECTIONS } from "@/lib/config";
-import { flattenLatest, formatShortDate } from "@/lib/feed";
+import { formatShortDate, mixedFeed, shuffle } from "@/lib/feed";
 import { getAllPosts } from "@/lib/posts";
 
-export const revalidate = 300;
+// Rendered per visit, so the order changes every time — the lists come from
+// the shared five-minute cache, so this costs no extra queries.
+export const dynamic = "force-dynamic";
 
 function formatDate(date: string | null): string | null {
   if (!date) return null;
@@ -16,16 +18,18 @@ function formatDate(date: string | null): string | null {
 }
 
 // Home, laid out like Instagram's: a tray of section stories across the top,
-// then one post per issue, newest first — the same shape as the iOS app.
+// then one post per issue, newest day first with the sections shuffled on
+// every visit — the same shape and order as the iOS app.
 export default async function Home() {
   const posts = await getAllPosts();
 
-  const tray: TrayEntry[] = NAV_SECTIONS.flatMap((s) => {
+  // Shuffled each visit too; the tray still puts unread sections first.
+  const tray: TrayEntry[] = shuffle(NAV_SECTIONS).flatMap((s) => {
     const newest = posts[s.key][0];
     return newest ? [{ section: s.key, label: s.label, id: newest.id }] : [];
   });
 
-  const feed: FeedItem[] = flattenLatest(posts, 40).map((p) => {
+  const feed: FeedItem[] = mixedFeed(posts, 40).map((p) => {
     const s = getSection(p.section)!;
     return {
       id: p.id,
