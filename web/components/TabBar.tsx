@@ -51,7 +51,7 @@ function TabIcon({ name, active }: { name: string; active: boolean }) {
 const TABS = [
   { key: "home", href: "/", label: "Home" },
   { key: "sections", href: "/sections", label: "Sections" },
-  { key: "search", href: "/search", label: "Search" },
+  { key: "search", href: "/search", label: "Explore" },
   { key: "profile", href: "/profile", label: "Profile" },
 ];
 

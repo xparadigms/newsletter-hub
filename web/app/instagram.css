@@ -866,3 +866,217 @@ html[data-furigana="on"] .story-bar .furigana-toggle,
 .story-controls {
   display: none;
 }
+
+/* ---------- Explore ---------- */
+
+/* Instagram's Explore: three columns of squares, with every fifth tile a tall
+   one spanning two rows. The tall tiles are placed explicitly (SearchPanel);
+   `dense` lets the squares flow into the gaps around them. */
+.explore {
+  list-style: none;
+  margin: 0 calc(var(--container-pad) * -1);
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-flow: row dense;
+  gap: 2px;
+}
+
+.explore > li {
+  min-width: 0;
+}
+
+.explore > li[data-tall] .grid__tile {
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+.grid__tile[data-tall] .grid__title {
+  font-size: 16px;
+  -webkit-line-clamp: 7;
+  line-clamp: 7;
+}
+
+.grid__summary {
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgb(255 255 255 / 75%);
+  display: -webkit-box;
+  -webkit-line-clamp: 6;
+  line-clamp: 6;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Not read yet. */
+.grid__dot {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #10b981;
+}
+
+@media (min-width: 680px) {
+  .explore {
+    margin: 0;
+  }
+}
+
+/* ---------- section profile ---------- */
+
+.profile__avatar-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.profile__latest {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.profile__buttons {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.profile__button {
+  flex: 1;
+  height: 36px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--tap);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--dur-press) var(--spring-bounce);
+}
+
+.profile__button:active {
+  transform: scale(0.97);
+  transition-duration: 0.1s;
+}
+
+.profile__button--primary {
+  background: #10b981;
+  color: #fff;
+}
+
+.profile__button:disabled {
+  opacity: 0.5;
+}
+
+.profile__generate {
+  padding: 0 16px 14px;
+}
+
+.section-list {
+  padding-top: 8px;
+  padding-bottom: 24px;
+}
+
+/* ---------- The Brief's timeline ---------- */
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 18px 16px 40px;
+}
+
+.timeline__item {
+  position: relative;
+}
+
+/* The rail running down behind the avatars. */
+.timeline__item::before {
+  content: "";
+  position: absolute;
+  left: 21px;
+  top: 0;
+  bottom: 0;
+  width: 1.5px;
+  background: var(--border-strong);
+}
+
+.timeline__item:first-child::before {
+  top: 22px;
+}
+
+.timeline__item--today::before {
+  bottom: auto;
+  height: 22px;
+}
+
+.timeline__link,
+.timeline__item--today {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding-bottom: 22px;
+}
+
+.timeline__link .avatar {
+  position: relative;
+  z-index: 1;
+}
+
+.timeline__now {
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  margin: 16px 16px 0;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 0 4px var(--bg);
+}
+
+.timeline__body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 6px;
+  min-width: 0;
+}
+
+.timeline__date {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+}
+
+.timeline__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.timeline__desc {
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.timeline__meta {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+}
