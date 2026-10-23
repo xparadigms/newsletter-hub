@@ -1,0 +1,33 @@
+name: TestFlight testers
+
+# Adds an external TestFlight tester, or shows the current setup, through the
+# App Store Connect API. See ios/scripts/asc_testers.py.
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: "Tester's email (leave empty to only show the status)"
+        type: string
+        default: ""
+      phone:
+        description: "Contact phone for Apple's Beta App Review (asked once per app)"
+        type: string
+        default: ""
+
+jobs:
+  testers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install pyjwt cryptography requests
+      - env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: 42Z98QR7J4
+          ASC_ISSUER_ID: 4b0444d7-b87e-4112-8b16-653ff28b5bb9
+          BETA_PHONE: ${{ inputs.phone }}
+          EMAIL: ${{ inputs.email }}
+        run: |
+          if [ -n "$EMAIL" ]; then python3 ios/scripts/asc_testers.py add "$EMAIL"
+          else python3 ios/scripts/asc_testers.py status; fi
