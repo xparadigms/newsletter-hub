@@ -174,9 +174,21 @@ def share(version: str) -> None:
     call("POST", "/v1/betaBuildLocalizations", {"data": {"type": "betaBuildLocalizations",
          "attributes": {"locale": "en-US", "whatsNew": "The latest version of The Brief."},
          "relationships": {"build": {"data": {"type": "builds", "id": build["id"]}}}}}, ok=(201, 409))
-    call("POST", "/v1/betaAppReviewSubmissions", {"data": {"type": "betaAppReviewSubmissions",
-         "relationships": {"build": {"data": {"type": "builds", "id": build["id"]}}}}}, ok=(201, 409))
-    print(f"build {version} shared with {GROUP} and submitted for review")
+    # Apple reviews one build at a time. While another is waiting — the app's
+    # first review can take a day — this one stays in the group unsubmitted,
+    # and the next upload submits itself once the queue is clear.
+    r = requests.post(API + "/v1/betaAppReviewSubmissions", timeout=60,
+                      headers={"Authorization": f"Bearer {token()}"},
+                      json={"data": {"type": "betaAppReviewSubmissions",
+                            "relationships": {"build": {"data": {"type": "builds", "id": build["id"]}}}}})
+    if r.status_code == 201:
+        print(f"build {version} shared with {GROUP} and submitted for review")
+    elif "ANOTHER_BUILD_IN_REVIEW" in r.text:
+        print(f"build {version} is in {GROUP}; another build is still in review, so it is not submitted yet")
+    elif r.status_code == 409 or "ALREADY" in r.text:
+        print(f"build {version} shared with {GROUP}; already submitted")
+    else:
+        raise SystemExit(f"review submission -> {r.status_code}\n{r.text[:1500]}")
 
 
 if __name__ == "__main__":
