@@ -59,4 +59,18 @@ jobs:
         run: |
           export ASC_KEY_PATH="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
           printf '%s\n' "$ASC_KEY_P8" > "$ASC_KEY_PATH"
+          export BUILD=$(date -u +%Y%m%d%H%M)
+          echo "BUILD=$BUILD" >> "$GITHUB_ENV"
           ios/scripts/testflight.sh || { tail -60 ios/build/archive.log 2>/dev/null; exit 1; }
+
+      # Internal testers get every build on their own; the external "Testers"
+      # group has to be given each one, after Apple has processed it.
+      - name: Share with external testers
+        if: env.HAS_KEY == 'true' && (github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch')
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: 42Z98QR7J4
+          ASC_ISSUER_ID: 4b0444d7-b87e-4112-8b16-653ff28b5bb9
+        run: |
+          pip3 install --quiet --break-system-packages pyjwt cryptography requests || pip3 install --quiet pyjwt cryptography requests
+          python3 ios/scripts/asc_testers.py share "$BUILD"
