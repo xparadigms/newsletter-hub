@@ -3,6 +3,7 @@
 
     python3 ios/scripts/asc_testers.py status
     python3 ios/scripts/asc_testers.py add someone@example.com
+    python3 ios/scripts/asc_testers.py share 202610230300   # after an upload
 
 Internal testers must be users on the App Store Connect team; anyone else is
 an external tester, in the "Testers" group. External testing needs Apple's Beta
@@ -149,7 +150,39 @@ def add(email: str) -> None:
     status()
 
 
+def share(version: str) -> None:
+    """Give the external group a newly uploaded build: wait for Apple to
+    process it, add it to the group, and submit it for Beta App Review —
+    usually approved at once after the app's first review."""
+    group = external_group()
+    if not group:
+        print("no external group yet; nothing to share")
+        return
+    build = None
+    for _ in range(60):  # up to 30 minutes
+        found = call("GET", f"/v1/builds?filter[app]={APP}&filter[version]={version}")["data"]
+        if found and found[0]["attributes"]["processingState"] == "VALID":
+            build = found[0]
+            break
+        if found and found[0]["attributes"]["processingState"] in ("FAILED", "INVALID"):
+            raise SystemExit(f"build {version} failed processing")
+        time.sleep(30)
+    if not build:
+        raise SystemExit(f"build {version} still processing after 30 minutes")
+    call("POST", f"/v1/betaGroups/{group['id']}/relationships/builds",
+         {"data": [{"type": "builds", "id": build["id"]}]})
+    call("POST", "/v1/betaBuildLocalizations", {"data": {"type": "betaBuildLocalizations",
+         "attributes": {"locale": "en-US", "whatsNew": "The latest version of The Brief."},
+         "relationships": {"build": {"data": {"type": "builds", "id": build["id"]}}}}}, ok=(201, 409))
+    call("POST", "/v1/betaAppReviewSubmissions", {"data": {"type": "betaAppReviewSubmissions",
+         "relationships": {"build": {"data": {"type": "builds", "id": build["id"]}}}}}, ok=(201, 409))
+    print(f"build {version} shared with {GROUP} and submitted for review")
+
+
 if __name__ == "__main__":
+    if len(sys.argv) >= 3 and sys.argv[1] == "share":
+        share(sys.argv[2])
+        raise SystemExit(0)
     if len(sys.argv) >= 3 and sys.argv[1] == "add":
         add(sys.argv[2])
     else:
