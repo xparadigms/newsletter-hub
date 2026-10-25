@@ -9,6 +9,10 @@ struct Cover: Hashable, Codable {
     let kind: String?
 }
 
+/// The same type under a name that StoryCard.Cover (the deck's first card)
+/// does not shadow.
+typealias IssueCover = Cover
+
 struct Post: Identifiable, Hashable, Codable {
     /// The slug. Unique within a section, which is how every lookup keys it.
     let id: String

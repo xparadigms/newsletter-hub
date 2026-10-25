@@ -18,7 +18,7 @@ enum StoryCard: Identifiable {
         let date: String?
         let minutes: Int
         let count: Int
-        var image: Cover? = nil
+        var image: IssueCover? = nil
     }
 
     struct SectionDivider {
