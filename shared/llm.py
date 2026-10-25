@@ -146,7 +146,10 @@ def _anthropic(model: str, system: str, user: str, max_tokens: int) -> tuple[str
         messages=[{"role": "user", "content": user}],
     ) as stream:
         final = stream.get_final_message()
-    return final.content[0].text, Usage(
+    # Newer models can open with a thinking block, which has no .text; the
+    # answer is the text blocks, whatever comes before them.
+    text = "".join(getattr(b, "text", "") for b in final.content if getattr(b, "type", "") == "text")
+    return text, Usage(
         model=model,
         input_tokens=final.usage.input_tokens,
         output_tokens=final.usage.output_tokens,

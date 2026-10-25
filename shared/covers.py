@@ -108,7 +108,7 @@ def _llm_queries(title: str, section: str) -> list[str]:
         from . import llm
 
         text = llm.complete(model=QUERY_MODEL, system="You pick photo searches.", label="cover search",
-                            user=QUERY_PROMPT.format(title=title, section=section), max_tokens=60)
+                            user=QUERY_PROMPT.format(title=title, section=section), max_tokens=400)
     except Exception as e:  # noqa: BLE001 — the word-based searches still run
         print(f"  ⚠ cover search model failed: {e}")
         return []
@@ -169,11 +169,18 @@ def find_cover(row: dict[str, Any]) -> dict[str, str] | None:
             return {"url": image, "credit": host, "link": page, "kind": "source"}
     seed = f"{row.get('section')}/{row.get('slug') or row.get('run_key') or row.get('title')}"
     title = row.get("title") or ""
-    for query in _llm_queries(title, row.get("section", "")) + _queries(title):
+    # Key-word searches only when no model is configured at all: they find
+    # *something* for most headlines, but that something is often unrelated
+    # ("Minimize Regret Decide" found a mineral), and a subject photo is better.
+    searches = _llm_queries(title, row.get("section", ""))
+    if not searches and not (os.environ.get("CLAUDE_CODE_OAUTH_TOKEN") or os.environ.get("ANTHROPIC_API_KEY")):
+        searches = _queries(title)
+    via = "model" if searches and searches != _queries(title) else "words"
+    for query in searches:
         cover = _openverse(query, seed)
         if cover:
-            return {**cover, "query": query}
+            return {**cover, "query": query, "via": via}
     fallbacks = FALLBACK_QUERY.get(row.get("section", ""), ["city skyline"])
     pick = fallbacks[int(hashlib.sha1(seed.encode()).hexdigest(), 16) % len(fallbacks)]
     cover = _openverse(pick, seed)
-    return {**cover, "query": pick} if cover else None
+    return {**cover, "query": pick, "via": "subject"} if cover else None

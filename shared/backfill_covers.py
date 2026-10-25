@@ -63,7 +63,7 @@ def main() -> int:
                 print(f"  – {label}: none")
                 continue
             found += 1
-            print(f"  ✓ {label}: {cover['kind']} · {cover.get('query', '')} · {cover['credit']}")
+            print(f"  ✓ {label}: {cover['kind']} · {cover.get('via', '')}: {cover.get('query', '')} · {cover['credit']}")
             if not args.dry_run:
                 store.patch_issue(row["run_key"], {"cover": cover})
     print(f"\n{found}/{len(rows)} covered{' (dry run)' if args.dry_run else ''}.")
