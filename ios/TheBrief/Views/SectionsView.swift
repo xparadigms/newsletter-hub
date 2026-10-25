@@ -317,7 +317,7 @@ struct ExploreTile: View {
             if storyMode { router.playStories(from: post, queue: []) } else { router.push(.post(post)) }
         } label: {
             ZStack(alignment: .topLeading) {
-                SectionBackground(section: section)
+                SectionBackground(section: section, cover: post.cover)
                 VStack(alignment: .leading, spacing: tall ? 10 : 5) {
                     Spacer(minLength: 0)
                     Text(post.title)

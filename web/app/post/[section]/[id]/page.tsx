@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { renderAnnotated } from "@/components/ArticleBlocks";
 import FuriganaToggle from "@/components/FuriganaToggle";
 import LangToggle from "@/components/LangToggle";
+import CoverImage, { CoverCredit } from "@/components/home/CoverImage";
 import MarkRead from "@/components/home/MarkRead";
 import SaveButton from "@/components/home/SaveButton";
 import PageTransition from "@/components/PageTransition";
@@ -114,7 +115,14 @@ export default async function PostPage({
   const toc = buildToc(annotated);
   const { prev, next } = findAdjacent(sectionPosts, post.id);
   const date = formatDate(post.date);
-  const shelf = { id: post.id, section: post.section, title: post.title, date: post.date, series: post.series };
+  const shelf = {
+    id: post.id,
+    section: post.section,
+    title: post.title,
+    date: post.date,
+    series: post.series,
+    cover: post.cover ?? null,
+  };
 
   return (
     <PageTransition>
@@ -135,6 +143,14 @@ export default async function PostPage({
               <SaveButton post={shelf} />
             </div>
             <MarkRead post={shelf} />
+            {post.cover?.url && (
+              <figure className="article__cover">
+                <CoverImage cover={post.cover} className="article__cover-img" eager />
+                <figcaption>
+                  <CoverCredit cover={post.cover} />
+                </figcaption>
+              </figure>
+            )}
             {/* data-multi gates the default "hide English" rule so English-only
                 issues never render blank. */}
             <div

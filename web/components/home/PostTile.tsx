@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import CoverImage from "@/components/home/CoverImage";
 import { clearStoryQueue, storyModeOn } from "@/components/home/stories";
 import { Glyph } from "@/components/SectionGlyph";
 import { getSection } from "@/lib/config";
@@ -35,6 +36,7 @@ export default function PostTile({
       className="grid__tile"
       data-section={post.section}
       data-tall={tall || undefined}
+      data-cover={post.cover?.url ? "" : undefined}
       transitionTypes={["nav-forward"]}
       onClick={(e) => {
         if (!storyModeOn()) return;
@@ -43,6 +45,7 @@ export default function PostTile({
         router.push(`/story/${post.section}/${post.id}`, { transitionTypes: ["nav-present"] });
       }}
     >
+      <CoverImage cover={post.cover} className="grid__photo" />
       <Glyph name={post.section} active={false} size={14} />
       {unreadDot && !isRead(post) && <i className="grid__dot" aria-label="Unread" />}
       <span className="grid__title">{post.title}</span>

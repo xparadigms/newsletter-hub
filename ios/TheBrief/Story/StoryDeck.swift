@@ -18,6 +18,7 @@ enum StoryCard: Identifiable {
         let date: String?
         let minutes: Int
         let count: Int
+        var image: Cover? = nil
     }
 
     struct SectionDivider {
@@ -322,7 +323,7 @@ enum StoryDeck {
         let cover = StoryCard.Cover(
             sectionLabel: section.label, sectionNumber: section.number, series: post.series,
             title: post.title, summary: post.summary, date: Format.longDate(post.date),
-            minutes: minutes, count: cards.count + 1)
+            minutes: minutes, count: cards.count + 1, image: post.cover)
         return [.cover(cover)] + cards
     }
 }

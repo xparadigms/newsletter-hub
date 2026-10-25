@@ -84,6 +84,28 @@ struct ArticleView: View {
             if let summary = post.summary, !summary.isEmpty {
                 Text(summary).font(.callout).foregroundStyle(.secondary)
             }
+            if let cover = post.cover, let url = URL(string: cover.url) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Color.clear
+                        .aspectRatio(16 / 9, contentMode: .fit)
+                        .overlay {
+                            AsyncImage(url: url) { phase in
+                                if case let .success(image) = phase {
+                                    image.resizable().scaledToFill()
+                                } else {
+                                    Rectangle().fill(.quaternary)
+                                }
+                            }
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                    if let link = URL(string: cover.link) {
+                        Link("Photo: \(cover.credit)", destination: link)
+                            .font(.system(size: 11, design: .monospaced))
+                            .tint(.secondary)
+                    }
+                }
+                .padding(.top, 6)
+            }
             Divider().padding(.top, 8)
         }
         .padding(.top, 8)

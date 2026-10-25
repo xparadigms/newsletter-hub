@@ -51,6 +51,7 @@ export default async function SectionPage({
     date: p.date,
     series: p.series,
     summary: p.summary,
+    cover: p.cover ?? null,
   }));
   const newestDate = posts[0]?.date
     ? new Date(`${posts[0].date}T00:00:00`).toLocaleDateString("en-US", {

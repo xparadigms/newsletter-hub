@@ -35,6 +35,15 @@ export interface Section {
   hideInNav?: boolean;
 }
 
+/** An issue's cover (shared/covers.py): its source's preview image, or a
+ *  freely licensed photo with its credit. Hotlinked, never copied. */
+export interface Cover {
+  url: string;
+  credit: string;
+  link: string;
+  kind: "source" | "openverse";
+}
+
 export interface Post {
   id: string;
   section: SectionKey;
@@ -42,6 +51,7 @@ export interface Post {
   series: string | null;
   date: string | null;
   summary: string | null;
+  cover?: Cover | null;
 }
 
 // One unit of a Chinese sentence: a word, a numeral, or a punctuation mark.

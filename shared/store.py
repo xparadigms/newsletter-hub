@@ -59,6 +59,16 @@ def upsert_issue(row: dict[str, Any]) -> dict[str, Any]:
 
     url, key = _config()
     row = {k: v for k, v in row.items() if k != "slug"}
+    # Every issue gets a cover on its way in (shared/covers.py). Non-fatal: a
+    # source that will not answer leaves the issue on its typographic card.
+    if "cover" not in row:
+        try:
+            from . import covers
+
+            row["cover"] = covers.find_cover(row)
+            print(f"  ✓ Cover: {row['cover']['credit'] if row['cover'] else 'none'}")
+        except Exception as e:  # noqa: BLE001
+            print(f"  ⚠ Cover failed (non-fatal): {e}")
     resp = http.request_with_retry(
         "POST",
         f"{url}/rest/v1/{TABLE}?on_conflict=run_key",

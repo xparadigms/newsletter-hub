@@ -6,7 +6,7 @@
 // changes, in this tab or another.
 
 import { useSyncExternalStore } from "react";
-import type { Post, SectionKey } from "./types";
+import type { Cover, Post, SectionKey } from "./types";
 
 export interface ShelfPost {
   id: string;
@@ -14,6 +14,7 @@ export interface ShelfPost {
   title: string;
   date: string | null;
   series: string | null;
+  cover?: Cover | null;
 }
 
 interface Shelf {
@@ -77,6 +78,7 @@ const slim = (p: Post | ShelfPost): ShelfPost => ({
   title: p.title,
   date: p.date,
   series: p.series,
+  cover: p.cover ?? null,
 });
 
 export function toggleSaved(post: Post | ShelfPost) {

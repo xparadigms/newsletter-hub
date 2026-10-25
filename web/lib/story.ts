@@ -7,6 +7,7 @@ import type { PostDetail, Section } from "./types";
 
 export interface CoverCard {
   kind: "cover";
+  cover: import("./types").Cover | null;
   sectionLabel: string;
   sectionNumber: string;
   series: string | null;
@@ -448,6 +449,7 @@ export function buildDeck(
 
   const cover: CoverCard = {
     kind: "cover",
+    cover: post.cover ?? null,
     sectionLabel: section.label,
     sectionNumber: section.number,
     series: post.series,

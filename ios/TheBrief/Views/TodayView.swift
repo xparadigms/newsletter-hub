@@ -181,7 +181,7 @@ private struct FeedPost: View {
     /// headline set large on the story card's dark ground.
     private var picture: some View {
         ZStack(alignment: .bottomLeading) {
-            SectionBackground(section: section)
+            SectionBackground(section: section, cover: post.cover)
             VStack(alignment: .leading, spacing: 14) {
                 Eyebrow("\(section.number) / \(section.label)", color: .white.opacity(0.7))
                 Text(post.title)
@@ -240,9 +240,16 @@ private struct FeedPost: View {
                     .lineLimit(expanded ? nil : 2)
                     .onTapGesture { withAnimation(.easeOut(duration: 0.2)) { expanded.toggle() } }
             }
-            Text(Format.shortDate(post.date).uppercased())
-                .font(.system(size: 11))
-                .foregroundStyle(.secondary)
+            HStack(spacing: 4) {
+                Text(Format.shortDate(post.date).uppercased())
+                if let cover = post.cover, let link = URL(string: cover.link) {
+                    Text("·")
+                    Link("Photo: \(cover.credit)", destination: link)
+                }
+            }
+            .font(.system(size: 11))
+            .foregroundStyle(.secondary)
+            .tint(.secondary)
         }
         .padding(.horizontal, 14)
     }
