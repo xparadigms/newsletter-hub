@@ -93,7 +93,9 @@ struct StoryView: View {
     private func cardFace(_ deck: Deck, size: CGSize) -> some View {
         let card = deck.cards.indices.contains(index) ? deck.cards[index] : deck.cards[0]
         return ZStack(alignment: .top) {
-            SectionBackground(section: Sections.get(deck.post.section))
+            // The cover card wears the issue's photo; the reading cards stay dark.
+            SectionBackground(section: Sections.get(deck.post.section),
+                              cover: index == 0 ? deck.post.cover : nil)
 
             StoryCardView(card: card, issue: deck.issue, section: Sections.get(deck.post.section), mode: mode) {
                 atTop = $0
@@ -451,14 +453,30 @@ private struct SegmentBar: View {
 
 /// A dark card, so the text and its readings carry the contrast. The section
 /// shows only as a faint wash of its colour at the top, enough to tell one
-/// newsletter from another as the cube turns.
+/// newsletter from another as the cube turns. With a cover, the photo fills
+/// the card under a shade that darkens toward the bottom, where the text sits.
 struct SectionBackground: View {
     let section: NewsSection
+    var cover: Cover? = nil
 
     var body: some View {
         ZStack {
             Color(white: 0.075)
             LinearGradient(colors: [section.storyTint.opacity(0.22), .clear], startPoint: .top, endPoint: .center)
+            if let cover, let url = URL(string: cover.url) {
+                AsyncImage(url: url, transaction: Transaction(animation: .easeOut(duration: 0.25))) { phase in
+                    if case let .success(image) = phase {
+                        ZStack {
+                            Color.clear.overlay(image.resizable().scaledToFill()).clipped()
+                            LinearGradient(stops: [.init(color: .black.opacity(0.05), location: 0),
+                                                   .init(color: .black.opacity(0.3), location: 0.4),
+                                                   .init(color: .black.opacity(0.82), location: 1)],
+                                           startPoint: .top, endPoint: .bottom)
+                        }
+                        .transition(.opacity)
+                    }
+                }
+            }
         }
     }
 }
@@ -536,6 +554,11 @@ private struct StoryCardView: View {
                     Eyebrow([c.series, c.date, "\(c.minutes) min read"].compactMap { $0 }.joined(separator: " · "),
                             color: .white.opacity(0.7))
                     Eyebrow("\(c.count) cards · tap to begin", color: .white.opacity(0.7))
+                    if let image = c.image {
+                        Text("Photo: \(image.credit)")
+                            .font(.system(size: 10.5))
+                            .foregroundStyle(.white.opacity(0.6))
+                    }
                 }
                 .padding(.top, 26)
             }

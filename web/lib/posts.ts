@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { unstable_cache } from "next/cache";
 import { sectionKeys } from "./config";
 import { cache } from "react";
-import type { Block, Post, PostDetail, SectionKey } from "./types";
+import type { Block, Cover, Post, PostDetail, SectionKey } from "./types";
 
 // Data layer over the Supabase `newsletter` table, which the four generators
 // write before mirroring each issue to Notion and Google Calendar.
@@ -34,7 +34,7 @@ export const POSTS_TAG = "posts";
 // Everything a list needs. Never "*": blocks is ~40KB a row and a section index
 // is ~130 rows, so selecting it here would move megabytes per render for data
 // no list ever displays.
-const LIST_COLUMNS = "slug,section,title,series,issue_date,summary";
+const LIST_COLUMNS = "slug,section,title,series,issue_date,summary,cover";
 
 interface Row {
   slug: string;
@@ -43,6 +43,7 @@ interface Row {
   series: string | null;
   issue_date: string | null;
   summary: string | null;
+  cover: Cover | null;
 }
 
 function toPost(row: Row): Post {
@@ -55,6 +56,7 @@ function toPost(row: Row): Post {
     series: row.series,
     date: row.issue_date,
     summary: row.summary,
+    cover: row.cover ?? null,
   };
 }
 
@@ -103,7 +105,7 @@ async function fetchPosts(section: SectionKey): Promise<Post[]> {
 
 // Shared across home, section, article and search routes so one revalidation
 // window costs one query per section rather than one per page.
-export const getPosts = unstable_cache(fetchPosts, ["posts", "v3"], {
+export const getPosts = unstable_cache(fetchPosts, ["posts", "v4"], {
   revalidate: 300,
   tags: [POSTS_TAG],
 });

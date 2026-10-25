@@ -1,0 +1,31 @@
+name: Give issues a cover image
+
+# Manual: finds a cover for every published issue that has none and writes it
+# to the row. Safe to rerun. See shared/backfill_covers.py.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Find covers and write nothing"
+        type: boolean
+        default: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - name: Backfill
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="--dry-run"; fi
+          python -m shared.backfill_covers $ARGS

@@ -158,7 +158,7 @@ struct PostTile: View {
             if storyMode { router.playStories(from: post, queue: []) } else { router.push(.post(post)) }
         } label: {
             ZStack(alignment: .topLeading) {
-                SectionBackground(section: section)
+                SectionBackground(section: section, cover: post.cover)
                 VStack(alignment: .leading, spacing: 6) {
                     Image(systemName: section.symbol)
                         .font(.system(size: 11, weight: .semibold))

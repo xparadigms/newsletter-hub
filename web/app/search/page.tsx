@@ -17,6 +17,7 @@ export default async function ExplorePage() {
     date: p.date,
     series: p.series,
     summary: p.summary,
+    cover: p.cover ?? null,
   }));
   return (
     <PageTransition>

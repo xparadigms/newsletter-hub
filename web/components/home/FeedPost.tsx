@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import BottomSheet from "@/components/BottomSheet";
+import CoverImage, { CoverCredit } from "@/components/home/CoverImage";
 import SectionAvatar from "@/components/home/SectionAvatar";
 import SaveButton from "@/components/home/SaveButton";
 import { clearStoryQueue, storyModeOn } from "@/components/home/stories";
@@ -102,7 +103,9 @@ export default function FeedPost({ item }: { item: FeedItem }) {
         aria-label={`Read ${item.title}`}
         onClick={onPicture}
         onKeyDown={(e) => e.key === "Enter" && open()}
+        data-cover={item.cover?.url ? "" : undefined}
       >
+        <CoverImage cover={item.cover} className="post__photo" />
         <span className="label post__eyebrow">
           {item.sectionNumber} / {item.sectionLabel}
         </span>
@@ -143,7 +146,15 @@ export default function FeedPost({ item }: { item: FeedItem }) {
             <strong>{item.sectionLabel}</strong> {item.summary}
           </p>
         )}
-        <span className="post__when">{item.shortDate}</span>
+        <span className="post__when">
+          {item.shortDate}
+          {item.cover?.url && (
+            <>
+              {" · "}
+              <CoverCredit cover={item.cover} className="post__credit" />
+            </>
+          )}
+        </span>
       </div>
 
       <BottomSheet open={menu} onClose={() => setMenu(false)} title={item.sectionTitle}>

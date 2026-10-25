@@ -8,6 +8,7 @@ import { blockAudio } from "@/lib/text";
 import type { SectionKey } from "@/lib/types";
 import FuriganaToggle from "@/components/FuriganaToggle";
 import LangToggle from "@/components/LangToggle";
+import CoverImage from "@/components/home/CoverImage";
 import MarkRead from "@/components/home/MarkRead";
 import SaveButton from "@/components/home/SaveButton";
 import SectionAvatar from "@/components/home/SectionAvatar";
@@ -53,7 +54,8 @@ function Card({
 }) {
   if (card.kind === "cover") {
     return (
-      <div className="story-card story-card--cover">
+      <div className="story-card story-card--cover" data-cover={card.cover?.url ? "" : undefined}>
+        <CoverImage cover={card.cover} className="story-card__photo" eager />
         <span className="label story-card__eyebrow">
           {card.sectionNumber} / {card.sectionLabel}
         </span>
@@ -66,6 +68,7 @@ function Card({
               .join(" · ")}
           </span>
           <span className="label">{card.count} cards · tap to begin</span>
+          {card.cover?.url && <span className="label story-card__credit">Photo: {card.cover.credit}</span>}
         </div>
       </div>
     );

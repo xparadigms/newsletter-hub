@@ -1,5 +1,18 @@
 import Foundation
 
+/// An issue's cover (shared/covers.py): its source's preview image, or a
+/// freely licensed photo, with the credit to show beside it. Hotlinked.
+struct Cover: Hashable, Codable {
+    let url: String
+    let credit: String
+    let link: String
+    let kind: String?
+}
+
+/// The same type under a name that StoryCard.Cover (the deck's first card)
+/// does not shadow.
+typealias IssueCover = Cover
+
 struct Post: Identifiable, Hashable, Codable {
     /// The slug. Unique within a section, which is how every lookup keys it.
     let id: String
@@ -9,6 +22,7 @@ struct Post: Identifiable, Hashable, Codable {
     /// "YYYY-MM-DD", date only.
     let date: String?
     let summary: String?
+    var cover: Cover? = nil
 
     var routeID: String { "\(section.rawValue)/\(id)" }
 }

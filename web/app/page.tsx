@@ -38,6 +38,7 @@ export default async function Home() {
       date: p.date,
       series: p.series,
       summary: p.summary,
+      cover: p.cover ?? null,
       sectionTitle: s.title,
       sectionLabel: s.label,
       sectionNumber: s.number,

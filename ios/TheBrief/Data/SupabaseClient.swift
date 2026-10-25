@@ -14,7 +14,7 @@ struct SupabaseClient: Sendable {
     private let key = (Bundle.main.object(forInfoDictionaryKey: "SupabasePublishableKey") as? String) ?? ""
 
     /// Everything a list needs. Never `blocks`: that is ~40KB a row.
-    private static let listColumns = "slug,section,title,series,issue_date,summary"
+    private static let listColumns = "slug,section,title,series,issue_date,summary,cover"
 
     private struct Row: Decodable {
         let slug: String
@@ -23,10 +23,12 @@ struct SupabaseClient: Sendable {
         let series: String?
         let issue_date: String?
         let summary: String?
+        let cover: Cover?
         let blocks: LossyBlocks?
 
         var post: Post {
-            Post(id: slug, section: section, title: title, series: series, date: issue_date, summary: summary)
+            Post(id: slug, section: section, title: title, series: series, date: issue_date, summary: summary,
+                 cover: cover)
         }
     }
 
