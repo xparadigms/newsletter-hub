@@ -10,6 +10,10 @@ on:
         description: "Find covers and write nothing"
         type: boolean
         default: false
+      redo_library:
+        description: "Also re-pick covers that came from the photo library"
+        type: boolean
+        default: false
 
 jobs:
   backfill:
@@ -21,11 +25,16 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install -r requirements.txt
+      # The photo searches are picked by a small model, on the subscription.
+      - run: npm install -g @anthropic-ai/claude-code
       - name: Backfill
         env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
         run: |
           ARGS=""
           if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="--dry-run"; fi
+          if [ "${{ inputs.redo_library }}" = "true" ]; then ARGS="$ARGS --redo-library"; fi
           python -m shared.backfill_covers $ARGS
