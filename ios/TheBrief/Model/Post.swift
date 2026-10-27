@@ -142,3 +142,25 @@ struct LossyBlocks: Codable {
 
     private struct Skip: Decodable {}
 }
+
+/// One headline from the hourly news feed — not an issue: it opens on its
+/// publisher's site.
+struct NewsItem: Identifiable, Hashable, Decodable {
+    let id: Int
+    let section: SectionKey
+    let url: String
+    let title: String
+    let source: String?
+    let summary: String?
+    let image_url: String?
+    let published_at: String?
+
+    var published: Date? {
+        guard let s = published_at else { return nil }
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let d = f.date(from: s) { return d }
+        f.formatOptions = [.withInternetDateTime]
+        return f.date(from: s)
+    }
+}

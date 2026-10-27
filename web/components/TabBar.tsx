@@ -8,6 +8,12 @@ import { useEffect, useState } from "react";
 // level down, under Sections — eight of them never fitted a phone-width bar.
 const ICONS: Record<string, React.ReactNode> = {
   home: <path d="M3.5 10.5 12 4l8.5 6.5V20a1 1 0 0 1-1 1H4.5a1 1 0 0 1-1-1z" />,
+  feed: (
+    <>
+      <path d="M5 5.5h11a3 3 0 0 1 3 3V19H8a3 3 0 0 1-3-3z" />
+      <path d="M9 9.5h6M9 13h6M9 16.5h3" fill="none" />
+    </>
+  ),
   sections: (
     <>
       <rect x="4" y="4" width="7" height="7" rx="1.5" />
@@ -50,6 +56,7 @@ function TabIcon({ name, active }: { name: string; active: boolean }) {
 
 const TABS = [
   { key: "home", href: "/", label: "Home" },
+  { key: "feed", href: "/feed", label: "Feed" },
   { key: "sections", href: "/sections", label: "Sections" },
   { key: "search", href: "/search", label: "Explore" },
   { key: "profile", href: "/profile", label: "Profile" },

@@ -156,6 +156,34 @@ export const getTimeline = unstable_cache(fetchTimeline, ["timeline", "v1"], {
   tags: [POSTS_TAG],
 });
 
+export interface FeedItem {
+  id: number;
+  section: SectionKey;
+  url: string;
+  title: string;
+  source: string | null;
+  summary: string | null;
+  image_url: string | null;
+  published_at: string | null;
+}
+
+async function fetchFeed(section: string): Promise<FeedItem[]> {
+  if (!supabase) return [];
+  let query = supabase
+    .from("feed_items")
+    .select("id,section,url,title,source,summary,image_url,published_at")
+    .order("published_at", { ascending: false })
+    .limit(150);
+  if (section !== "all") query = query.eq("section", section);
+  const { data, error } = await query;
+  if (error) throw new Error(`feed: ${error.message}`);
+  return (data ?? []) as FeedItem[];
+}
+
+/** The hourly news feed (shared/news_feed.py), newest first. Cached for two
+ *  minutes: the feed itself only moves once an hour. */
+export const getFeed = unstable_cache(fetchFeed, ["feed", "v1"], { revalidate: 120 });
+
 // One indexed row, so no cross-request cache: the Notion version needed
 // `revalidate: false` because assembling an issue cost ~45 API calls and ~4
 // seconds. The route-level ISR cache is enough now, and React cache() still

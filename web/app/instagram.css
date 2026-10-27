@@ -1172,3 +1172,127 @@ html[data-furigana="on"] .story-bar .furigana-toggle,
 .article__cover figcaption a {
   color: inherit;
 }
+
+/* ---------- Feed: the hourly news ---------- */
+
+.newsfeed {
+  max-width: 680px;
+  margin: 0 auto;
+  padding-bottom: 24px;
+}
+
+.chips {
+  display: flex;
+  gap: 8px;
+  padding: 4px 16px 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  position: sticky;
+  top: calc(var(--safe-top) + var(--header-height));
+  z-index: 5;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  flex-shrink: 0;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--tap);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.chip[data-on="true"] {
+  background: var(--text-primary);
+  color: var(--bg);
+}
+
+.newsfeed__empty {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text-tertiary);
+}
+
+.newsfeed__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.newsfeed__list > li + li {
+  border-top: 1px solid var(--border);
+}
+
+.news {
+  display: flex;
+  gap: 14px;
+  padding: 14px 16px;
+  transition: background var(--dur-slow) var(--ease-out);
+}
+
+.news:active {
+  background: var(--tap);
+  transition-duration: 0s;
+}
+
+.news__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.news__meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.news__meta .avatar {
+  --size: 18px;
+}
+
+.news__title {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.32;
+  color: var(--text-primary);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.news__summary {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.news__image {
+  flex-shrink: 0;
+  width: 88px;
+  height: 88px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--bg-subtle);
+}

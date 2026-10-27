@@ -84,6 +84,28 @@ struct SupabaseClient: Sendable {
         return ((rows.first?["issue_date"] ?? nil), count)
     }
 
+    /// The hourly news feed (shared/news_feed.py), newest first; nil for every
+    /// newsletter at once.
+    func feed(section: SectionKey?) async throws -> [NewsItem] {
+        var components = URLComponents(url: base.deletingLastPathComponent().appendingPathComponent("feed_items"),
+                                       resolvingAgainstBaseURL: false)!
+        var query = [
+            URLQueryItem(name: "select", value: "id,section,url,title,source,summary,image_url,published_at"),
+            URLQueryItem(name: "order", value: "published_at.desc"),
+            URLQueryItem(name: "limit", value: "150"),
+        ]
+        if let section { query.append(URLQueryItem(name: "section", value: "eq.\(section.rawValue)")) }
+        components.queryItems = query
+        var request = URLRequest(url: components.url!)
+        request.setValue(key, forHTTPHeaderField: "apikey")
+        request.timeoutInterval = 20
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+        return try JSONDecoder().decode([NewsItem].self, from: data)
+    }
+
     func posts(in section: SectionKey) async throws -> [Post] {
         try await get([
             URLQueryItem(name: "select", value: Self.listColumns),
