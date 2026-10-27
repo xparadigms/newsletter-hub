@@ -41,8 +41,14 @@ def token() -> str:
 
 
 def call(method: str, path: str, body: dict | None = None, ok=(200, 201, 204)) -> dict:
-    r = requests.request(method, API + path, json=body, timeout=60,
-                         headers={"Authorization": f"Bearer {token()}"})
+    # App Store Connect answers the odd request with a 500 that succeeds a
+    # moment later; three tries before treating it as real.
+    for attempt in range(3):
+        r = requests.request(method, API + path, json=body, timeout=60,
+                             headers={"Authorization": f"Bearer {token()}"})
+        if r.status_code < 500:
+            break
+        time.sleep(5 * (attempt + 1))
     if r.status_code not in ok:
         raise SystemExit(f"{method} {path} -> {r.status_code}\n{r.text[:1500]}")
     return r.json() if r.text else {}
