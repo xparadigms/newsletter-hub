@@ -14,6 +14,10 @@ on:
         description: "Contact phone for Apple's Beta App Review (asked once per app)"
         type: string
         default: ""
+      share_build:
+        description: "Instead: share this already-uploaded build number with the Testers group"
+        type: string
+        default: ""
 
 jobs:
   testers:
@@ -28,6 +32,8 @@ jobs:
           ASC_ISSUER_ID: 4b0444d7-b87e-4112-8b16-653ff28b5bb9
           BETA_PHONE: ${{ inputs.phone }}
           EMAIL: ${{ inputs.email }}
+          SHARE: ${{ inputs.share_build }}
         run: |
-          if [ -n "$EMAIL" ]; then python3 ios/scripts/asc_testers.py add "$EMAIL"
+          if [ -n "$SHARE" ]; then python3 ios/scripts/asc_testers.py share "$SHARE"
+          elif [ -n "$EMAIL" ]; then python3 ios/scripts/asc_testers.py add "$EMAIL"
           else python3 ios/scripts/asc_testers.py status; fi
