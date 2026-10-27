@@ -7,7 +7,7 @@ enum Route: Hashable {
 }
 
 enum AppTab: Hashable {
-    case today, sections, search, profile
+    case today, feed, sections, search, profile
 }
 
 @MainActor
@@ -18,6 +18,7 @@ final class Router {
     var sections: [Route] = []
     var search: [Route] = []
     var profile: [Route] = []
+    var feed: [Route] = []
     /// The issue open in story mode, presented full screen over everything.
     var story: Post?
     /// Set when a story is opened from the tray: finishing one section's issue
@@ -59,6 +60,7 @@ final class Router {
         case .sections: return sections
         case .search: return search
         case .profile: return profile
+        case .feed: return feed
         }
     }
 
@@ -68,6 +70,7 @@ final class Router {
         case .sections: sections.removeLast()
         case .search: search.removeLast()
         case .profile: profile.removeLast()
+        case .feed: feed.removeLast()
         }
     }
 
@@ -79,6 +82,7 @@ final class Router {
             case .sections: sections.removeAll()
             case .search: search.removeAll()
             case .profile: profile.removeAll()
+            case .feed: feed.removeAll()
             }
         }
         tab = next
@@ -93,6 +97,7 @@ final class Router {
         let parts = [url.host ?? ""] + url.pathComponents.filter { $0 != "/" }
         // thebrief://explore and thebrief://profile[/saved|read|timeline]
         if parts[0] == "explore" { tab = .search; return }
+        if parts[0] == "feed" { tab = .feed; return }
         if parts[0] == "profile" {
             tab = .profile
             requestedShelf = parts.count > 1 ? parts[1] : nil
@@ -122,6 +127,7 @@ final class Router {
         case .sections: sections.append(route)
         case .search: search.append(route)
         case .profile: profile.append(route)
+        case .feed: feed.append(route)
         }
     }
 }

@@ -40,6 +40,12 @@ struct RootView: View {
             .tabItem { Label("Home", systemImage: "house") }
             .tag(AppTab.today)
 
+            NavigationStack(path: $router.feed) {
+                FeedView().routes()
+            }
+            .tabItem { Label("Feed", systemImage: "newspaper") }
+            .tag(AppTab.feed)
+
             NavigationStack(path: $router.sections) {
                 SectionsView().routes()
             }

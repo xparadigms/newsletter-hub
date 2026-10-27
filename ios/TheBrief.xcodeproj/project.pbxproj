@@ -24,6 +24,7 @@
 		35DA9779A44B2B491F825EC7 /* ArticleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1CBFC09F0A3BC0829F111CC; };
 		F0E0C9C36D3A389FDF79BDDD /* BlockViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED2106AE223872F0FDCC2353; };
 		7DCA05A317BE77DD563DB5E6 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7B85ECAA754C8A268AFA797; };
+		17420DBF440CF24A865686F7 /* FeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 218216EDDE38176ED7F1EEFC; };
 		C235D410F8B73EE8F3F38CE0 /* GenerateControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CEC76505B558D0538732EFA; };
 		ABE1417BB74D4E68F2A3F342 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B561FB12C02BFF36CFDA37; };
 		9317087135D3FBDB78FFECF7 /* RubyText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93AF21B1EBD9B4BD12720EA3; };
@@ -53,6 +54,7 @@
 		D1CBFC09F0A3BC0829F111CC /* ArticleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArticleView.swift; sourceTree = "<group>"; };
 		ED2106AE223872F0FDCC2353 /* BlockViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlockViews.swift; sourceTree = "<group>"; };
 		F7B85ECAA754C8A268AFA797 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		218216EDDE38176ED7F1EEFC /* FeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedView.swift; sourceTree = "<group>"; };
 		9CEC76505B558D0538732EFA /* GenerateControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateControls.swift; sourceTree = "<group>"; };
 		A1B561FB12C02BFF36CFDA37 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		93AF21B1EBD9B4BD12720EA3 /* RubyText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RubyText.swift; sourceTree = "<group>"; };
@@ -111,6 +113,7 @@
 				D1CBFC09F0A3BC0829F111CC /* ArticleView.swift */,
 				ED2106AE223872F0FDCC2353 /* BlockViews.swift */,
 				F7B85ECAA754C8A268AFA797 /* Components.swift */,
+				218216EDDE38176ED7F1EEFC /* FeedView.swift */,
 				9CEC76505B558D0538732EFA /* GenerateControls.swift */,
 				A1B561FB12C02BFF36CFDA37 /* ProfileView.swift */,
 				93AF21B1EBD9B4BD12720EA3 /* RubyText.swift */,
@@ -195,6 +198,7 @@
 				35DA9779A44B2B491F825EC7 /* ArticleView.swift in Sources */,
 				F0E0C9C36D3A389FDF79BDDD /* BlockViews.swift in Sources */,
 				7DCA05A317BE77DD563DB5E6 /* Components.swift in Sources */,
+				17420DBF440CF24A865686F7 /* FeedView.swift in Sources */,
 				C235D410F8B73EE8F3F38CE0 /* GenerateControls.swift in Sources */,
 				ABE1417BB74D4E68F2A3F342 /* ProfileView.swift in Sources */,
 				9317087135D3FBDB78FFECF7 /* RubyText.swift in Sources */,

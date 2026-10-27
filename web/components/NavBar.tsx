@@ -23,6 +23,7 @@ function titleFor(pathname: string): { title: string; back: string | null } {
     const key = pathname.split("/")[2] ?? "";
     return { title: getSection(key)?.title ?? SITE.name, back: null };
   }
+  if (pathname === "/feed") return { title: "Feed", back: null };
   if (pathname === "/sections") return { title: "Sections", back: null };
   if (pathname === "/search") return { title: "Explore", back: null };
   if (pathname === "/profile") return { title: "Profile", back: null };
