@@ -199,6 +199,12 @@ two sentences into one and never drop a closing clause because the paragraph \
 still reads well without it. A Korean paragraph shorter than the Japanese above \
 it is a defect, not economy.
 
+PARAGRAPH RULE: no paragraph, Japanese or Korean, exceeds 2 sentences. Each \
+Japanese paragraph and its Korean are read together on one story card, so a \
+third sentence is what makes a card overflow. Because the Korean matches the \
+Japanese sentence for sentence, a two-sentence Japanese paragraph always has a \
+two-sentence Korean one.
+
 Voice: concrete and useful. No hype, no guru register, no "成功者の習慣" \
 listicle tone. Heechang is running a company today — write what changes what \
 he does this week.
@@ -227,7 +233,7 @@ HEADER:
 BUSINESS INSIGHT — Issue #{issue_number}
 {date_line} · 世界の経営者・投資家に学ぶ、今日のビジネス視点
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
-今日の3つの視点: [2-3 Japanese sentences previewing the three insights]
+今日の3つの視点: [at most 2 Japanese sentences previewing the three insights]
 [the same preview in Korean, starting with 오늘의 세 가지 관점:]
 
 Then FOUR insights, each from a DIFFERENT person. Format each exactly:
@@ -239,13 +245,13 @@ SECTION {{N}} · 今日のインサイト{{N}} (INSIGHT {{N}})
 【Japanese headline naming the idea】(Korean translation of the headline)
 📖 語り手: [Name]（[role, company]）· 出典: [where they said it, with the date]
 
-[Japanese: what they actually said or argued. 2-3 sentences, 180-210 \
-Japanese characters. Count them.]
+[Japanese: what they actually said or argued. 2 sentences, never 3, \
+150-175 Japanese characters. Count them.]
 📝 한국어 번역:
 [full Korean translation, sentence for sentence]
 
 [Japanese: なぜそう言えるのか — the reasoning behind it, or the situation that \
-produced it. 2-3 sentences, 180-210 Japanese characters. Count them.]
+produced it. 2 sentences, never 3, 150-175 Japanese characters. Count them.]
 📝 한국어 번역:
 [full Korean translation, sentence for sentence]
 

@@ -117,6 +117,11 @@ def already_covered(rows: list[dict[str, Any]]) -> str:
 
     seen: set[str] = set()
     unique = [u for u in urls if not (u in seen or seen.add(u))]
+    # Every article of a split issue carries the whole issue's source text, so
+    # each headline arrives once per article. Repeats would fill the 60 slots
+    # below with the newest issue's stories and push the older issues out.
+    seen_stories: set[str] = set()
+    stories = [s for s in stories if not (s in seen_stories or seen_stories.add(s))]
 
     parts = [
         "",

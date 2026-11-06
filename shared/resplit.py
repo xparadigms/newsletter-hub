@@ -91,13 +91,18 @@ def main() -> None:
         print("(dry run — nothing written)")
         return
 
+    # A section with no closing title folds its closing into the last story,
+    # as it does at publishing time. Rails issues from before The Sweep was
+    # dropped open their closing with it, so they keep its name.
     closing_title = split.CLOSING_TITLES.get(args.section)
+    if args.section == "fintech" and "SWEEP" in ((closing[:1] or [{}])[0].get("text") or "").upper():
+        closing_title = "The Sweep"
     split.publish(
         section=args.section,
         issue_date=args.date,
         series=series,
         stories=list(zip(titles, stories)),
-        closing=(closing_title, closing) if closing_title else None,
+        closing=(closing_title, closing),
         source_text=row.get("source_text") or "",
         source_format=row.get("source_format") or "plain",
         edition=row.get("edition") or 1,

@@ -55,6 +55,7 @@ def build_row_from_blocks(
     summary: str | None = None,
     edition: int = 1,
     part: int | str | None = None,
+    min_plain_text: int = MIN_PLAIN_TEXT,
 ) -> dict[str, Any]:
     """The row to upsert, given the website's Block[] directly.
 
@@ -62,6 +63,10 @@ def build_row_from_blocks(
     Three Companies writes one per company. Each part needs its own run_key,
     or the second article would replace the first. A string part names an
     article outside the numbered set, such as a reader's company request.
+
+    `min_plain_text` lowers the refusal guard for an article that is short by
+    design — a China Daily story is a single card — and whose generator
+    guards against a refusal some other way (shared/split.py, PART_MIN_CHARS).
 
     `slug` is deliberately absent — the database trigger derives it and keeps an
     existing one, so a same-day rerun republishes under the URL it first used.
@@ -75,10 +80,10 @@ def build_row_from_blocks(
     # issue number. The shortest genuine issue on record is 874 characters (a
     # Mandarin lesson), so anything under this is not an issue.
     plain = blocks_mod.plain_text(blocks)
-    if len(plain) < MIN_PLAIN_TEXT:
+    if len(plain) < min_plain_text:
         raise ValueError(
             f"refusing to store a {len(plain)}-character issue for {section!r} "
-            f"— under {MIN_PLAIN_TEXT}, this is a stub or a refusal, not an issue"
+            f"— under {min_plain_text}, this is a stub or a refusal, not an issue"
         )
 
     title, series, issue_number = parse_title(raw_title)
