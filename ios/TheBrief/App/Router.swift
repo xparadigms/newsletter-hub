@@ -98,6 +98,12 @@ final class Router {
         // thebrief://explore and thebrief://profile[/saved|read|timeline]
         if parts[0] == "explore" { tab = .search; return }
         if parts[0] == "feed" { tab = .feed; return }
+        // thebrief://mode/japan or thebrief://mode/china
+        if parts[0] == "mode", parts.count > 1, let mode = AppMode(rawValue: parts[1]) {
+            UserDefaults.standard.set(mode.rawValue, forKey: SettingsKey.mode)
+            tab = .today
+            return
+        }
         if parts[0] == "profile" {
             tab = .profile
             requestedShelf = parts.count > 1 ? parts[1] : nil

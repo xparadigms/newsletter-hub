@@ -84,9 +84,9 @@ struct SupabaseClient: Sendable {
         return ((rows.first?["issue_date"] ?? nil), count)
     }
 
-    /// The hourly news feed (shared/news_feed.py), newest first; nil for every
-    /// newsletter at once.
-    func feed(section: SectionKey?) async throws -> [NewsItem] {
+    /// The hourly news feed (shared/news_feed.py) for these newsletters,
+    /// newest first.
+    func feed(sections: [SectionKey]) async throws -> [NewsItem] {
         var components = URLComponents(url: base.deletingLastPathComponent().appendingPathComponent("feed_items"),
                                        resolvingAgainstBaseURL: false)!
         var query = [
@@ -94,7 +94,7 @@ struct SupabaseClient: Sendable {
             URLQueryItem(name: "order", value: "published_at.desc"),
             URLQueryItem(name: "limit", value: "150"),
         ]
-        if let section { query.append(URLQueryItem(name: "section", value: "eq.\(section.rawValue)")) }
+        query.append(URLQueryItem(name: "section", value: "in.(\(sections.map(\.rawValue).joined(separator: ",")))"))
         components.queryItems = query
         var request = URLRequest(url: components.url!)
         request.setValue(key, forHTTPHeaderField: "apikey")

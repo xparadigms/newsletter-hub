@@ -40,7 +40,32 @@ enum Appearance: String, CaseIterable, Identifiable {
     }
 }
 
+/// Which half of The Brief the app shows. The Japanese-learning newsletters
+/// and the Chinese-learning ones are read for different reasons, so each mode
+/// keeps to its own: Home, the story tray, Feed, Sections and Explore all
+/// follow it. Profile — your saves and history — shows everything.
+enum AppMode: String, CaseIterable, Identifiable {
+    case japan, china
+    var id: String { rawValue }
+
+    var title: String { self == .japan ? "Japan" : "China" }
+    var flag: String { self == .japan ? "🇯🇵" : "🇨🇳" }
+
+    var sections: [SectionKey] {
+        switch self {
+        case .japan: return [.startup, .business, .fintech, .stocks]
+        case .china: return [.china, .mandarin]
+        }
+    }
+
+    /// The ones with an hourly news feed — Mandarin Basics is a lesson.
+    var feedSections: [SectionKey] {
+        sections.filter { $0 != .mandarin }
+    }
+}
+
 enum SettingsKey {
+    static let mode = "mode"
     static let langs = "langs"
     static let furigana = "furigana"
     static let storyMode = "storyMode"

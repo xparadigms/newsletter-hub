@@ -1,19 +1,21 @@
 import SwiftUI
 import SafariServices
 
-/// The newsletters with a news feed. Mandarin Basics is a lesson, not news.
-private let feedSections: [SectionKey] = [.startup, .business, .fintech, .stocks, .china, .japan, .watch]
-
 /// The Feed tab: the latest from every newsletter's sources, collected each
 /// hour (shared/news_feed.py) — the news itself, before it becomes an issue.
 /// Each item opens on its publisher's site, inside the app.
 @MainActor
 struct FeedView: View {
+    @AppStorage(SettingsKey.mode) private var modeRaw = AppMode.japan.rawValue
     @State private var filter: SectionKey?
     @State private var items: [NewsItem] = []
     @State private var loading = false
     @State private var failed = false
     @State private var opened: URL?
+
+    private var mode: AppMode { AppMode(rawValue: modeRaw) ?? .japan }
+    /// The mode's newsletters that have a news feed.
+    private var feedSections: [SectionKey] { mode.feedSections }
 
     var body: some View {
         List {
@@ -34,16 +36,20 @@ struct FeedView: View {
                         .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
                 }
             } header: {
-                chips
-                    .listRowInsets(EdgeInsets())
-                    .textCase(nil)
+                // China mode has one feed, so nothing to choose between.
+                if feedSections.count > 1 {
+                    chips
+                        .listRowInsets(EdgeInsets())
+                        .textCase(nil)
+                }
             }
         }
         .listStyle(.plain)
-        .navigationTitle("Feed")
+        .navigationTitle("\(mode.flag) Feed")
         .toolbar { ToolbarItem(placement: .topBarTrailing) { SettingsMenu() } }
         .refreshable { await load() }
-        .task(id: filter) { await load() }
+        .task(id: "\(modeRaw)/\(filter?.rawValue ?? "all")") { await load() }
+        .onChange(of: modeRaw) { filter = nil }
         .sheet(item: $opened) { SafariView(url: $0).ignoresSafeArea() }
     }
 
@@ -77,7 +83,7 @@ struct FeedView: View {
         loading = true
         defer { loading = false }
         do {
-            items = try await SupabaseClient.shared.feed(section: filter)
+            items = try await SupabaseClient.shared.feed(sections: filter.map { [$0] } ?? feedSections)
             failed = false
         } catch {
             failed = items.isEmpty
