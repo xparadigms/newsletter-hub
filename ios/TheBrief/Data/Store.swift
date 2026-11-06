@@ -82,11 +82,11 @@ final class Store {
     /// leads — and take turns, one issue each, so a section that published
     /// eight articles does not fill the screen. A section's own issues keep
     /// their order, so part 1 still comes before part 2.
-    func feed(_ limit: Int) -> [Post] {
+    func feed(_ limit: Int, sections: [SectionKey] = SectionKey.allCases) -> [Post] {
         var rng = SeededGenerator(seed: shuffleSeed)
         var out: [Post] = []
         var byDate: [String: [SectionKey: [Post]]] = [:]
-        for key in Sections.feedOrder {
+        for key in Sections.feedOrder where sections.contains(key) {
             for post in posts[key] ?? [] {
                 byDate[post.date ?? "", default: [:]][key, default: []].append(post)
             }
@@ -162,9 +162,9 @@ final class Store {
 
     /// Explore's grid: a random draw from the whole archive, every section and
     /// every month, issues you have not opened first.
-    func explore(_ limit: Int) -> [Post] {
+    func explore(_ limit: Int, sections: [SectionKey] = SectionKey.allCases) -> [Post] {
         var rng = SeededGenerator(seed: exploreSeed)
-        let all = SectionKey.allCases.flatMap { posts[$0] ?? [] }
+        let all = sections.flatMap { posts[$0] ?? [] }
         let unread = all.filter { !seen.contains($0.routeID) }.shuffled(using: &rng)
         let read = all.filter { seen.contains($0.routeID) }.shuffled(using: &rng)
         return Array((unread + read).prefix(limit))

@@ -1,18 +1,22 @@
 import SwiftUI
 
-/// Home, laid out like Instagram's: a tray of section "stories" across the
-/// top, then a feed with one post per issue — header, a typographic picture,
-/// actions and a caption. Double-tap the picture to save the issue.
+/// Home: a tray of section "stories" across the top, then every issue as a
+/// row in the Feed tab's style — source and date, headline, a line of summary,
+/// the cover beside it. Only the current mode's newsletters: tap the title to
+/// switch between Japan and China.
 @MainActor
 struct TodayView: View {
     @Environment(Store.self) private var store
     @Environment(Router.self) private var router
+    @AppStorage(SettingsKey.mode) private var modeRaw = AppMode.japan.rawValue
+
+    private var mode: AppMode { AppMode(rawValue: modeRaw) ?? .japan }
 
     var body: some View {
-        let feed = store.feed(40)
+        let feed = store.feed(60, sections: mode.sections)
         ScrollView {
             LazyVStack(spacing: 0) {
-                StoryTray()
+                StoryTray(sections: mode.sections)
                 Divider().opacity(0.6)
                 if let error = store.error {
                     ErrorBanner(message: error).padding(.horizontal, 16).padding(.vertical, 10)
@@ -21,7 +25,8 @@ struct TodayView: View {
                     ProgressView().padding(.top, 60)
                 }
                 ForEach(feed) { post in
-                    FeedPost(post: post)
+                    HomeRow(post: post)
+                    Divider().padding(.leading, 16)
                 }
             }
         }
@@ -29,10 +34,27 @@ struct TodayView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Text("The Brief")
-                    .font(.system(size: 26, weight: .black, design: .serif))
-                    .tracking(-0.6)
+                // The mode switch, where Instagram puts its account switcher.
+                Menu {
+                    Picker("Mode", selection: $modeRaw) {
+                        ForEach(AppMode.allCases) { m in
+                            Text("\(m.flag) \(m.title) — \(m.sections.map { Sections.get($0).label }.joined(separator: ", "))")
+                                .tag(m.rawValue)
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text("The Brief")
+                            .font(.system(size: 26, weight: .black, design: .serif))
+                            .tracking(-0.6)
+                        Text(mode.flag).font(.system(size: 18))
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 12, weight: .bold))
+                    }
+                    .foregroundStyle(.primary)
                     .fixedSize()
+                }
+                .accessibilityLabel("The Brief, \(mode.title) mode. Switch mode")
             }
             ToolbarItem(placement: .topBarTrailing) { SettingsMenu() }
         }
@@ -76,13 +98,14 @@ struct SectionAvatar: View {
 
 @MainActor
 private struct StoryTray: View {
+    let sections: [SectionKey]
     @Environment(Store.self) private var store
     @Environment(Router.self) private var router
 
     var body: some View {
         // One story per section: its newest issue. Unread sections come first,
         // as Instagram puts unseen accounts first.
-        let entries: [(NewsSection, Post)] = Sections.nav.compactMap { s in
+        let entries: [(NewsSection, Post)] = sections.map(Sections.get).compactMap { s in
             store.posts(in: s.key).first.map { (s, $0) }
         }
         // Shuffled each launch too, with unread sections still in front.
@@ -114,157 +137,76 @@ private struct StoryTray: View {
     }
 }
 
+/// One issue on Home, in the Feed tab's style. Tap to read (or play, with
+/// story mode on); long-press for the rest.
 @MainActor
-private struct FeedPost: View {
+private struct HomeRow: View {
     let post: Post
     @Environment(Store.self) private var store
     @Environment(Router.self) private var router
     @AppStorage(SettingsKey.storyMode) private var storyMode = false
-    @State private var expanded = false
-    @State private var burst = false
 
     private var section: NewsSection { Sections.get(post.section) }
-    private var shareURL: URL {
-        URL(string: "https://heechang-newsletter.vercel.app/post/\(post.section.rawValue)/\(post.id)")!
-    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
-            picture
-            actions
-            caption
-        }
-        .padding(.bottom, 18)
-    }
-
-    private var header: some View {
-        HStack(spacing: 10) {
-            Button { router.playStories(from: post, queue: []) } label: {
-                SectionAvatar(section: section, size: 30, unseen: !store.seen.contains(post.routeID))
-            }
-            .buttonStyle(.plain)
-            // The name opens the section's profile; the ringed avatar beside
-            // it plays the story — the same split as Instagram.
-            Button { router.push(.section(post.section)) } label: {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(section.title).font(.system(size: 14, weight: .semibold))
-                    if let series = post.series, !series.isEmpty {
-                        Text(series).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(1)
+        Button {
+            if storyMode { router.playStories(from: post, queue: []) } else { router.push(.post(post)) }
+        } label: {
+            HStack(alignment: .top, spacing: 14) {
+                VStack(alignment: .leading, spacing: 5) {
+                    HStack(spacing: 6) {
+                        SectionAvatar(section: section, size: 16, unseen: !store.seen.contains(post.routeID))
+                        Text(section.title)
+                        Text("·")
+                        Text(Format.shortDate(post.date))
+                    }
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    Text(post.title)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(3)
+                        .multilineTextAlignment(.leading)
+                    if let summary = post.summary, !summary.isEmpty {
+                        Text(summary)
+                            .font(.system(size: 14))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                    } else if let series = post.series, !series.isEmpty {
+                        Text(series)
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
                 }
-                .contentShape(Rectangle())
+                .frame(maxWidth: .infinity, alignment: .leading)
+                // The cover, or the section's card when there is none.
+                SectionBackground(section: section, cover: post.cover)
+                    .overlay {
+                        if post.cover == nil {
+                            Image(systemName: section.symbol).font(.system(size: 22)).foregroundStyle(.white.opacity(0.8))
+                        }
+                    }
+                    .frame(width: 84, height: 84)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("\(section.title) profile")
-            Spacer()
-            Menu {
-                Button { router.push(.post(post)) } label: { Label("Read Article", systemImage: "doc.plaintext") }
-                Button { router.playStories(from: post, queue: []) } label: {
-                    Label("Play Story", systemImage: "play.rectangle")
-                }
-                Button { router.push(.section(post.section)) } label: { Label("Go to \(section.title)", systemImage: section.symbol) }
-                ShareLink(item: shareURL) { Label("Share", systemImage: "square.and.arrow.up") }
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 16, weight: .semibold))
-                    .frame(width: 36, height: 36)
-                    .contentShape(Rectangle())
-            }
-            .foregroundStyle(.primary)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-    }
-
-    /// Text in place of a photo, as a text post on Instagram is: the issue's
-    /// headline set large on the story card's dark ground.
-    private var picture: some View {
-        ZStack(alignment: .bottomLeading) {
-            SectionBackground(section: section, cover: post.cover)
-            VStack(alignment: .leading, spacing: 14) {
-                Eyebrow("\(section.number) / \(section.label)", color: .white.opacity(0.7))
-                Text(post.title)
-                    .font(.system(size: 32, weight: .heavy))
-                    .tracking(-0.6)
-                    .foregroundStyle(.white)
-                    .minimumScaleFactor(0.6)
-                    .lineLimit(7)
-                Eyebrow(Format.longDate(post.date) ?? "", color: .white.opacity(0.55))
-            }
-            .padding(22)
-            Image(systemName: "bookmark.fill")
-                .font(.system(size: 84))
-                .foregroundStyle(.white)
-                .shadow(radius: 12)
-                .scaleEffect(burst ? 1 : 0.3)
-                .opacity(burst ? 1 : 0)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .aspectRatio(1, contentMode: .fit)
-        .contentShape(Rectangle())
-        .onTapGesture(count: 2) { saveWithBurst() }
-        .onTapGesture { open() }
-    }
-
-    private var actions: some View {
-        let saved = store.isSaved(post)
-        return HStack(spacing: 18) {
-            Button { router.push(.post(post)) } label: { Image(systemName: "doc.plaintext") }
-                .accessibilityLabel("Read article")
-            Button { router.playStories(from: post, queue: []) } label: { Image(systemName: "play.rectangle") }
-                .accessibilityLabel("Play story")
-            ShareLink(item: shareURL) { Image(systemName: "paperplane") }
-            Spacer()
-            Button {
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) { store.toggleSaved(post) }
-            } label: {
-                Image(systemName: saved ? "bookmark.fill" : "bookmark")
-                    .contentTransition(.symbolEffect(.replace))
-            }
-            .accessibilityLabel(saved ? "Unsave" : "Save")
-        }
-        .font(.system(size: 22))
-        .foregroundStyle(.primary)
         .buttonStyle(.plain)
-        .padding(.horizontal, 14)
-        .padding(.top, 12)
-        .padding(.bottom, 8)
-    }
-
-    @ViewBuilder private var caption: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            if let summary = post.summary, !summary.isEmpty {
-                (Text(section.label).fontWeight(.semibold) + Text("  ") + Text(summary))
-                    .font(.system(size: 14))
-                    .lineLimit(expanded ? nil : 2)
-                    .onTapGesture { withAnimation(.easeOut(duration: 0.2)) { expanded.toggle() } }
+        .contextMenu {
+            Button { router.push(.post(post)) } label: { Label("Read Article", systemImage: "doc.plaintext") }
+            Button { router.playStories(from: post, queue: []) } label: { Label("Play Story", systemImage: "play.rectangle") }
+            Button { router.push(.section(post.section)) } label: { Label("Go to \(section.title)", systemImage: section.symbol) }
+            Button { withAnimation { store.toggleSaved(post) } } label: {
+                store.isSaved(post) ? Label("Remove from Saved", systemImage: "bookmark.slash") : Label("Save", systemImage: "bookmark")
             }
-            HStack(spacing: 4) {
-                Text(Format.shortDate(post.date).uppercased())
-                if let cover = post.cover, let link = URL(string: cover.link) {
-                    Text("·")
-                    Link("Photo: \(cover.credit)", destination: link)
-                }
+            ShareLink(item: URL(string: "https://heechang-newsletter.vercel.app/post/\(post.section.rawValue)/\(post.id)")!) {
+                Label("Share", systemImage: "square.and.arrow.up")
             }
-            .font(.system(size: 11))
-            .foregroundStyle(.secondary)
-            .tint(.secondary)
-        }
-        .padding(.horizontal, 14)
-    }
-
-    private func open() {
-        if storyMode { router.playStories(from: post, queue: []) } else { router.push(.post(post)) }
-    }
-
-    private func saveWithBurst() {
-        if !store.isSaved(post) { store.toggleSaved(post) }
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.55)) { burst = true }
-        Task {
-            try? await Task.sleep(nanoseconds: 700_000_000)
-            withAnimation(.easeOut(duration: 0.25)) { burst = false }
         }
     }
 }

@@ -3,11 +3,21 @@ import SwiftUI
 @MainActor
 struct SectionsView: View {
     @Environment(Store.self) private var store
+    @AppStorage(SettingsKey.mode) private var modeRaw = AppMode.japan.rawValue
+    private var mode: AppMode { AppMode(rawValue: modeRaw) ?? .japan }
 
     var body: some View {
         List {
             Section {
-                ForEach(Sections.nav) { row($0) }
+                Picker("Mode", selection: $modeRaw) {
+                    ForEach(AppMode.allCases) { Text("\($0.flag) \($0.title)").tag($0.rawValue) }
+                }
+                .pickerStyle(.segmented)
+                .listRowBackground(Color.clear)
+                .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+            }
+            Section {
+                ForEach(mode.sections.map(Sections.get)) { row($0) }
             }
             Section("Paused") {
                 ForEach(Sections.paused) { row($0) }
@@ -220,7 +230,9 @@ struct SectionView: View {
 struct SearchView: View {
     @Environment(Store.self) private var store
     @Environment(Router.self) private var router
+    @AppStorage(SettingsKey.mode) private var modeRaw = AppMode.japan.rawValue
     @State private var query = ""
+    private var mode: AppMode { AppMode(rawValue: modeRaw) ?? .japan }
 
     var body: some View {
         let q = query.trimmingCharacters(in: .whitespaces).lowercased()
@@ -228,7 +240,7 @@ struct SearchView: View {
             if q.isEmpty {
                 GeometryReader { geo in
                     ScrollView {
-                        ExploreGrid(posts: store.explore(90), width: geo.size.width)
+                        ExploreGrid(posts: store.explore(90, sections: mode.sections), width: geo.size.width)
                             .padding(.bottom, 90)
                     }
                     .refreshable {
@@ -238,9 +250,10 @@ struct SearchView: View {
                 }
             } else {
                 let results = Array(store.latest(Int.max).filter { post in
-                    post.title.lowercased().contains(q)
-                        || (post.series ?? "").lowercased().contains(q)
-                        || Sections.get(post.section).label.lowercased().contains(q)
+                    mode.sections.contains(post.section) && (
+                        post.title.lowercased().contains(q)
+                            || (post.series ?? "").lowercased().contains(q)
+                            || Sections.get(post.section).label.lowercased().contains(q))
                 }.prefix(50))
                 List {
                     if results.isEmpty {

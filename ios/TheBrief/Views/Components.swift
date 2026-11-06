@@ -70,9 +70,13 @@ struct SettingsMenu: View {
     @AppStorage(SettingsKey.langs) private var langs = LangMode.jaKo.rawValue
     @AppStorage(SettingsKey.furigana) private var furigana = true
     @AppStorage(SettingsKey.appearance) private var appearance = Appearance.system.rawValue
+    @AppStorage(SettingsKey.mode) private var mode = AppMode.japan.rawValue
 
     var body: some View {
         Menu {
+            Picker(selection: $mode) {
+                ForEach(AppMode.allCases) { Text("\($0.flag) \($0.title)").tag($0.rawValue) }
+            } label: { Label("Mode", systemImage: "globe.asia.australia") }
             Toggle(isOn: $storyMode) { Label("Story Mode", systemImage: "rectangle.portrait.on.rectangle.portrait") }
             Toggle(isOn: $furigana) { Label("Furigana", systemImage: "character.ja") }
             Picker(selection: $langs) {
