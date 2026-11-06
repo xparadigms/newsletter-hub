@@ -1,4 +1,7 @@
-import FeedPost, { type FeedItem } from "@/components/home/FeedPost";
+import CoverImage from "@/components/home/CoverImage";
+import SectionAvatar from "@/components/home/SectionAvatar";
+import { Glyph } from "@/components/SectionGlyph";
+import PrefetchLink from "@/components/PrefetchLink";
 import StoryTray, { type TrayEntry } from "@/components/home/StoryTray";
 import PageTransition from "@/components/PageTransition";
 import PullToRefresh from "@/components/PullToRefresh";
@@ -10,16 +13,10 @@ import { getAllPosts } from "@/lib/posts";
 // the shared five-minute cache, so this costs no extra queries.
 export const dynamic = "force-dynamic";
 
-function formatDate(date: string | null): string | null {
-  if (!date) return null;
-  const d = new Date(`${date}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return date;
-  return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-}
-
-// Home, laid out like Instagram's: a tray of section stories across the top,
-// then one post per issue, newest day first with the sections shuffled on
-// every visit — the same shape and order as the iOS app.
+// Home: a tray of section stories across the top, then every issue as a row in
+// the Feed tab's style — section and date, headline, summary, the cover beside
+// it — newest day first with the sections shuffled on every visit, as in the
+// iOS app. With story mode on, StoryModeToggle opens these as stories.
 export default async function Home() {
   const posts = await getAllPosts();
 
@@ -29,35 +26,43 @@ export default async function Home() {
     return newest ? [{ section: s.key, label: s.label, id: newest.id }] : [];
   });
 
-  const feed: FeedItem[] = mixedFeed(posts, 40).map((p) => {
-    const s = getSection(p.section)!;
-    return {
-      id: p.id,
-      section: p.section,
-      title: p.title,
-      date: p.date,
-      series: p.series,
-      summary: p.summary,
-      cover: p.cover ?? null,
-      sectionTitle: s.title,
-      sectionLabel: s.label,
-      sectionNumber: s.number,
-      longDate: formatDate(p.date),
-      shortDate: formatShortDate(p.date),
-    };
-  });
+  const feed = mixedFeed(posts, 60);
 
   return (
     <PageTransition>
       <div className="home">
         <PullToRefresh />
         <StoryTray entries={tray} />
-        <div className="feed">
-          {feed.length === 0 && <p className="feed__empty">Nothing published yet.</p>}
-          {feed.map((item) => (
-            <FeedPost key={`${item.section}/${item.id}`} item={item} />
-          ))}
-        </div>
+        {feed.length === 0 && <p className="feed__empty">Nothing published yet.</p>}
+        <ul className="newsfeed__list">
+          {feed.map((p) => {
+            const s = getSection(p.section)!;
+            return (
+              <li key={`${p.section}/${p.id}`}>
+                <PrefetchLink href={`/post/${p.section}/${p.id}`} className="news" transitionTypes={["nav-forward"]}>
+                  <span className="news__text">
+                    <span className="news__meta">
+                      <SectionAvatar section={p.section} size={18} />
+                      <span>{s.title}</span>
+                      <span aria-hidden>·</span>
+                      <span>{formatShortDate(p.date)}</span>
+                    </span>
+                    <span className="news__title">{p.title}</span>
+                    {p.summary ? (
+                      <span className="news__summary">{p.summary}</span>
+                    ) : (
+                      p.series && <span className="news__summary">{p.series}</span>
+                    )}
+                  </span>
+                  <span className="news__thumb" data-section={p.section}>
+                    <Glyph name={p.section} active={false} size={22} />
+                    <CoverImage cover={p.cover} className="news__thumb-img" />
+                  </span>
+                </PrefetchLink>
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </PageTransition>
   );

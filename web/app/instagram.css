@@ -1296,3 +1296,33 @@ html[data-furigana="on"] .story-bar .furigana-toggle,
   object-fit: cover;
   background: var(--bg-subtle);
 }
+
+/* Home's rows share the Feed's style; the thumbnail is the issue's cover, or
+   its section's card when it has none. */
+.home .newsfeed__list {
+  margin-top: 4px;
+}
+
+.news__thumb {
+  position: relative;
+  flex-shrink: 0;
+  width: 88px;
+  height: 88px;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgb(255 255 255 / 80%);
+  background:
+    linear-gradient(to bottom, rgb(var(--tint) / 30%), transparent 70%),
+    var(--card-dark);
+}
+
+.news__thumb-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
