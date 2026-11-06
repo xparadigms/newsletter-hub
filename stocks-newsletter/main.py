@@ -338,7 +338,8 @@ matters. No vague or metaphorical phrasing.
 their Korean equivalents 「X가 아니라 Y」. Say what the company does.
 - Never mention the reader or the audience (no 「銀行幹部にとって」「투자자에게」). \
 State the implication itself.
-- Every paragraph has at most three sentences.
+- Every paragraph has at most two sentences. A part that needs more is written \
+as several short paragraphs, each followed by its own Korean.
 - Never use em dashes, en dashes or hyphens anywhere: no —, –, ―, ‐ or -. \
 Write "30 day" and "long term" style compounds without a hyphen, and write \
 negative moves in words (約9%下落). The katakana long vowel mark ー is fine.
@@ -398,16 +399,18 @@ figures above are an example of the form only. Every Japanese bullet keeps its \
 です so it reads as Japanese; a bare label like 「終値：$137.10」 does not.]
 WHAT:
 [Japanese: the specific events of the last 30 days with dates and figures. \
-FIVE sentences and 370 characters at most, in one or two paragraphs, each \
-paragraph followed by its Korean translation under 📝 한국어 번역:]
+FIVE sentences and 370 characters at most, in paragraphs of at most TWO \
+sentences each, each paragraph followed by its Korean translation under \
+📝 한국어 번역:]
 INDUSTRY:
 [Japanese: how the sector works and where this company sits in it. FOUR \
-sentences and 390 characters at most, in one or two paragraphs, each followed \
-by its Korean translation.]
+sentences and 390 characters at most, in paragraphs of at most TWO sentences \
+each, each followed by its Korean translation.]
 WHY:
 [Japanese: implications for markets, policy, the wider economy, and where \
 relevant for Korea, Japan and Asia. FIVE sentences and 370 characters at \
-most, in one or two paragraphs, each followed by its Korean translation.]
+most, in paragraphs of at most TWO sentences each, each followed by its \
+Korean translation.]
 SOURCES:
 🔗 [URL from this company's research, copied exactly]
 🔗 [one to three lines]
@@ -467,6 +470,11 @@ def write_edition(
 # suggestions, so they are measured and sent back instead.
 # BASIC is bullets, one figure per line, so its "sentences" are lines.
 LIMITS = {"BASIC": (8, 260), "WHAT": (5, 370), "INDUSTRY": (4, 390), "WHY": (5, 370)}
+# And per paragraph, for the prose parts: each Japanese paragraph is one line,
+# and a paragraph with its Korean is what a story card shows, so a third
+# sentence is what overflows one. BASIC is bullets and has no paragraphs.
+PARAGRAPH_SENTENCES = 2
+PROSE_PARTS = ("WHAT", "INDUSTRY", "WHY")
 BANNED = {
     "ではなく": "a 「XではなくY」 contrast",
     "というより": "a 「XというよりY」 contrast",
@@ -487,7 +495,8 @@ def _japanese(lines: list[str]) -> list[str]:
 
 
 def problems(companies: list[tuple[str, dict[str, list[str]]]]) -> list[str]:
-    """Every part over its limit and every banned phrase, as instructions."""
+    """Every part over its limit, every paragraph over two sentences and every
+    banned phrase, as instructions."""
     found = []
     for title, sections in companies:
         name = title.split(":")[0]
@@ -501,7 +510,17 @@ def problems(companies: list[tuple[str, dict[str, list[str]]]]) -> list[str]:
                     f"characters. Cut it to at most {max_sentences} sentences and "
                     f"{max_chars} characters, and cut its Korean to match."
                 )
-        text = "\n".join(line for lines in sections.values() for line in lines)
+        for key in PROSE_PARTS:
+            ja = _japanese(sections.get(key, []))
+            long = [line.count("。") for line in ja if line.count("。") > PARAGRAPH_SENTENCES]
+            if long:
+                found.append(
+                    f"{name}, {key}: {len(long)} paragraph(s) of {max(long)} sentences. "
+                    f"Split every paragraph into paragraphs of at most "
+                    f"{PARAGRAPH_SENTENCES} sentences, each followed by its own "
+                    f"📝 한국어 번역: and the Korean of just those sentences."
+                )
+        text ="\n".join(line for lines in sections.values() for line in lines)
         dollars = sorted(set(m.group(0) for m in _DOLLAR_IN_LOCAL_UNITS.finditer(text)))
         if dollars:
             found.append(

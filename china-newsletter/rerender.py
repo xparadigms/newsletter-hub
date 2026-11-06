@@ -10,6 +10,12 @@ fine for publishing today's news, useless for applying a parser fix to something
 already published. This reads the stored `source_text` and puts it through the
 current build_blocks, so the words are identical and only the structure moves.
 
+Issues are now published as one article per story (shared/split.py), and every
+article stores the whole issue's source text. An article's row is rebuilt by
+building the whole issue and taking its own part (the :pN of its run_key)
+through the same split the generator used. Rows from before the split hold the
+whole issue and are rebuilt whole, as before.
+
 Needs SUPABASE_URL and SUPABASE_SECRET_KEY.
 """
 
@@ -17,6 +23,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import re
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
@@ -24,10 +31,30 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 from shared import audio  # noqa: E402
 from shared import blocks as blocks_mod  # noqa: E402
 from shared import markers as china_blocks  # noqa: E402
-from shared import store  # noqa: E402
+from shared import split, store  # noqa: E402
 from shared.http import request_with_retry  # noqa: E402
 
 COMMIT = "--commit" in sys.argv
+_PART = re.compile(r":p(\d+)$")
+
+
+def rebuild(run_key: str, source_text: str) -> tuple[list[dict], int, int] | None:
+    """(blocks, story_count, unsegmented) for one stored row, or None when the
+    issue no longer splits into as many articles as the row's part number.
+    `unsegmented` counts the whole issue's lines, since that is what was built."""
+    blocks, stories, unsegmented = china_blocks.build_blocks(source_text)
+    m = _PART.search(run_key)
+    if not m:
+        return blocks, stories, unsegmented
+    parts, _ = split.split_parts(blocks, **split.RULES["china"])
+    merged = split.merge_parts(
+        "china", [(split.story_title("china", p), p) for p in parts], None
+    )
+    n = int(m.group(1))
+    if n > len(merged):
+        return None
+    part = merged[n - 1][1]
+    return part, sum(1 for b in part if b.get("type") == "heading"), unsegmented
 
 
 def fetch_rows() -> list[dict]:
@@ -64,7 +91,11 @@ def main() -> int:
             print(f"  ! {row['slug']} has no source_text — skipped")
             continue
 
-        blocks, stories, unsegmented = china_blocks.build_blocks(row["source_text"])
+        rebuilt = rebuild(row["run_key"], row["source_text"])
+        if rebuilt is None:
+            print(f"  ! {row['slug']}: the issue no longer splits into {row['run_key']} — skipped")
+            continue
+        blocks, stories, unsegmented = rebuilt
         # Stored blocks carry `audio`; freshly built ones do not, so without
         # this every row reads as "changed" and --commit would PATCH the audio
         # away. Carry each sentence's existing clip over first — the cache key

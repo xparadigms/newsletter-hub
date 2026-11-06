@@ -147,27 +147,33 @@ MAIN_TITLE: [concise English title of the single most important story, ≤8 word
 For each major story (funding rounds, product launches, strategic \
 partnerships, acquisitions), produce:
 
-• What happened – factual summary (2-3 sentences)
+• What happened – factual summary (2 sentences)
 • Industry status – current state of the industry being disrupted \
 (market size, incumbents, pain points)
 • Why this is disruptive – specifically how the startup/company is \
 challenging the status quo, what aspect of the industry it is disrupting, \
 and why it matters
 
-Group minor stories under an "Other Notable Headlines" section with a \
-one-line description each.
+Cover the major stories only. Leave minor stories out entirely: no list of \
+other headlines, no one-line roundup at the end.
+
+PARAGRAPHS: no paragraph may exceed 2 sentences. Each paragraph becomes one \
+story card, with its Japanese and Korean beside it. If a section needs more \
+than two sentences, write it as two short paragraphs separated by a blank \
+line, never as one long one.
 
 ⚠️ CRITICAL FORMATTING RULES — this text will be displayed inside a Google \
 Calendar event description, which is PLAIN TEXT only:
 - Do NOT use Markdown (no #, ##, ###, **, *, ```, etc.)
 - Use these Unicode characters for visual structure:
   • Use ━━━━━━━━━━━━━━━━━━━━ as section dividers
-  • Use ALL CAPS for section headers (e.g. MAJOR STORIES, OTHER HEADLINES)
+  • Use ALL CAPS for section headers (e.g. MAJOR STORIES)
   • Use ▸ for bullet points
   • Use └─ for sub-bullets
   • Use 🏷️ emojis to tag categories: 💰 Funding, 🤝 Partnership, 🛒 Acquisition, 🚀 Launch
   • Use blank lines between sections for readability
-- Keep each story's analysis concise (3-5 lines per section)
+- Keep each story's analysis concise (one or two paragraphs per section, \
+2 sentences each at most)
 - Be analytical and specific about disruption angles.
 
 Example format:
@@ -177,7 +183,7 @@ Example format:
 ━━━━━━━━━━━━━━━━━━━━
 
 ▸ What happened
-  Brief 2-3 sentence summary here.
+  Brief 2 sentence summary here.
 
 ▸ Industry status
   Brief industry context here.
@@ -267,6 +273,14 @@ Then for each sub-section (▸ What happened / ▸ Industry status / ▸ Why thi
 </callout>
 [Korean translation]
 
+PARAGRAPH RULE: no paragraph, in any language, exceeds 2 sentences — each one \
+is read on its own story card. Where a sub-section has two English paragraphs, \
+repeat the whole unit above (English, Japanese, furigana toggle, Korean) for \
+each, in order. Where an English paragraph runs longer than 2 sentences, split \
+it at a sentence boundary first and give each half its own unit. The Japanese \
+and Korean match the English sentence for sentence: the same number of \
+sentences, in the same order, never merged and never dropped.
+
 After each story add:
 왜 중요한가: [1-2 sentences in Korean on why this matters for startup/tech/investor readers]
 🔗 [the URL of the source item you used, copied exactly from the material]
@@ -286,20 +300,13 @@ FURIGANA RULES:
 4. Indent furigana text one tab inside the toggle.
 5. Do NOT add furigana to headings or 【…】 lines.
 
-FOR BULLET-LIST SECTIONS ("Other Notable Headlines" etc.):
-Each bullet as:
-- **English headline**
-Japanese — written PLAINLY, with no readings in parentheses
-<details>
-<summary>ふりがな（ひらがな）</summary>
-\t[the same Japanese line with the reading after each kanji word]
-</details>
-Korean
-
 NEVER put readings inline in the Japanese itself. 身分証明書（みぶんしょうめいしょ）\
 確認（かくにん）… is unreadable at a glance, and the toggle is the reading aid \
-everywhere else in this newsletter. One toggle per headline, so each card \
+everywhere else in this newsletter. One toggle per paragraph, so each card \
 carries its own.
+
+Convert the major stories only. If the source has any list of minor or other \
+headlines, leave it out.
 
 CLOSING SECTION — add at the very end:
 ## 今週の表現 / 이번 주 표현
@@ -509,7 +516,8 @@ def _trilingual_to_calendar_text(md_text: str) -> str:
 NOTION_API_URL = "https://api.notion.com/v1/pages"
 NOTION_VERSION = "2022-06-28"
 
-_SECTION_HEADERS = ["MAJOR STORIES", "OTHER NOTABLE HEADLINES", "OTHER NOTABLE", "OTHER HEADLINES"]
+# Major stories only: the Other Notable Headlines section is no longer written.
+_SECTION_HEADERS = ["MAJOR STORIES"]
 _SUB_HEADERS = ["▸ What happened", "▸ Industry status", "▸ Why this is disruptive"]
 
 
@@ -687,7 +695,9 @@ def run():
     # Supabase first: it is what the site reads, so it is the write that must
     # land. Notion and Calendar are mirrors and neither can fail the run.
     # One article per story, the way Three Companies publishes one per company.
-    # The Notion page and the calendar event below stay one per issue.
+    # The closing 今週の表現 is not a story, so it has no title of its own and
+    # joins the last story's article. The Notion page and the calendar event
+    # below stay one per issue.
     print("▸ Saving to Supabase, one article per story...")
     web_blocks = split.to_web(all_blocks)
     stories, closing = split.split_parts(web_blocks, **split.RULES["startup"])
@@ -696,7 +706,7 @@ def run():
         issue_date=date_str,
         series=f"Startup News #{ISSUE_NUMBER}",
         stories=[(split.story_title("startup", st), st) for st in stories],
-        closing=(split.CLOSING_TITLES["startup"], closing),
+        closing=(split.CLOSING_TITLES.get("startup"), closing),
         source_text=trilingual_md,
         source_format="trilingual_md",
         edition=EDITION,

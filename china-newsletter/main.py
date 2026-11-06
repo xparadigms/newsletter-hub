@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """China Daily — politics, tech, and what China is talking about → Supabase.
 
-Scrapes Chinese-language and China-desk news, writes a short-paragraph issue in
-Simplified Chinese with a Korean translation under every line and a short
-어휘·문법 note per story, segments each sentence into words with pinyin, and
-stores it.
+Scrapes Chinese-language and China-desk news, writes four stories in
+Simplified Chinese — two short lines each, with one Korean read-through —
+segments each sentence into words with pinyin, and stores each story as its own
+article (shared/split.py), sized to be read on a single story card.
 
-Supabase is the system of record and is written first. Notion gets a mirror for
-browsing, like the other four, but it cannot fail the run — and there is no
-calendar event.
+Supabase is the system of record and is written first. Notion gets a mirror of
+the whole issue for browsing, like the other four, but it cannot fail the run —
+and there is no calendar event.
 """
 
 import os
@@ -25,7 +25,7 @@ from bs4 import BeautifulSoup
 # is not importable. Python only puts the *script's* directory on sys.path.
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from shared import audio, issue as issue_row, llm, markers as china_blocks, sources, store  # noqa: E402
+from shared import llm, markers as china_blocks, sources, split, store  # noqa: E402
 from shared.http import request_with_retry  # noqa: E402
 
 # ── Config ──────────────────────────────────────────────────────────────────
@@ -46,7 +46,12 @@ EDITION = int(os.environ.get("EDITION", "1"))
 
 
 MODEL = "claude-sonnet-4-6"
-MAX_TOKENS = 24000  # roughly twice the issue length
+# A ceiling, not a target: four short stories need a small fraction of it, and
+# a run that stops early costs a day.
+MAX_TOKENS = 24000
+# Each story is published as its own article and read as one card, so the
+# issue is a few stories rather than a long list.
+STORIES = 4
 
 # ── Sources ─────────────────────────────────────────────────────────────────
 # The risk here is not that mainland sites are blocked from us — the runner sits
@@ -193,9 +198,9 @@ SYSTEM_PROMPT = """\
 You are the writer of "China Daily", a daily Chinese-language brief written for \
 Heechang — co-founder/CSO at Four Pillars, a Seoul-based institutional crypto \
 research firm. He reads Chinese at an intermediate level and uses this brief \
-both as a news source and as reading practice — which is why every line carries
-its own Korean and each story ends with a note on two or three words or one
-grammar pattern it actually used.
+both as a news source and as reading practice — which is why each story is two
+short Chinese sentences with a Korean read-through of exactly those two
+sentences, small enough to read on one card.
 
 Cover three things, led by technology: Chinese technology and industry, \
 Chinese politics and policy, and whatever ordinary people in China are \
@@ -217,54 +222,48 @@ are formal.
 ISSUE_PROMPT = """\
 Write today's China Daily issue from the news items below. Today is {date_line}.
 
-Output format — these three markers and nothing else. No Markdown, no emoji, no \
+Output format — these two markers and nothing else. No Markdown, no emoji, no \
 bullet characters, no horizontal rules.
 
 Line 1 must be:
-SUMMARY: <one Korean sentence, at most 60 characters, summarising the day>
-
-Line 2 must be:
 MAIN_TITLE: <English title of the single most important story, 8 words or fewer>
 
-Then 12 to 16 stories. Each story is exactly:
+Then exactly FOUR stories. Each story is exactly:
 
 ### <headline in Korean>
-<Chinese sentence line>
-> <Korean translation of that one line, and nothing else>
-<Chinese sentence line>
-> <Korean translation of that one line, and nothing else>
-> 어휘·문법: <Korean note on this story's language — see the rule below>
+<Chinese sentence>
+<Chinese sentence>
+> <Korean translation of both Chinese sentences, on this one line>
 
 Rules that matter:
 
+- Exactly four stories: not three, not five. Each is published as its own \
+article and read on a single card, so a story is its headline, at most two \
+Chinese lines and one Korean line, and nothing else.
 - The ### headline is written in KOREAN and is NOT numbered. Do not write "1.", \
-"2." or any ordinal — numbering is added afterwards.
-- Each line under a ### is one or two Chinese sentences and at most 45 \
-characters. Two or three lines per story.
-- Keep each story to 85-95 Chinese characters in total, counting all its lines. \
-Count them; do not come in well under. This is a brief: give the fact and why it \
+"2." or any ordinal — numbering is added afterwards. It is also the article's \
+title, so make it a complete headline of 30 characters or fewer.
+- Each Chinese line is ONE sentence of at most 40 characters. Two lines per \
+story, never more; one is enough when the fact is simple. Keep each story to \
+50-75 Chinese characters in total. This is a brief: give the fact and why it \
 matters, and stop. Do not add background the reader can infer, and do not \
 restate the headline.
 - Write ONLY Simplified Chinese in those lines. No Traditional characters.
 - NEVER write pinyin or romanisation anywhere, and never put a reading in \
 parentheses after a word. Readings are added afterwards by a separate tool, and \
 anything you add corrupts it.
-- EVERY Chinese line is immediately followed by its own "> " line giving that \
-one line in Korean. Never group translations, never write "번역:" and list \
-several at once, and never leave a Chinese line without the Korean beneath it.
-- The last "> " line of each story is a 어휘·문법 note: pick two or three words \
-or one grammar pattern that actually appear in that story's Chinese and are \
-worth learning — a word a Korean reader would not already know, a set phrase, or \
-a construction like 把/被/越来越/不但…而且. Give each word as "단어 — 뜻", and \
-explain a pattern in one sentence with the phrase from the story as the example. \
-Two or three items, no more. Never explain something the story did not use.
+- The single "> " line after a story's Chinese is its Korean read-through: a \
+full translation of exactly those Chinese sentences, sentence for sentence — \
+two Chinese sentences, two Korean sentences, in the same order, with every \
+name and number carried across. Keep it on one line. Never put Korean between \
+the Chinese lines, never write "번역:", never add a note on vocabulary or \
+grammar, and never leave a story without its Korean.
 - Do not repeat a story. Do not invent facts, numbers or dates that are not in \
 the items below.
-- Technology and industry is the largest area: five or six of the stories must \
-be technology — AI, semiconductors, electric vehicles, platforms, telecoms, \
-startups, and the companies behind them. Count them. Split the rest between \
-politics and policy on one side, society and what people are talking about on \
-the other. Do not let any one area take more than half the issue.
+- Technology and industry leads: two of the four stories must be technology — \
+AI, semiconductors, electric vehicles, platforms, telecoms, startups, and the \
+companies behind them. Of the other two, one is politics and policy and one is \
+society and what ordinary people in China are talking about.
 
 --- NEWS ITEMS ---
 {news_items}
@@ -369,47 +368,56 @@ def run():
     print(f"▸ Generating issue via Claude ({len(items)} items)...")
     issue_text = generate_issue(items)
 
-    main_title, summary = china_blocks.parse_meta(issue_text)
+    # MAIN_TITLE names the Notion page and the fallback article. There is no
+    # SUMMARY any more: a day-level deck would describe four stories on each
+    # article's cover, and each article's own Korean line already says what
+    # it is about.
+    main_title, _ = china_blocks.parse_meta(issue_text)
     print(f"  Title: {_issue_title(main_title)}")
 
     print("▸ Segmenting Chinese and attaching pinyin...")
     blocks, stories, unsegmented = china_blocks.build_blocks(issue_text)
     print(f"  {stories} stories, {len(blocks)} blocks, {unsegmented} lines unsegmented.")
     if stories == 0:
+        # This is China's refusal guard. Its articles are too short by design
+        # for the 700-character one in shared/issue.py, and an apology has no
+        # ### stories in it.
         print("✗ No ### headings found — the model ignored the output contract.")
         sys.exit(1)
+    if stories != STORIES:
+        # Published anyway: a day with three good stories beats no day.
+        print(f"  ⚠ Expected {STORIES} stories, got {stories}.")
     if unsegmented > max(2, stories):
         # A handful of odd lines is tolerable; a systematic failure means the
         # model emitted something other than plain Simplified Chinese.
         print(f"✗ {unsegmented} lines failed segmentation — refusing to publish.")
         sys.exit(1)
 
-    print("▸ Synthesising audio...")
-    try:
-        audio.attach_audio(blocks, "zh")
-    except Exception as e:  # noqa: BLE001 — a silent issue still publishes
-        print(f"  ⚠ Audio failed (non-fatal): {e}")
-
+    # One article per story, each titled by its own Korean headline and tagged
+    # "[China Daily #N · 2/4]" the way the split newsletters are. publish()
+    # voices each article's Chinese and finds each its own cover on the way
+    # in. Every article keeps the whole issue's source text, which is what
+    # the next runs read to avoid repeating a story.
     date_str = now_kst.strftime("%Y-%m-%d")
-    row = issue_row.build_row_from_blocks(
+    print("▸ Saving to Supabase, one article per story...")
+    parts, _ = split.split_parts(blocks, **split.RULES["china"])
+    rows = split.publish(
         section="china",
         issue_date=date_str,
-        raw_title=_issue_title(main_title),
-        blocks=blocks,
+        series=f"China Daily #{ISSUE_NUMBER}",
+        stories=[(split.story_title("china", st), st) for st in parts],
+        closing=None,
         source_text=issue_text,
         source_format="china_md",
-        summary=summary,
         edition=EDITION,
+        fallback=(_issue_title(main_title), blocks),
+        audio_lang="zh",
     )
+    stored = rows[0] if rows else {}
 
-    print("▸ Saving to Supabase...")
-    stored = store.upsert_issue(row)
-    if stored.get("slug"):
-        print(f"✓ Stored: china/{stored['slug']}")
-
-    # Notion is a mirror for browsing, written after the row the site reads.
-    # It cannot fail the run: a Notion outage should leave a live issue with no
-    # mirror, not no issue.
+    # Notion is a mirror for browsing, written after the rows the site reads,
+    # and stays one page per issue. It cannot fail the run: a Notion outage
+    # should leave live articles with no mirror, not no articles.
     print("▸ Mirroring to Notion...")
     try:
         notion_url = create_notion_page(
@@ -418,12 +426,9 @@ def run():
         if notion_url:
             print(f"✓ Notion page created: {notion_url}")
             if stored.get("slug"):
-                store.patch_issue(row["run_key"], {"notion_url": notion_url})
+                store.patch_issue(stored["run_key"], {"notion_url": notion_url})
     except Exception as e:  # noqa: BLE001
         print(f"  ⚠ Notion mirror failed (non-fatal): {e}")
-
-    if stored.get("slug"):
-        store.ping_revalidate("china", stored["slug"])
 
     print("\n" + "=" * 60)
     print(issue_text)

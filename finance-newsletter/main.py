@@ -266,8 +266,7 @@ Editorial priors (color your takes, but push back when evidence warrants):
 - Bank-led stablecoin frameworks are last-decade answers to next-decade questions
 - Custody is the unsolved bottleneck, not issuance
 
-EVERY STORY ENDS WITH ITS SOURCE LINK. After each Deep Read and after each \
-Sweep headline, on its own line:
+EVERY STORY ENDS WITH ITS SOURCE LINK. After each Deep Read, on its own line:
 🔗 <the URL of the item you used, copied character for character from the \
 material>
 This is not optional and not decoration. An issue that omits these is \
@@ -277,7 +276,8 @@ removed before publishing, so a guess only costs the story its link.
 
 Voice: tight, not academic. Short sentences. Active voice. Have a take. \
 No hedge language. No corporate-speak. No emoji. No paragraph may exceed \
-4 sentences — split longer thoughts into separate paragraphs.
+2 sentences — split longer thoughts into separate paragraphs. Each paragraph \
+is read on its own story card, so two sentences is a hard limit.
 
 TRILINGUAL FORMAT — this is non-negotiable:
 - Every substantive section is written FIRST in English, then immediately \
@@ -342,7 +342,7 @@ What happened. [English, 2 sentences]
 📝 한국어 번역:
 [Korean translation of What happened]
 
-What it means. [English, 2-3 sentences]
+What it means. [English, 2 sentences]
 🇯🇵 日本語:
 [Japanese translation of What it means]
 📝 한국어 번역:
@@ -358,62 +358,42 @@ Open question. [English, 1 sentence]
 🇯🇵 日本語:
 [Japanese translation]
 📝 한국어 번역:
-[Korean translation. Then add: 왜 중요한가: 1-2 sentences if relevant.]
+[Korean translation. Then add, if relevant: 왜 중요한가: in ONE sentence, so \
+the Korean paragraph is still at most two sentences.]
 
 🔗 [the URL of the source item you used, copied exactly from the material]
-
-SECTION 2 — THE SWEEP:
-7-9 headlines grouped by region:
-Americas / Asia / Europe / Infra & markets
-Mix crypto and pure fintech within each group — aim for roughly half the \
-headlines to be non-crypto fintech (payments, banking tech, open banking, \
-neobanks, card networks). Skip a group if nothing meaningful. Don't pad.
-
-For EACH headline, output all three languages together before moving to \
-the next headline:
-
-[English headline]
-▸ Explanation: What happened, in one sentence of 20 words or fewer.
-▸ Implication: Why it matters for financial infra, same limit.
-
-🇯🇵 日本語:
-[Japanese translation of the headline + both bullet points above]
-
-📝 한국어 번역:
-[Korean translation of the headline + both bullet points above]
-
-🔗 [the URL of the source item you used, copied exactly from the material]
-
-Then move to the next headline and repeat the same EN → JP → KR pattern.
 
 Copy every URL character for character from the item you actually used. Never \
 shorten it, never tidy it, never reconstruct one from the outlet's name, and \
 never invent one. A link that was not in the material is removed before the \
 issue is published, so a guessed URL only loses the story its link.
 
-SECTION 3 — FOOD FOR THOUGHT:
+SECTION 2 — FOOD FOR THOUGHT:
 Today is {weekday}. Today's rotation: {rotation_slot}.
 {rotation_instructions}
 
 After the English content, add:
 🇯🇵 日本語:
-[Full Japanese translation]
+[Full Japanese translation, with the same paragraph breaks as the English]
 📝 한국어 번역:
-[Full Korean translation]
+[Full Korean translation, with the same paragraph breaks as the English]
 
 CLOSING:
 Single italicized line: issue number, estimated minutes elapsed, \
 one-line teaser for tomorrow's rotation ({tomorrow_slot}).
 
-LENGTH: 1,050-1,250 English words in total. The per-section budgets above \
-are how you get there — a single global count has not held on its own. These \
-budgets count ENGLISH ONLY. The Japanese and Korean translations add to the \
-total and are not part of any budget: translate every sentence in full, \
-sentence for sentence, however long that makes the issue.
+LENGTH: 550-700 English words in total: the three Deep Reads at 150-175 \
+words each, plus Food for Thought. The per-section budgets above are how you \
+get there — a single global count has not held on its own. These budgets \
+count ENGLISH ONLY. The Japanese and Korean translations add to the total and \
+are not part of any budget: translate every sentence in full, sentence for \
+sentence, however long that makes the issue.
 
-PARAGRAPHS: No paragraph may exceed 4 sentences. If a section calls for \
-more sentences, split them into multiple short paragraphs. This applies \
-to the Japanese and Korean translations too.
+PARAGRAPHS: No paragraph may exceed 2 sentences. If a section calls for \
+more sentences, split them into multiple short paragraphs of one or two \
+sentences each. This applies to the Japanese and Korean translations too: \
+they keep the English paragraph breaks and match it sentence for sentence, so \
+no translated paragraph exceeds 2 sentences either.
 
 If signal is thin, say so. Don't manufacture three Deep Reads when only \
 two stories warrant it.
@@ -431,13 +411,13 @@ two stories warrant it.
 """
 
 ROTATION_INSTRUCTIONS = {
-    0: "Thesis Monday: State or sharpen a current conviction. Bold the thesis as the first line, then 3-4 sentences arguing it, split into paragraphs of 4 sentences max.",
-    1: "Counter-Take Tuesday: Steelman a position Heechang would disagree with. Not a strawman. 4-5 sentences, split into paragraphs of 4 sentences max.",
-    2: "Data Point Wednesday: One number or chart-worthy stat + why it matters. Lead with the number in bold. 3 sentences, split into paragraphs of 4 sentences max.",
-    3: "Throwback Thursday: A piece of financial history that rhymes with today (Eurodollar markets, Bretton Woods, MMF reform, etc.). Name the event, draw the parallel, name the lesson. 4-5 sentences, split into paragraphs of 4 sentences max.",
-    4: "Founder Friday: A question you'd ask a founder building in the space. Lead with the question in italics, then 2 sentences of framing.",
-    5: "Long Read Saturday: A quote from a paper, book, or essay (15 words max, paraphrase the rest) + reaction. 4-5 sentences, split into paragraphs of 4 sentences max.",
-    6: "Week in Review Sunday: Pull the thread across the week. What story compounded? What question resolved? 5-6 sentences, split into paragraphs of 4 sentences max.",
+    0: "Thesis Monday: State or sharpen a current conviction. Bold the thesis as the first line, then 3-4 sentences arguing it, split into paragraphs of 2 sentences max.",
+    1: "Counter-Take Tuesday: Steelman a position Heechang would disagree with. Not a strawman. 4-5 sentences, split into paragraphs of 2 sentences max.",
+    2: "Data Point Wednesday: One number or chart-worthy stat + why it matters. Lead with the number in bold. 3 sentences, split into paragraphs of 2 sentences max.",
+    3: "Throwback Thursday: A piece of financial history that rhymes with today (Eurodollar markets, Bretton Woods, MMF reform, etc.). Name the event, draw the parallel, name the lesson. 4-5 sentences, split into paragraphs of 2 sentences max.",
+    4: "Founder Friday: A question you'd ask a founder building in the space. Lead with the question in italics, then 2 sentences of framing in a paragraph of their own.",
+    5: "Long Read Saturday: A quote from a paper, book, or essay (15 words max, paraphrase the rest) + reaction. 4-5 sentences, split into paragraphs of 2 sentences max.",
+    6: "Week in Review Sunday: Pull the thread across the week. What story compounded? What question resolved? 5-6 sentences, split into paragraphs of 2 sentences max.",
 }
 
 
@@ -556,9 +536,11 @@ def create_calendar_event(issue_text: str, main_title: str = "Finance Infra") ->
 NOTION_API_URL = "https://api.notion.com/v1/pages"
 NOTION_VERSION = "2022-06-28"
 
+# No Sweep headers (THE SWEEP and its region groups): the issue no longer has
+# one, and a stray "Asia" line in a Deep Read must stay body text, not become a
+# level-2 heading that would cut the Deep Read short as the start of the tail.
 _SECTION_HEADERS = [
-    "THREE DEEP READS", "THE SWEEP", "FOOD FOR THOUGHT",
-    "AMERICAS", "ASIA", "EUROPE", "INFRA & MARKETS",
+    "THREE DEEP READS", "FOOD FOR THOUGHT",
     "THESIS MONDAY", "COUNTER-TAKE TUESDAY", "DATA POINT WEDNESDAY",
     "THROWBACK THURSDAY", "FOUNDER FRIDAY", "LONG READ SATURDAY",
     "WEEK IN REVIEW SUNDAY", "OTHER NOTABLE", "CLOSING",
@@ -775,8 +757,10 @@ def run():
     # existed. Notion is a mirror now and the site reads Supabase, so this is
     # the write that must land; a failed mirror leaves a live issue with
     # notion_page_id null rather than no issue at all.
-    # One article per Deep Read, and The Sweep with Food for Thought as the
-    # last. The Notion page and the calendar event below stay one per issue.
+    # One article per Deep Read, and Food for Thought with the closing line as
+    # the last. A Food for Thought too short to stand alone (Founder Friday's
+    # question can be) joins the third Deep Read instead. The Notion page and
+    # the calendar event below stay one per issue.
     print("▸ Saving to Supabase, one article per story...")
     web_blocks = split.to_web(all_blocks)
     stories, closing = split.split_parts(web_blocks, **split.RULES["fintech"])
