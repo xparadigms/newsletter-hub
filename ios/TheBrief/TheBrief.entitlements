@@ -2,9 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Push notifications. Signing for the App Store turns this into the
-	     production environment, which is what TestFlight builds talk to. -->
+	<!-- Push notifications, through Apple's production service — the one
+	     TestFlight and App Store builds use, and the only one the App Store
+	     profile (ios.yml) allows. -->
 	<key>aps-environment</key>
-	<string>development</string>
+	<string>production</string>
 </dict>
 </plist>

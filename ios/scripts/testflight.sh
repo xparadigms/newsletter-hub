@@ -13,10 +13,10 @@
 #   ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx TEAM_ID=N7DWY66V6B \
 #     ios/scripts/testflight.sh
 #
-# The archive is signed ad hoc and signed for distribution at export: an
-# archive signed for development needs a registered device, and the upload
-# needs none. Ad hoc rather than unsigned, because an unsigned archive carries
-# no entitlements, and the push entitlement must survive to the export. -allowProvisioningUpdates lets Xcode create the distribution
+# In CI the archive is signed for the App Store with a certificate and profile
+# kept as secrets (see below and ios.yml): an archive signed for development
+# needs a registered device, ad hoc signing is refused by the iOS 26 SDK, and
+# an unsigned archive loses the push entitlement. -allowProvisioningUpdates lets Xcode create the distribution
 # certificate and profile on the first run.
 set -eu
 cd "$(dirname "$0")/.."
@@ -51,11 +51,26 @@ python3 generate_project.py >/dev/null
 rm -rf "$ARCHIVE" build/export
 mkdir -p build
 
+# With IOS_PROFILE_NAME set (CI installs the certificate and profile first),
+# the archive is signed for the App Store directly, so its entitlements — push
+# — are the profile's. Without it, the archive is unsigned and Xcode signs it
+# at export, which works for an app without capabilities.
+if [ -n "${IOS_PROFILE_NAME:-}" ]; then
+  SIGN_ALLOWED=YES SIGN_STYLE=Manual SIGN_ID="Apple Distribution" SIGN_PROFILE="$IOS_PROFILE_NAME"
+  EXPORT_SIGNING="<key>signingStyle</key><string>manual</string>
+  <key>signingCertificate</key><string>Apple Distribution</string>
+  <key>provisioningProfiles</key><dict><key>com.heechangkang.thebrief</key><string>$IOS_PROFILE_NAME</string></dict>"
+else
+  SIGN_ALLOWED=NO SIGN_STYLE=Automatic SIGN_ID="" SIGN_PROFILE=""
+  EXPORT_SIGNING="<key>signingStyle</key><string>automatic</string>"
+fi
+
 xcodebuild -project TheBrief.xcodeproj -scheme TheBrief -configuration Release \
   -destination 'generic/platform=iOS' -archivePath "$ARCHIVE" \
   -allowProvisioningUpdates $AUTH \
   DEVELOPMENT_TEAM="$TEAM_ID" CURRENT_PROJECT_VERSION="$BUILD" \
-  CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- PROVISIONING_PROFILE_SPECIFIER= \
+  CODE_SIGNING_ALLOWED="$SIGN_ALLOWED" CODE_SIGN_STYLE="$SIGN_STYLE" \
+  CODE_SIGN_IDENTITY="$SIGN_ID" PROVISIONING_PROFILE_SPECIFIER="$SIGN_PROFILE" \
   SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
   archive > build/archive.log 2>&1 || {
     grep -E "error:|warning: .*signing" build/archive.log | head -20 >&2
@@ -74,7 +89,7 @@ cat > build/ExportOptions.plist <<PLIST
   <key>method</key><string>app-store-connect</string>
   <key>destination</key><string>upload</string>
   <key>teamID</key><string>$TEAM_ID</string>
-  <key>signingStyle</key><string>automatic</string>
+  $EXPORT_SIGNING
   <key>uploadSymbols</key><true/>
   <key>manageAppVersionAndBuildNumber</key><false/>
 </dict>
