@@ -1326,3 +1326,62 @@ html[data-furigana="on"] .story-bar .furigana-toggle,
   height: 100%;
   object-fit: cover;
 }
+
+/* The filter row on Home and Feed floats just above the tab bar, where the
+   thumb already is, as in the iOS app. */
+.filterbar {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(var(--safe-bottom) + var(--tabbar-height) + 26px);
+  z-index: 54;
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-radius: 999px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg);
+  box-shadow: var(--shadow-float);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  transition: transform var(--dur-sheet) var(--spring), opacity var(--dur-base) var(--ease-out);
+}
+
+.filterbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Tucks away with the tab bar while reading downwards (phones only; the
+   desktop bar never tucks). */
+@media (max-width: 1023px) {
+  body:has(.tabbar[data-minimized="true"]) .filterbar {
+    transform: translate3d(0, calc(100% + var(--tabbar-height) + var(--safe-bottom) + 40px), 0);
+    opacity: 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .filterbar {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    max-width: 640px;
+  }
+}
+
+.filterbar .chip {
+  background: transparent;
+}
+
+.filterbar .chip[data-on="true"] {
+  background: var(--text-primary);
+  color: var(--bg);
+}
+
+/* The list must scroll clear of the filter row as well as the tab bar. */
+.home,
+.newsfeed {
+  padding-bottom: 72px;
+}

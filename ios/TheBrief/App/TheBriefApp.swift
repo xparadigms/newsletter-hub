@@ -4,6 +4,7 @@ import AVFoundation
 @main
 @MainActor
 struct TheBriefApp: App {
+    @UIApplicationDelegateAdaptor(PushDelegate.self) private var pushDelegate
     @State private var store = Store()
     @State private var router = Router()
     @AppStorage(SettingsKey.appearance) private var appearance = Appearance.system.rawValue
@@ -30,6 +31,7 @@ struct RootView: View {
     @Environment(Router.self) private var router
     @Environment(\.scenePhase) private var scenePhase
     @State private var wasInBackground = false
+    @AppStorage(SettingsKey.mode) private var modeRaw = AppMode.japan.rawValue
 
     var body: some View {
         @Bindable var router = router
@@ -65,6 +67,12 @@ struct RootView: View {
             .tag(AppTab.profile)
         }
         .onOpenURL { router.open($0, store: store) }
+        // A tapped notification's link.
+        .onReceive(NotificationCenter.default.publisher(for: PushDelegate.openLink)) { note in
+            if let url = note.object as? URL { router.open(url, store: store) }
+        }
+        // Notifications follow the mode: tell Supabase when it changes.
+        .onChange(of: modeRaw) { Task { await PushRegistration.register() } }
         // Coming back to the app counts as opening it again: a new order.
         .onChange(of: scenePhase) { _, phase in
             if phase == .background { wasInBackground = true }

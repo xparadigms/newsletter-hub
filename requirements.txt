@@ -15,3 +15,8 @@ pypinyin==0.55.*
 
 # shared/audio.py: story-mode speech from Microsoft's neural voices, keyless.
 edge-tts==7.*
+
+# shared/push.py: iOS notifications through Apple's push service, which only
+# speaks HTTP/2, signed with an ES256 token.
+httpx[http2]==0.*
+pyjwt[crypto]==2.*

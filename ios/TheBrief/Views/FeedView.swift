@@ -35,48 +35,18 @@ struct FeedView: View {
                         .buttonStyle(.plain)
                         .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
                 }
-            } header: {
-                // China mode has one feed, so nothing to choose between.
-                if feedSections.count > 1 {
-                    chips
-                        .listRowInsets(EdgeInsets())
-                        .textCase(nil)
-                }
             }
         }
         .listStyle(.plain)
+        .safeAreaInset(edge: .bottom) {
+            FilterBar(sections: feedSections, selection: $filter)
+        }
         .navigationTitle("\(mode.flag) Feed")
         .toolbar { ToolbarItem(placement: .topBarTrailing) { SettingsMenu() } }
         .refreshable { await load() }
         .task(id: "\(modeRaw)/\(filter?.rawValue ?? "all")") { await load() }
         .onChange(of: modeRaw) { filter = nil }
         .sheet(item: $opened) { SafariView(url: $0).ignoresSafeArea() }
-    }
-
-    private var chips: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                chip("All", on: filter == nil) { filter = nil }
-                ForEach(feedSections, id: \.self) { key in
-                    chip(Sections.get(key).label, on: filter == key) { filter = key }
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
-        }
-        .background(.bar)
-    }
-
-    private func chip(_ title: String, on: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.system(size: 14, weight: .medium))
-                .padding(.horizontal, 14)
-                .padding(.vertical, 7)
-                .background(on ? Color.primary : Color.primary.opacity(0.08), in: Capsule())
-                .foregroundStyle(on ? Color(uiColor: .systemBackground) : Color.primary)
-        }
-        .buttonStyle(.plain)
     }
 
     private func load() async {

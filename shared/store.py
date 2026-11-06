@@ -78,7 +78,16 @@ def upsert_issue(row: dict[str, Any]) -> dict[str, Any]:
     )
     resp.raise_for_status()
     stored = resp.json()
-    return stored[0] if isinstance(stored, list) and stored else {}
+    stored = stored[0] if isinstance(stored, list) and stored else {}
+    # Phones hear about it (shared/push.py). Non-fatal: the issue is published
+    # whether or not a notification goes out.
+    try:
+        from . import push
+
+        push.notify(row, stored)
+    except Exception as e:  # noqa: BLE001
+        print(f"  ⚠ Notification failed (non-fatal): {e}")
+    return stored
 
 
 def patch_issue(run_key: str, fields: dict[str, Any]) -> None:

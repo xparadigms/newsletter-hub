@@ -13,9 +13,10 @@
 #   ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx TEAM_ID=N7DWY66V6B \
 #     ios/scripts/testflight.sh
 #
-# The archive is built unsigned and signed for distribution at export: an
+# The archive is signed ad hoc and signed for distribution at export: an
 # archive signed for development needs a registered device, and the upload
-# needs none. -allowProvisioningUpdates lets Xcode create the distribution
+# needs none. Ad hoc rather than unsigned, because an unsigned archive carries
+# no entitlements, and the push entitlement must survive to the export. -allowProvisioningUpdates lets Xcode create the distribution
 # certificate and profile on the first run.
 set -eu
 cd "$(dirname "$0")/.."
@@ -54,12 +55,16 @@ xcodebuild -project TheBrief.xcodeproj -scheme TheBrief -configuration Release \
   -destination 'generic/platform=iOS' -archivePath "$ARCHIVE" \
   -allowProvisioningUpdates $AUTH \
   DEVELOPMENT_TEAM="$TEAM_ID" CURRENT_PROJECT_VERSION="$BUILD" \
-  CODE_SIGNING_ALLOWED=NO SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
+  CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- PROVISIONING_PROFILE_SPECIFIER= \
+  SUPABASE_PUBLISHABLE_KEY="$SUPABASE_PUBLISHABLE_KEY" \
   archive > build/archive.log 2>&1 || {
     grep -E "error:|warning: .*signing" build/archive.log | head -20 >&2
     echo "Archive failed; full log in ios/build/archive.log" >&2
     exit 1
   }
+
+echo "Archived entitlements:"
+codesign -d --entitlements - "$ARCHIVE/Products/Applications/TheBrief.app" 2>&1 | grep -A1 aps-environment || echo "  (none)"
 
 cat > build/ExportOptions.plist <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
