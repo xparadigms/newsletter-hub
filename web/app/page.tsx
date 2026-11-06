@@ -2,29 +2,29 @@ import CoverImage from "@/components/home/CoverImage";
 import SectionAvatar from "@/components/home/SectionAvatar";
 import { Glyph } from "@/components/SectionGlyph";
 import PrefetchLink from "@/components/PrefetchLink";
-import StoryTray, { type TrayEntry } from "@/components/home/StoryTray";
+import FilterBar from "@/components/home/FilterBar";
 import PageTransition from "@/components/PageTransition";
 import PullToRefresh from "@/components/PullToRefresh";
 import { getSection, NAV_SECTIONS } from "@/lib/config";
-import { formatShortDate, mixedFeed, shuffle } from "@/lib/feed";
+import { formatShortDate, mixedFeed } from "@/lib/feed";
+import type { SectionKey } from "@/lib/types";
 import { getAllPosts } from "@/lib/posts";
 
 // Rendered per visit, so the order changes every time — the lists come from
 // the shared five-minute cache, so this costs no extra queries.
 export const dynamic = "force-dynamic";
 
-// Home: a tray of section stories across the top, then every issue as a row in
-// the Feed tab's style — section and date, headline, summary, the cover beside
-// it — newest day first with the sections shuffled on every visit, as in the
-// iOS app. With story mode on, StoryModeToggle opens these as stories.
-export default async function Home() {
-  const posts = await getAllPosts();
-
-  // Shuffled each visit too; the tray still puts unread sections first.
-  const tray: TrayEntry[] = shuffle(NAV_SECTIONS).flatMap((s) => {
-    const newest = posts[s.key][0];
-    return newest ? [{ section: s.key, label: s.label, id: newest.id }] : [];
-  });
+// Home: every issue as a row in the Feed tab's style — section and date,
+// headline, summary, the cover beside it — newest day first with the sections
+// shuffled on every visit, as in the iOS app, and a row of filters just above
+// the tab bar. With story mode on, StoryModeToggle opens these as stories.
+export default async function Home({ searchParams }: { searchParams: Promise<{ s?: string }> }) {
+  const { s: filter } = await searchParams;
+  const current = NAV_SECTIONS.some((x) => x.key === filter) ? (filter as SectionKey) : null;
+  const all = await getAllPosts();
+  const posts = current
+    ? (Object.fromEntries(Object.entries(all).map(([k, v]) => [k, k === current ? v : []])) as typeof all)
+    : all;
 
   const feed = mixedFeed(posts, 60);
 
@@ -32,7 +32,6 @@ export default async function Home() {
     <PageTransition>
       <div className="home">
         <PullToRefresh />
-        <StoryTray entries={tray} />
         {feed.length === 0 && <p className="feed__empty">Nothing published yet.</p>}
         <ul className="newsfeed__list">
           {feed.map((p) => {
@@ -63,6 +62,7 @@ export default async function Home() {
             );
           })}
         </ul>
+        <FilterBar base="/" current={current} options={NAV_SECTIONS.map((x) => ({ key: x.key, label: x.label }))} />
       </div>
     </PageTransition>
   );

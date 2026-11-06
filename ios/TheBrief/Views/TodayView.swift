@@ -1,36 +1,43 @@
 import SwiftUI
 
-/// Home: a tray of section "stories" across the top, then every issue as a
-/// row in the Feed tab's style — source and date, headline, a line of summary,
-/// the cover beside it. Only the current mode's newsletters: tap the title to
-/// switch between Japan and China.
+/// Home: every issue as a row in the Feed tab's style — source and date,
+/// headline, a line of summary, the cover beside it — for the current mode's
+/// newsletters, with a row of filters just above the tab bar where the thumb
+/// already is. Tap the title to switch between Japan and China.
 @MainActor
 struct TodayView: View {
     @Environment(Store.self) private var store
     @Environment(Router.self) private var router
     @AppStorage(SettingsKey.mode) private var modeRaw = AppMode.japan.rawValue
+    @State private var filter: SectionKey?
 
     private var mode: AppMode { AppMode(rawValue: modeRaw) ?? .japan }
 
     var body: some View {
-        let feed = store.feed(60, sections: mode.sections)
-        ScrollView {
-            LazyVStack(spacing: 0) {
-                StoryTray(sections: mode.sections)
-                Divider().opacity(0.6)
-                if let error = store.error {
-                    ErrorBanner(message: error).padding(.horizontal, 16).padding(.vertical, 10)
-                }
-                if feed.isEmpty && store.isLoading {
-                    ProgressView().padding(.top, 60)
-                }
-                ForEach(feed) { post in
-                    HomeRow(post: post)
-                    Divider().padding(.leading, 16)
+        let feed = store.feed(60, sections: filter.map { [$0] } ?? mode.sections)
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    Color.clear.frame(height: 0).id("top")
+                    if let error = store.error {
+                        ErrorBanner(message: error).padding(.horizontal, 16).padding(.vertical, 10)
+                    }
+                    if feed.isEmpty && store.isLoading {
+                        ProgressView().padding(.top, 60)
+                    }
+                    ForEach(feed) { post in
+                        HomeRow(post: post)
+                        Divider().padding(.leading, 16)
+                    }
                 }
             }
+            .scrollIndicators(.hidden)
+            .safeAreaInset(edge: .bottom) {
+                FilterBar(sections: mode.sections, selection: $filter)
+            }
+            .onChange(of: filter) { withAnimation { proxy.scrollTo("top", anchor: .top) } }
         }
-        .scrollIndicators(.hidden)
+        .onChange(of: modeRaw) { filter = nil }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
@@ -59,6 +66,49 @@ struct TodayView: View {
             ToolbarItem(placement: .topBarTrailing) { SettingsMenu() }
         }
         .refreshable { await store.refresh() }
+    }
+}
+
+/// "All" and one chip per newsletter, in a glass strip that floats just above
+/// the tab bar — the same filter on Home and on Feed.
+struct FilterBar: View {
+    let sections: [SectionKey]
+    @Binding var selection: SectionKey?
+
+    var body: some View {
+        if sections.count > 1 {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    chip("All", on: selection == nil) { selection = nil }
+                    ForEach(sections, id: \.self) { key in
+                        chip(Sections.get(key).label, on: selection == key) { selection = key }
+                    }
+                }
+                .padding(.horizontal, 6)
+                .padding(.vertical, 6)
+            }
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08)))
+            .shadow(color: .black.opacity(0.12), radius: 12, y: 4)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 6)
+        }
+    }
+
+    private func chip(_ title: String, on: Bool, action: @escaping () -> Void) -> some View {
+        Button {
+            withAnimation(.snappy(duration: 0.2)) { action() }
+            UISelectionFeedbackGenerator().selectionChanged()
+        } label: {
+            Text(title)
+                .font(.system(size: 14, weight: .semibold))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 8)
+                .background(on ? Color.primary : Color.primary.opacity(0.06), in: Capsule())
+                .foregroundStyle(on ? Color(uiColor: .systemBackground) : Color.primary)
+        }
+        .buttonStyle(.plain)
     }
 }
 
@@ -93,47 +143,6 @@ struct SectionAvatar: View {
                 Circle().strokeBorder(Color.secondary.opacity(0.35), lineWidth: 1)
             }
         }
-    }
-}
-
-@MainActor
-private struct StoryTray: View {
-    let sections: [SectionKey]
-    @Environment(Store.self) private var store
-    @Environment(Router.self) private var router
-
-    var body: some View {
-        // One story per section: its newest issue. Unread sections come first,
-        // as Instagram puts unseen accounts first.
-        let entries: [(NewsSection, Post)] = sections.map(Sections.get).compactMap { s in
-            store.posts(in: s.key).first.map { (s, $0) }
-        }
-        // Shuffled each launch too, with unread sections still in front.
-        let mixed = store.shuffled(entries, salt: 0x7472_6179)
-        let ordered = mixed.filter { store.hasUnseen($0.0.key) } + mixed.filter { !store.hasUnseen($0.0.key) }
-        ScrollView(.horizontal) {
-            HStack(alignment: .top, spacing: 14) {
-                ForEach(ordered, id: \.1.routeID) { entry in
-                    let (section, post) = entry
-                    Button {
-                        router.playStories(from: post, queue: ordered.map(\.1))
-                    } label: {
-                        VStack(spacing: 6) {
-                            SectionAvatar(section: section, size: 64, unseen: store.hasUnseen(section.key))
-                            Text(section.label)
-                                .font(.system(size: 12))
-                                .foregroundStyle(.primary)
-                                .lineLimit(1)
-                        }
-                        .frame(width: 76)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-        }
-        .scrollIndicators(.hidden)
     }
 }
 

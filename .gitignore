@@ -40,3 +40,6 @@ gcp-*.json
 # OS / editor
 .DS_Store
 .conductor/
+
+# Claude Code agent worktrees
+.claude/worktrees/

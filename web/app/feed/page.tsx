@@ -1,4 +1,4 @@
-import Link from "next/link";
+import FilterBar from "@/components/home/FilterBar";
 import PageTransition from "@/components/PageTransition";
 import PullToRefresh from "@/components/PullToRefresh";
 import SectionAvatar from "@/components/home/SectionAvatar";
@@ -34,16 +34,11 @@ export default async function FeedPage({ searchParams }: { searchParams: Promise
     <PageTransition>
       <div className="newsfeed">
         <PullToRefresh />
-        <nav className="chips" aria-label="Newsletter">
-          <Link href="/feed" className="chip" data-on={current === "all"} replace scroll={false}>
-            All
-          </Link>
-          {FEED_SECTIONS.map((key) => (
-            <Link key={key} href={`/feed?s=${key}`} className="chip" data-on={current === key} replace scroll={false}>
-              {getSection(key)?.label}
-            </Link>
-          ))}
-        </nav>
+        <FilterBar
+          base="/feed"
+          current={current === "all" ? null : current}
+          options={FEED_SECTIONS.map((key) => ({ key, label: getSection(key)?.label ?? key }))}
+        />
 
         {items.length === 0 ? (
           <p className="newsfeed__empty">Nothing collected yet — the feed fills every hour.</p>

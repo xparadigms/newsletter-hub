@@ -1,0 +1,28 @@
+name: Test notification
+
+# Sends a test notification to every registered phone. See shared/push.py.
+
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: "What it says"
+        default: "Notifications are working."
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt
+      - env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          APNS_KEY_P8: ${{ secrets.APNS_KEY_P8 }}
+          APNS_KEY_ID: ${{ secrets.APNS_KEY_ID }}
+          MESSAGE: ${{ inputs.message }}
+        run: python -m shared.push test "$MESSAGE"

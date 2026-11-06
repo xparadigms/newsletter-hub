@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Push notifications. Signing for the App Store turns this into the
+	     production environment, which is what TestFlight builds talk to. -->
+	<key>aps-environment</key>
+	<string>development</string>
+</dict>
+</plist>

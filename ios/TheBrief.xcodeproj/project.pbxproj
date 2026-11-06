@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		FEA2A5B4EF5D8CF8DA0A75AB /* Format.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4D44454E20794A7134E1337; };
+		1A12E979AD81F1E2A98F0B53 /* Push.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DCB2906ABDF6C392C3383D8; };
 		9D520FC42EC38071C188A5B0 /* Router.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F368B2724AF7D7514C09E96; };
 		0F2C4F2E05202061CDA01851 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51710E7867669877101A804; };
 		E66B2AED9D798A5706A4F7D3 /* TheBriefApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2472B4D4BCA045D31C7A996; };
@@ -38,6 +39,7 @@
 		36DE305C2CDECA5A80064B2B /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		C1BECE8796B75118992FC515 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		E4D44454E20794A7134E1337 /* Format.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Format.swift; sourceTree = "<group>"; };
+		4DCB2906ABDF6C392C3383D8 /* Push.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Push.swift; sourceTree = "<group>"; };
 		3F368B2724AF7D7514C09E96 /* Router.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Router.swift; sourceTree = "<group>"; };
 		E51710E7867669877101A804 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
 		F2472B4D4BCA045D31C7A996 /* TheBriefApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TheBriefApp.swift; sourceTree = "<group>"; };
@@ -87,6 +89,7 @@
 			); path = TheBrief; sourceTree = "<group>"; };
 		3B003252BDF39112A332C197 /* App */ = {isa = PBXGroup; children = (
 				E4D44454E20794A7134E1337 /* Format.swift */,
+				4DCB2906ABDF6C392C3383D8 /* Push.swift */,
 				3F368B2724AF7D7514C09E96 /* Router.swift */,
 				E51710E7867669877101A804 /* Settings.swift */,
 				F2472B4D4BCA045D31C7A996 /* TheBriefApp.swift */,
@@ -182,6 +185,7 @@
 /* Begin PBXSourcesBuildPhase section */
 		F2AB5FB218DA8B84623F4557 /* Sources */ = {isa = PBXSourcesBuildPhase; buildActionMask = 2147483647; files = (
 				FEA2A5B4EF5D8CF8DA0A75AB /* Format.swift in Sources */,
+				1A12E979AD81F1E2A98F0B53 /* Push.swift in Sources */,
 				9D520FC42EC38071C188A5B0 /* Router.swift in Sources */,
 				0F2C4F2E05202061CDA01851 /* Settings.swift in Sources */,
 				E66B2AED9D798A5706A4F7D3 /* TheBriefApp.swift in Sources */,
@@ -235,6 +239,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TheBrief/TheBrief.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
@@ -282,6 +287,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = TheBrief/TheBrief.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";

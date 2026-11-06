@@ -106,6 +106,22 @@ struct SupabaseClient: Sendable {
         return try JSONDecoder().decode([NewsItem].self, from: data)
     }
 
+    /// Leaves this phone's push token with Supabase (shared/push.py sends).
+    /// `register_device` is a database function that can only insert or update
+    /// a token — the table itself is not readable with this key.
+    func registerDevice(token: String, mode: String) async throws {
+        let url = base.deletingLastPathComponent().appendingPathComponent("rpc/register_device")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(key, forHTTPHeaderField: "apikey")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(["p_token": token, "p_mode": mode])
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+    }
+
     func posts(in section: SectionKey) async throws -> [Post] {
         try await get([
             URLQueryItem(name: "select", value: Self.listColumns),
