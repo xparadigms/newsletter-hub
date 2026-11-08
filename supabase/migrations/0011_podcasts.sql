@@ -6,6 +6,9 @@
 --
 -- Each episode is its own row. Its run_key is podcasts:<episode date>:p<show>-<id>,
 -- so nothing else in the schema has to change.
+--
+-- Applied 2026-11-08 as the drop alone (shared/issue.py checks section names
+-- before every write); the add below restores the database-side check.
 
 alter table public.newsletter
   drop constraint if exists newsletter_section_check;
