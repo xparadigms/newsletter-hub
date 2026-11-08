@@ -70,6 +70,13 @@ SHOWS: list[dict[str, str]] = [
 ]
 
 HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; TheBrief/1.0; +https://heechang-newsletter.vercel.app)"}
+BROWSER = {
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    ),
+    "Accept": "application/rss+xml, application/xml;q=0.9, */*;q=0.8",
+}
 NOTES_CHARS = 8000
 TRANSCRIPT_CHARS = 90000
 
@@ -91,7 +98,7 @@ def _transcript(entry: Any) -> str:
     if not url:
         return ""
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=30)
+        resp = requests.get(url, headers=BROWSER, timeout=30)
         resp.raise_for_status()
     except Exception as e:  # noqa: BLE001
         print(f"  ⚠ transcript unavailable: {e}")
@@ -124,12 +131,16 @@ def episodes(cutoff: datetime) -> list[dict[str, Any]]:
     found: list[dict[str, Any]] = []
     for show in SHOWS:
         try:
-            feed = feedparser.parse(show["feed"], agent=HEADERS["User-Agent"])
+            # Fetched as a browser would: Substack answers a feed reader on a
+            # datacenter address with 403.
+            resp = requests.get(show["feed"], headers=BROWSER, timeout=30)
+            resp.raise_for_status()
+            feed = feedparser.parse(resp.content)
         except Exception as e:  # noqa: BLE001
             print(f"  ⚠ {show['name']}: {e}")
             continue
         if not feed.entries:
-            print(f"  ⚠ {show['name']}: no entries ({feed.get('status')})")
+            print(f"  ⚠ {show['name']}: no entries")
             continue
         show_image = (feed.feed.get("image") or {}).get("href")
         for entry in feed.entries[:10]:
