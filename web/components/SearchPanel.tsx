@@ -23,7 +23,7 @@ const LIMIT = 50;
 // from the whole archive on every visit, things not yet read first. Typing
 // searches every title — the archive's titles come down once (~25KB, cached
 // for the visit) and are filtered here, so it never waits on the network.
-export default function SearchPanel({ explore }: { explore: TilePost[] }) {
+export default function SearchPanel({ explore, sections }: { explore: TilePost[]; sections: string[] }) {
   const { isRead } = useLibrary();
   // Unread first; the draw itself is already random, from the server.
   const grid = [...explore.filter((p) => !isRead(p)), ...explore.filter((p) => isRead(p))];
@@ -55,6 +55,8 @@ export default function SearchPanel({ explore }: { explore: TilePost[] }) {
     if (!q || !index) return [];
     return index
       .filter((e) => {
+        // Search keeps to the reader's mode, as the grid does.
+        if (!sections.includes(e.s)) return false;
         const label = getSection(e.s)?.label ?? "";
         return (
           e.t.toLowerCase().includes(q) ||
@@ -63,7 +65,7 @@ export default function SearchPanel({ explore }: { explore: TilePost[] }) {
         );
       })
       .slice(0, LIMIT);
-  }, [query, index]);
+  }, [query, index, sections]);
 
   return (
     <div className="container search-page">
@@ -88,7 +90,7 @@ export default function SearchPanel({ explore }: { explore: TilePost[] }) {
         // Every newsletter's profile, one tap away: the tab bar's slot for
         // Sections went to Podcasts.
         <nav className="explore-sections" aria-label="Newsletters">
-          {SECTIONS.filter((s) => !s.hideInNav).map((s) => (
+          {SECTIONS.filter((s) => sections.includes(s.key)).map((s) => (
             <PrefetchLink key={s.key} href={`/section/${s.key}`} className="explore-sections__item" transitionTypes={["nav-forward"]}>
               <SectionAvatar section={s.key} size={56} />
               <span>{s.label}</span>

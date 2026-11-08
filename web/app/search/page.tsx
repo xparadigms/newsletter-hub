@@ -1,7 +1,9 @@
 import PageTransition from "@/components/PageTransition";
 import SearchPanel from "@/components/SearchPanel";
 import { exploreDraw } from "@/lib/feed";
+import { getMode } from "@/lib/mode-server";
 import { getAllPosts } from "@/lib/posts";
+import type { SectionKey } from "@/lib/types";
 
 export const metadata = { title: "Explore" };
 // A new draw on every visit, like Instagram's Explore. The lists themselves
@@ -9,7 +11,11 @@ export const metadata = { title: "Explore" };
 export const dynamic = "force-dynamic";
 
 export default async function ExplorePage() {
-  const posts = await getAllPosts();
+  const [all, mode] = await Promise.all([getAllPosts(), getMode()]);
+  // Only the reader's mode, Japan or China.
+  const posts = Object.fromEntries(
+    Object.entries(all).map(([k, v]) => [k, mode.sections.includes(k as SectionKey) ? v : []])
+  ) as typeof all;
   const explore = exploreDraw(posts, 150).map((p) => ({
     id: p.id,
     section: p.section,
@@ -21,7 +27,7 @@ export default async function ExplorePage() {
   }));
   return (
     <PageTransition>
-      <SearchPanel explore={explore} />
+      <SearchPanel explore={explore} sections={mode.sections} />
     </PageTransition>
   );
 }

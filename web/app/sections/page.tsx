@@ -1,18 +1,23 @@
 import PageTransition from "@/components/PageTransition";
 import SectionAvatar from "@/components/home/SectionAvatar";
+import { ModeSegmented } from "@/components/ModeSwitch";
 import PrefetchLink from "@/components/PrefetchLink";
 import { SECTIONS } from "@/lib/config";
 import { formatShortDate } from "@/lib/feed";
+import { getMode } from "@/lib/mode-server";
 import { getAllPosts } from "@/lib/posts";
 import type { Section } from "@/lib/types";
 
-export const revalidate = 300;
 export const metadata = { title: "Sections" };
+// The mode comes from a cookie, so the page renders per request; the lists
+// come from the shared five-minute cache.
+export const dynamic = "force-dynamic";
 
-// Every newsletter, as an iOS inset list. Paused ones sit apart: their
-// archives still open, but nothing new arrives.
+// The mode's newsletters, as an iOS inset list, under the Japan / China
+// switch. Paused ones sit apart: their archives still open, but nothing new
+// arrives.
 export default async function SectionsPage() {
-  const posts = await getAllPosts();
+  const [posts, mode] = await Promise.all([getAllPosts(), getMode()]);
   const row = (s: Section) => {
     const newest = posts[s.key][0];
     return (
@@ -32,7 +37,8 @@ export default async function SectionsPage() {
   return (
     <PageTransition>
       <div className="container sections-page">
-        <ul className="inset-list">{SECTIONS.filter((s) => !s.hideInNav).map(row)}</ul>
+        <ModeSegmented current={mode.key} />
+        <ul className="inset-list">{SECTIONS.filter((s) => mode.sections.includes(s.key)).map(row)}</ul>
         <span className="label inset-list__header">Paused</span>
         <ul className="inset-list">{SECTIONS.filter((s) => s.hideInNav).map(row)}</ul>
       </div>
