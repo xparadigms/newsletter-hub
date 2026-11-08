@@ -100,6 +100,8 @@ struct ChipBar<ID: Hashable>: View {
                     .padding(.horizontal, 6)
                     .padding(.vertical, 6)
                 }
+                // Sideways only: no vertical bounce when a swipe starts on it.
+                .scrollBounceBehavior(.basedOnSize, axes: .vertical)
                 .onChange(of: selection) { _, id in
                     if let id { withAnimation { proxy.scrollTo(id, anchor: .center) } }
                 }

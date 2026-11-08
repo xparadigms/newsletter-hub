@@ -21,6 +21,10 @@ on:
         description: "Episodes from the last this many days"
         type: string
         default: "4"
+      rewrite:
+        description: "Rewrite already-published episodes in the current format (no notifications)"
+        type: boolean
+        default: false
       dry_run:
         description: "Print the articles and publish nothing"
         type: boolean
@@ -53,7 +57,8 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
-          APNS_KEY_P8: ${{ secrets.APNS_KEY_P8 }}
+          # A rewrite republishes what readers already had: no notifications.
+          APNS_KEY_P8: ${{ !inputs.rewrite && secrets.APNS_KEY_P8 || '' }}
           APNS_KEY_ID: ${{ secrets.APNS_KEY_ID }}
           SITE_URL: ${{ secrets.SITE_URL }}
           REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
@@ -61,6 +66,7 @@ jobs:
           SHOW: ${{ inputs.show || '' }}
           MAX_EPISODES: ${{ inputs.max_episodes || '4' }}
           LOOKBACK_DAYS: ${{ inputs.lookback_days || '4' }}
+          REWRITE: ${{ inputs.rewrite && 'true' || '' }}
         run: |
           ARGS=""
           if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="--dry-run"; fi

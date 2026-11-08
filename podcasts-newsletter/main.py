@@ -51,6 +51,10 @@ LOOKBACK_DAYS = int(os.environ.get("LOOKBACK_DAYS", "4"))
 # Per run. Each episode costs a search session and two model calls, and a run
 # every few hours catches up within the day.
 MAX_EPISODES = int(os.environ.get("MAX_EPISODES", "4"))
+# Rewrite episodes already published (same run_key, so the same URL) instead
+# of skipping them — for a change of format. The workflow sends no
+# notifications for a rewrite.
+REWRITE = os.environ.get("REWRITE", "") == "true"
 
 # slug: the run_key part and the filter's key; it must never change once used.
 SHOWS: list[dict[str, str]] = [
@@ -244,26 +248,23 @@ Link: {link}
 
 The first two lines MUST be:
 EPISODE_TITLE: [an English title for the article, ≤10 words, naming the main idea — not the episode's own title]
-SUMMARY_KO: [one Korean sentence, 평어체, under 80 characters: what the episode is about]
+SUMMARY_KO: [one short Korean sentence, 평어체, under 50 characters: what the episode is about]
 
 Then exactly this format, as plain text:
 
 【Japanese headline naming the episode's main idea】(Korean translation)
 📖 番組: {show} · 出演: [the hosts and guests named in the material] · 配信: {date_ja}
 
-[Japanese: what the episode is about and why it matters now. 2 sentences.]
+[Japanese: what the episode is about, in ONE sentence of at most 60 characters.]
 📝 한국어 번역:
 [full Korean translation]
 
-Then THREE or FOUR key points, the ideas worth keeping, each:
+Then exactly THREE key points, the ideas worth keeping, each:
 
-【ポイント{{N}}: Japanese headline of the point】(Korean translation)
+【ポイント{{N}}: short Japanese headline of the point】(Korean translation)
 
-[Japanese: who argued it and what they said. 2 sentences.]
-📝 한국어 번역:
-[full Korean translation]
-
-[Japanese: the reasoning, the example or the number behind it. 2 sentences.]
+[Japanese: who said it and the substance — a number, an example or the reason \
+— in at most 2 short sentences, 90 characters in all.]
 📝 한국어 번역:
 [full Korean translation]
 
@@ -271,10 +272,15 @@ Close with:
 
 【どう使うか】(어떻게 쓸까)
 
-[Japanese: how someone running a company would use this in the week ahead. \
-Concrete but general; address the reader as あなた or write impersonally. 2 sentences.]
+[Japanese: one concrete thing someone running a company could do with this \
+this week. ONE sentence, at most 60 characters; address the reader as あなた \
+or write impersonally.]
 📝 한국어 번역:
 [full Korean translation]
+
+LENGTH: short. The whole article is read in under a minute — five Japanese \
+paragraphs, each under its character budget. Cut adjectives and background, \
+never the names and numbers. The Korean is still a full translation.
 
 ⚠️ FORMATTING: plain text. No Markdown at all (no #, **, *, -, ```), no URLs, \
 no emoji other than 📖 and 📝, and nothing before EPISODE_TITLE or after the \
@@ -376,6 +382,7 @@ def publish(ep: dict[str, Any], dry_run: bool) -> None:
         source_format="plain",
         summary=summary or None,
         part=ep["id"],
+        min_plain_text=300,
     )
     # The episode's own artwork, as the podcast app shows it.
     if ep["image"]:
@@ -400,7 +407,11 @@ def run() -> None:
     if only:
         eps = [e for e in eps if e["show"]["slug"] == only]
     print(f"  {len(eps)} recent episode(s) across {len({e['show']['slug'] for e in eps})} show(s)")
-    chosen = pick(eps, _already_written(eps), MAX_EPISODES)
+    done = set() if REWRITE else _already_written(eps)
+    if REWRITE:
+        written = _already_written(eps)
+        eps = [e for e in eps if _run_key(e) in written]
+    chosen = pick(eps, done, MAX_EPISODES)
     if not chosen:
         print("  Nothing new to write.")
         return
