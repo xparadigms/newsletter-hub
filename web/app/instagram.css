@@ -1339,7 +1339,13 @@ html[data-furigana="on"] .story-bar .furigana-toggle,
   display: flex;
   gap: 8px;
   padding: 6px;
+  /* Sideways only. overflow-x alone makes overflow-y auto too, so the strip
+     could be dragged up and down by a pixel or two; pan-x keeps a vertical
+     swipe from moving it at all, and contain stops it scrolling the page. */
   overflow-x: auto;
+  overflow-y: hidden;
+  touch-action: pan-x;
+  overscroll-behavior: contain;
   scrollbar-width: none;
   border-radius: 999px;
   border: 1px solid var(--glass-border);
