@@ -7,6 +7,7 @@ import PageTransition from "@/components/PageTransition";
 import PullToRefresh from "@/components/PullToRefresh";
 import { getSection, NAV_SECTIONS } from "@/lib/config";
 import { formatShortDate, mixedFeed } from "@/lib/feed";
+import { getMode } from "@/lib/mode-server";
 import type { SectionKey } from "@/lib/types";
 import { getAllPosts } from "@/lib/posts";
 
@@ -20,11 +21,14 @@ export const dynamic = "force-dynamic";
 // the tab bar. With story mode on, StoryModeToggle opens these as stories.
 export default async function Home({ searchParams }: { searchParams: Promise<{ s?: string }> }) {
   const { s: filter } = await searchParams;
-  const current = NAV_SECTIONS.some((x) => x.key === filter) ? (filter as SectionKey) : null;
+  // Only the newsletters of the reader's mode, Japan or China.
+  const mode = await getMode();
+  const sections = NAV_SECTIONS.filter((x) => mode.sections.includes(x.key));
+  const current = sections.some((x) => x.key === filter) ? (filter as SectionKey) : null;
   const all = await getAllPosts();
-  // Only the chosen newsletter, or every one Home mixes — never Podcast Hub,
-  // which has its own tab.
-  const shown = (k: string) => (current ? k === current : NAV_SECTIONS.some((x) => x.key === k));
+  // Only the chosen newsletter, or every one the mode mixes — never Podcast
+  // Hub, which has its own tab.
+  const shown = (k: string) => (current ? k === current : sections.some((x) => x.key === k));
   const posts = Object.fromEntries(Object.entries(all).map(([k, v]) => [k, shown(k) ? v : []])) as typeof all;
 
   const feed = mixedFeed(posts, 60);
@@ -63,7 +67,7 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
             );
           })}
         </ul>
-        <FilterBar base="/" current={current} options={NAV_SECTIONS.map((x) => ({ key: x.key, label: x.label }))} />
+        <FilterBar base="/" current={current} options={sections.map((x) => ({ key: x.key, label: x.label }))} />
       </div>
     </PageTransition>
   );

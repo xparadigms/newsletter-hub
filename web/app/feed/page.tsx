@@ -4,15 +4,13 @@ import PullToRefresh from "@/components/PullToRefresh";
 import SectionAvatar from "@/components/home/SectionAvatar";
 import { getSection } from "@/lib/config";
 import { getFeed } from "@/lib/posts";
+import { getMode } from "@/lib/mode-server";
 import type { SectionKey } from "@/lib/types";
 
 export const metadata = { title: "Feed" };
 // Times are shown as "2h ago", so the page renders per visit; the data comes
 // from a two-minute cache.
 export const dynamic = "force-dynamic";
-
-// The newsletters with a news feed — Mandarin Basics is a lesson, not news.
-const FEED_SECTIONS: SectionKey[] = ["startup", "business", "fintech", "stocks", "china", "japan", "watch"];
 
 function ago(iso: string | null): string {
   if (!iso) return "";
@@ -27,18 +25,24 @@ function ago(iso: string | null): string {
 // itself, before it becomes an issue. Each item opens on its publisher's site.
 export default async function FeedPage({ searchParams }: { searchParams: Promise<{ s?: string }> }) {
   const { s } = await searchParams;
-  const current = FEED_SECTIONS.includes(s as SectionKey) ? (s as SectionKey) : "all";
-  const items = await getFeed(current);
+  // The mode's newsletters that have a news feed; Mandarin Basics is a lesson.
+  const mode = await getMode();
+  const feedSections = mode.feedSections;
+  const current = feedSections.includes(s as SectionKey) ? (s as SectionKey) : null;
+  const items = await getFeed(current ? [current] : feedSections);
 
   return (
     <PageTransition>
       <div className="newsfeed">
         <PullToRefresh />
-        <FilterBar
-          base="/feed"
-          current={current === "all" ? null : current}
-          options={FEED_SECTIONS.map((key) => ({ key, label: getSection(key)?.label ?? key }))}
-        />
+        {/* China mode has one feed, so nothing to choose between. */}
+        {feedSections.length > 1 && (
+          <FilterBar
+            base="/feed"
+            current={current}
+            options={feedSections.map((key) => ({ key, label: getSection(key)?.label ?? key }))}
+          />
+        )}
 
         {items.length === 0 ? (
           <p className="newsfeed__empty">Nothing collected yet — the feed fills every hour.</p>

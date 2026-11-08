@@ -3,6 +3,7 @@
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, ViewTransition } from "react";
 import { PAGE_ENTER, PAGE_EXIT } from "@/components/PageTransition";
+import { ModeTitle } from "@/components/ModeSwitch";
 import StoryModeToggle from "@/components/StoryModeToggle";
 import ThemeToggle from "@/components/ThemeToggle";
 import { getSection, SITE } from "@/lib/config";
@@ -159,7 +160,7 @@ export function LargeTitle() {
     <ViewTransition key={pathname} enter={PAGE_ENTER} exit={PAGE_EXIT} default="none">
       {/* Home's title is the masthead, set like Instagram's wordmark. */}
       <div className="largetitle" data-home={pathname === "/" ? "" : undefined}>
-        <h1 className="largetitle__text">{title}</h1>
+        {pathname === "/" ? <ModeTitle title={title} /> : <h1 className="largetitle__text">{title}</h1>}
       </div>
     </ViewTransition>
   );

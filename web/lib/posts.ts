@@ -167,22 +167,22 @@ export interface FeedItem {
   published_at: string | null;
 }
 
-async function fetchFeed(section: string): Promise<FeedItem[]> {
+async function fetchFeed(sections: string[]): Promise<FeedItem[]> {
   if (!supabase) return [];
   let query = supabase
     .from("feed_items")
     .select("id,section,url,title,source,summary,image_url,published_at")
     .order("published_at", { ascending: false })
     .limit(150);
-  if (section !== "all") query = query.eq("section", section);
+  query = sections.length === 1 ? query.eq("section", sections[0]) : query.in("section", sections);
   const { data, error } = await query;
   if (error) throw new Error(`feed: ${error.message}`);
   return (data ?? []) as FeedItem[];
 }
 
-/** The hourly news feed (shared/news_feed.py), newest first. Cached for two
- *  minutes: the feed itself only moves once an hour. */
-export const getFeed = unstable_cache(fetchFeed, ["feed", "v1"], { revalidate: 120 });
+/** The hourly news feed (shared/news_feed.py) for these sections, newest
+ *  first. Cached for two minutes: the feed itself only moves once an hour. */
+export const getFeed = unstable_cache(fetchFeed, ["feed", "v2"], { revalidate: 120 });
 
 // One indexed row, so no cross-request cache: the Notion version needed
 // `revalidate: false` because assembling an issue cost ~45 API calls and ~4

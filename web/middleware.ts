@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { isMode, MODE_COOKIE } from "@/lib/mode";
 
 // The whole site sits behind one password, asked for on arrival rather than at
 // the moment you press Generate.
@@ -42,6 +43,17 @@ function isOpen(pathname: string): boolean {
 }
 
 export function middleware(request: NextRequest) {
+  // ?mode=japan or ?mode=china on any page picks the mode and drops the
+  // parameter, as thebrief://mode/<mode> does in the app.
+  const asked = request.nextUrl.searchParams.get("mode");
+  if (isMode(asked)) {
+    const url = request.nextUrl.clone();
+    url.searchParams.delete("mode");
+    const response = NextResponse.redirect(url);
+    response.cookies.set(MODE_COOKIE, asked, { path: "/", maxAge: 31536000, sameSite: "lax" });
+    return response;
+  }
+
   const password = process.env.SITE_PASSWORD ?? process.env.GENERATE_PASSWORD;
   // No password configured means no gate. A deployment that forgot the
   // variable should serve the site, not lock everyone out of it.

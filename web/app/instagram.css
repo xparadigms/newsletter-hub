@@ -1434,3 +1434,138 @@ html[data-furigana="on"] .story-bar .furigana-toggle,
   border: 1px solid var(--border);
   color: var(--text-primary);
 }
+
+/* ---------- Japan / China mode ---------- */
+
+/* The flag follows html[data-mode], set by the boot script before paint. */
+html:not([data-mode="china"]) .mode-flag[data-flag="china"],
+html[data-mode="china"] .mode-flag[data-flag="japan"] {
+  display: none;
+}
+
+.mode-title {
+  position: relative;
+  display: inline-block;
+}
+
+.mode-title__button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mode-title__button:active {
+  opacity: 0.6;
+}
+
+.mode-flag {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.mode-title__chevron {
+  color: var(--text-secondary);
+}
+
+.mode-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  min-width: 260px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: 0 10px 40px rgb(0 0 0 / 0.18), 0 0 0 0.5px var(--border);
+}
+
+.mode-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mode-menu__item:active {
+  background: var(--tap);
+}
+
+.mode-menu__flag {
+  font-size: 22px;
+}
+
+.mode-menu__text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mode-menu__title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.mode-menu__desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.mode-menu__check {
+  visibility: hidden;
+  color: var(--text-primary);
+}
+
+html:not([data-mode="china"]) [data-mode-option="japan"] .mode-menu__check,
+html[data-mode="china"] [data-mode-option="china"] .mode-menu__check {
+  visibility: visible;
+}
+
+/* Sections' segmented control, as UIKit draws one. */
+.mode-segmented {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  margin: 0 0 16px;
+  border-radius: 9px;
+  background: var(--tap);
+}
+
+.mode-segmented__option {
+  flex: 1;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.mode-segmented__option[data-on="true"] {
+  background: var(--bg);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
+  font-weight: 600;
+}
