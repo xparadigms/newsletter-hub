@@ -67,21 +67,18 @@ next to the generators. See `web/README.md` for its caching and data model.
 
 ### Deploying
 
-The site is the Vercel project `heechang-newsletter`, serving
-<https://japan-newsletter.vercel.app>. It has no GitHub Actions workflow and no
-Vercel Git integration — pushing to `main` deploys nothing. Deploys are pushed
-by hand with the Vercel CLI, from inside `web/`:
+The site is the Vercel project `heechang-newsletter` (team `heechang`), serving
+<https://newsletter.heechangkang.org> and <https://heechang-newsletter.vercel.app>.
+The project is connected to this repository through Vercel's Git integration
+with `web/` as its root directory. A push to `main` deploys to production; a
+push to any other branch builds a preview, and preview URLs are SSO-protected.
+
+A manual deploy still works from inside `web/` with the Vercel CLI:
 
 ```bash
 cd web
-vercel deploy          # preview build; preview URLs are SSO-protected
-vercel deploy --prod   # production, re-aliases japan-newsletter.vercel.app
+vercel deploy --prod
 ```
-
-Because the CLI treats the directory you run it from as the project root,
-`web/` is the correct place to run it and no Root Directory setting is
-involved. The link lives in `web/.vercel/`, which is gitignored, so a fresh
-clone runs `vercel link --project heechang-newsletter` once first.
 
 `NOTION_TOKEN` is set on the Vercel project for both production and preview;
 `REVALIDATE_SECRET` is not set, so `POST /api/revalidate` currently answers 401
