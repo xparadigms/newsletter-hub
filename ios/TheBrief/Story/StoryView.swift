@@ -486,6 +486,7 @@ extension NewsSection {
         func c(_ r: Double, _ g: Double, _ b: Double) -> Color { Color(red: r, green: g, blue: b) }
         switch key {
         case .startup: return c(0.95, 0.42, 0.24)
+        case .podcasts: return c(0.66, 0.33, 0.97)
         case .business: return c(0.30, 0.45, 0.98)
         case .fintech: return c(0.10, 0.75, 0.62)
         case .japan: return c(0.92, 0.25, 0.40)

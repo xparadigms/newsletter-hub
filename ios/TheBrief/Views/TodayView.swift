@@ -76,16 +76,33 @@ struct FilterBar: View {
     @Binding var selection: SectionKey?
 
     var body: some View {
-        if sections.count > 1 {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    chip("All", on: selection == nil) { selection = nil }
-                    ForEach(sections, id: \.self) { key in
-                        chip(Sections.get(key).label, on: selection == key) { selection = key }
+        ChipBar(options: sections, label: { Sections.get($0).label }, selection: $selection)
+    }
+}
+
+/// The glass strip of chips itself: "All" and one per option. Podcasts
+/// filters by show with it.
+struct ChipBar<ID: Hashable>: View {
+    let options: [ID]
+    let label: (ID) -> String
+    @Binding var selection: ID?
+
+    var body: some View {
+        if options.count > 1 {
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        chip("All", on: selection == nil) { selection = nil }
+                        ForEach(options, id: \.self) { id in
+                            chip(label(id), on: selection == id) { selection = id }.id(id)
+                        }
                     }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 6)
                 }
-                .padding(.horizontal, 6)
-                .padding(.vertical, 6)
+                .onChange(of: selection) { _, id in
+                    if let id { withAnimation { proxy.scrollTo(id, anchor: .center) } }
+                }
             }
             .background(.ultraThinMaterial, in: Capsule())
             .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08)))
@@ -149,8 +166,10 @@ struct SectionAvatar: View {
 /// One issue on Home, in the Feed tab's style. Tap to read (or play, with
 /// story mode on); long-press for the rest.
 @MainActor
-private struct HomeRow: View {
+struct HomeRow: View {
     let post: Post
+    /// What the row's top line names: the newsletter, or for an episode its show.
+    var source: String?
     @Environment(Store.self) private var store
     @Environment(Router.self) private var router
     @AppStorage(SettingsKey.storyMode) private var storyMode = false
@@ -165,7 +184,7 @@ private struct HomeRow: View {
                 VStack(alignment: .leading, spacing: 5) {
                     HStack(spacing: 6) {
                         SectionAvatar(section: section, size: 16, unseen: !store.seen.contains(post.routeID))
-                        Text(section.title)
+                        Text(source ?? section.title)
                         Text("·")
                         Text(Format.shortDate(post.date))
                     }
@@ -183,7 +202,7 @@ private struct HomeRow: View {
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
                             .multilineTextAlignment(.leading)
-                    } else if let series = post.series, !series.isEmpty {
+                    } else if source == nil, let series = post.series, !series.isEmpty {
                         Text(series)
                             .font(.system(size: 13))
                             .foregroundStyle(.secondary)

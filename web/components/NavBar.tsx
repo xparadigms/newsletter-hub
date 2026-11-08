@@ -24,7 +24,8 @@ function titleFor(pathname: string): { title: string; back: string | null } {
     return { title: getSection(key)?.title ?? SITE.name, back: null };
   }
   if (pathname === "/feed") return { title: "Feed", back: null };
-  if (pathname === "/sections") return { title: "Sections", back: null };
+  if (pathname === "/podcasts") return { title: "Podcasts", back: null };
+  if (pathname === "/sections") return { title: "Sections", back: "Explore" };
   if (pathname === "/search") return { title: "Explore", back: null };
   if (pathname === "/profile") return { title: "Profile", back: null };
   if (pathname === "/offline") return { title: "Offline", back: "Back" };

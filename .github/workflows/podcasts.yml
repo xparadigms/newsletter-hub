@@ -1,0 +1,67 @@
+name: Podcast Hub
+
+# Every six hours: each new episode of the shows in podcasts-newsletter/main.py
+# becomes its own article. A run with nothing new writes nothing, so the
+# schedule running late or twice costs nothing.
+
+on:
+  schedule:
+    - cron: "40 */6 * * *"
+  workflow_dispatch:
+    inputs:
+      show:
+        description: "Only this show (its slug in main.py, e.g. allin)"
+        type: string
+        default: ""
+      max_episodes:
+        description: "At most this many episodes this run"
+        type: string
+        default: "4"
+      lookback_days:
+        description: "Episodes from the last this many days"
+        type: string
+        default: "4"
+      dry_run:
+        description: "Print the articles and publish nothing"
+        type: boolean
+        default: false
+
+concurrency:
+  group: podcasts
+  cancel-in-progress: false
+
+jobs:
+  episodes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        working-directory: podcasts-newsletter
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r ../requirements.txt
+      # Claude calls run on the Claude subscription through Claude Code, and on
+      # the API key if that fails (shared/llm.py).
+      - run: npm install -g @anthropic-ai/claude-code
+      - name: Write new episodes
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+          APNS_KEY_P8: ${{ secrets.APNS_KEY_P8 }}
+          APNS_KEY_ID: ${{ secrets.APNS_KEY_ID }}
+          SITE_URL: ${{ secrets.SITE_URL }}
+          REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
+          TIMEZONE: Asia/Seoul
+          SHOW: ${{ inputs.show || '' }}
+          MAX_EPISODES: ${{ inputs.max_episodes || '4' }}
+          LOOKBACK_DAYS: ${{ inputs.lookback_days || '4' }}
+        run: |
+          ARGS=""
+          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="--dry-run"; fi
+          python main.py $ARGS

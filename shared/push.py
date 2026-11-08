@@ -13,6 +13,7 @@ production push service, which is what this talks to.
 from __future__ import annotations
 
 import os
+import re
 import time
 from typing import Any
 
@@ -30,9 +31,10 @@ SECTION_NAMES = {
     "mandarin": "Mandarin Basics",
     "japan": "Japan Daily Talk",
     "watch": "Watch Weekly",
+    "podcasts": "Podcast Hub",
 }
 MODES = {
-    "japan": {"startup", "business", "fintech", "stocks"},
+    "japan": {"startup", "business", "fintech", "stocks", "podcasts"},
     "china": {"china", "mandarin"},
 }
 
@@ -78,9 +80,14 @@ def notify(row: dict[str, Any], stored: dict[str, Any]) -> int:
     if not configured():
         return 0
     run_key = row.get("run_key") or ""
-    if ":p" in run_key and not run_key.endswith(":p1"):
-        return 0  # later articles of the same edition stay quiet
+    part = re.search(r":p(\d+)$", run_key)
+    if part and part.group(1) != "1":
+        return 0  # later articles of the same edition stay quiet; a named
+        # part (a podcast episode, a requested company) is news on its own
     section = row["section"]
+    if section == "podcasts":
+        # The show is the news here, not the section.
+        row = {**row, "title": f"{row.get('series') or 'Podcast'} · {row.get('title') or ''}"}
     slug = stored.get("slug") or row.get("slug") or ""
     payload = {
         "aps": {

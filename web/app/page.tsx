@@ -22,9 +22,10 @@ export default async function Home({ searchParams }: { searchParams: Promise<{ s
   const { s: filter } = await searchParams;
   const current = NAV_SECTIONS.some((x) => x.key === filter) ? (filter as SectionKey) : null;
   const all = await getAllPosts();
-  const posts = current
-    ? (Object.fromEntries(Object.entries(all).map(([k, v]) => [k, k === current ? v : []])) as typeof all)
-    : all;
+  // Only the chosen newsletter, or every one Home mixes — never Podcast Hub,
+  // which has its own tab.
+  const shown = (k: string) => (current ? k === current : NAV_SECTIONS.some((x) => x.key === k));
+  const posts = Object.fromEntries(Object.entries(all).map(([k, v]) => [k, shown(k) ? v : []])) as typeof all;
 
   const feed = mixedFeed(posts, 60);
 

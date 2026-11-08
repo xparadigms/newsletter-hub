@@ -88,6 +88,15 @@ export const SECTIONS: Section[] = [
     description:
       "Three public companies a day, two in the news and one wildcard, each as its own article in Japanese with furigana and a full Korean translation.",
   },
+  {
+    key: "podcasts",
+    number: "09",
+    label: "Podcasts",
+    title: "Podcast Hub",
+    description:
+      "Every new episode of All-In, Masters of Scale, Lenny's Podcast, Acquired, 20VC and more, summarized in Japanese with a full Korean translation.",
+    hub: true,
+  },
 ];
 
 // Fails the build, naming the offender, if a section is missing from SECTIONS.
@@ -100,6 +109,7 @@ const SECTION_KEYS = SECTIONS.map((s) => s.key) as [
   "mandarin",
   "business",
   "stocks",
+  "podcasts",
 ];
 const _sectionsCover: Covers<typeof SECTION_KEYS> = true;
 void _sectionsCover;
@@ -108,8 +118,9 @@ export function getSection(key: string): Section | undefined {
   return SECTIONS.find((s) => s.key === key);
 }
 
-/** The sections the tab bar and footer link to. */
-export const NAV_SECTIONS = SECTIONS.filter((s) => !s.hideInNav);
+/** The newsletters Home mixes and filters, and the footer links to. Podcast
+ *  Hub is left out: it has its own tab. */
+export const NAV_SECTIONS = SECTIONS.filter((s) => !s.hideInNav && !s.hub);
 
 export function sectionKeys(): SectionKey[] {
   return SECTIONS.map((s) => s.key);

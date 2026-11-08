@@ -5,7 +5,7 @@ enum SourceLang: String {
 }
 
 enum SectionKey: String, CaseIterable, Codable, Hashable, Identifiable {
-    case startup, business, fintech, japan, watch, china, mandarin, stocks
+    case startup, business, fintech, japan, watch, china, mandarin, stocks, podcasts
     var id: String { rawValue }
 }
 
@@ -18,6 +18,8 @@ struct NewsSection: Identifiable, Hashable {
     var sourceLang: SourceLang = .ja
     /// Paused: left out of the main list, but its archive still opens.
     var hideInNav = false
+    /// Has its own tab (Podcasts), so it stays out of Home's mix and filters.
+    var hub = false
     let symbol: String
 
     var id: SectionKey { key }
@@ -61,13 +63,17 @@ enum Sections {
             key: .stocks, number: "08", label: "Stocks", title: "Three Companies",
             description: "Three public companies a day, two in the news and one wildcard, each as its own article in Japanese with furigana and a full Korean translation.",
             symbol: "chart.xyaxis.line"),
+        NewsSection(
+            key: .podcasts, number: "09", label: "Podcasts", title: "Podcast Hub",
+            description: "Every new episode of All-In, Masters of Scale, Lenny's Podcast, Acquired, 20VC and more, summarized in Japanese with a full Korean translation.",
+            hub: true, symbol: "headphones"),
     ]
 
-    static let nav = all.filter { !$0.hideInNav }
+    static let nav = all.filter { !$0.hideInNav && !$0.hub }
     static let paused = all.filter { $0.hideInNav }
 
     /// Tie-break order for same-day issues in the merged feed (web/lib/feed.ts).
-    static let feedOrder: [SectionKey] = [.startup, .business, .stocks, .fintech, .japan, .china, .mandarin, .watch]
+    static let feedOrder: [SectionKey] = [.startup, .business, .stocks, .fintech, .japan, .china, .mandarin, .watch, .podcasts]
 
     static func get(_ key: SectionKey) -> NewsSection {
         all.first { $0.key == key }!

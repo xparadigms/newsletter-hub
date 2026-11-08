@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import PostTile, { type TilePost } from "@/components/home/PostTile";
 import PrefetchLink from "@/components/PrefetchLink";
-import { getSection } from "@/lib/config";
+import SectionAvatar from "@/components/home/SectionAvatar";
+import { getSection, SECTIONS } from "@/lib/config";
 import { formatShortDate } from "@/lib/feed";
 import { useLibrary } from "@/lib/library";
 
@@ -82,6 +83,30 @@ export default function SearchPanel({ explore }: { explore: TilePost[] }) {
           enterKeyHint="search"
         />
       </label>
+
+      {!query.trim() && (
+        // Every newsletter's profile, one tap away: the tab bar's slot for
+        // Sections went to Podcasts.
+        <nav className="explore-sections" aria-label="Newsletters">
+          {SECTIONS.filter((s) => !s.hideInNav).map((s) => (
+            <PrefetchLink key={s.key} href={`/section/${s.key}`} className="explore-sections__item" transitionTypes={["nav-forward"]}>
+              <SectionAvatar section={s.key} size={56} />
+              <span>{s.label}</span>
+            </PrefetchLink>
+          ))}
+          <PrefetchLink href="/sections" className="explore-sections__item" transitionTypes={["nav-forward"]}>
+            <span className="explore-sections__all" aria-hidden>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+                <rect x="4" y="4" width="7" height="7" rx="1.5" />
+                <rect x="13" y="4" width="7" height="7" rx="1.5" />
+                <rect x="4" y="13" width="7" height="7" rx="1.5" />
+                <rect x="13" y="13" width="7" height="7" rx="1.5" />
+              </svg>
+            </span>
+            <span>All</span>
+          </PrefetchLink>
+        </nav>
+      )}
 
       {!query.trim() ? (
         <ul className="explore">

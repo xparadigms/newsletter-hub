@@ -33,6 +33,8 @@ export const GLYPHS: Record<SectionKey | "home", React.ReactNode> = {
       <rect x="16" y="6" width="4" height="9" rx="1" />
     </>
   ),
+  // Headphones: one article per episode.
+  podcasts: <path d="M4 17v-4a8 8 0 0 1 16 0v4M4 15.5h2.5a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM20 15.5h-2.5a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1H19a1 1 0 0 0 1-1z" />,
 };
 
 export function Glyph({

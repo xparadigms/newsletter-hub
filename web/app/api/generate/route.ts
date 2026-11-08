@@ -108,7 +108,8 @@ export async function POST(request: Request) {
       method: "POST",
       body: JSON.stringify({
         ref: "main",
-        inputs: company ? { company } : { edition: String(2 + used) },
+        // Podcast Hub has no editions: a run writes whatever episodes are new.
+        inputs: company ? { company } : section === "podcasts" ? {} : { edition: String(2 + used) },
       }),
     });
     if (!res.ok) {
@@ -125,7 +126,9 @@ export async function POST(request: Request) {
       // The run takes several minutes and this route does not wait for it.
       message: company
         ? `Writing about ${company}. The article appears in about five minutes.`
-        : "Generating. The new issue appears in a few minutes.",
+        : section === "podcasts"
+          ? "Checking for new episodes. Any new ones appear in about ten minutes."
+          : "Generating. The new issue appears in a few minutes.",
     });
   } catch (e) {
     return NextResponse.json(

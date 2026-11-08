@@ -240,6 +240,7 @@ struct SearchView: View {
             if q.isEmpty {
                 GeometryReader { geo in
                     ScrollView {
+                        NewsletterRow(sections: mode.sections)
                         ExploreGrid(posts: store.explore(90, sections: mode.sections), width: geo.size.width)
                             .padding(.bottom, 90)
                     }
@@ -274,6 +275,46 @@ struct SearchView: View {
         .onChange(of: router.tab) { _, tab in
             if tab == .search { store.rerollExplore() }
         }
+    }
+}
+
+/// The top of Explore: each newsletter's round avatar, opening its profile,
+/// and the full list — the tab bar's Sections slot went to Podcasts.
+@MainActor
+struct NewsletterRow: View {
+    let sections: [SectionKey]
+    @Environment(Store.self) private var store
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(alignment: .top, spacing: 14) {
+                ForEach(sections.map(Sections.get)) { s in
+                    NavigationLink(value: Route.section(s.key)) {
+                        item(s.label) { SectionAvatar(section: s, size: 56, unseen: store.hasUnseen(s.key)) }
+                    }
+                }
+                NavigationLink(value: Route.allSections) {
+                    item("All") {
+                        Image(systemName: "square.grid.2x2")
+                            .font(.system(size: 20, weight: .semibold))
+                            .frame(width: 56, height: 56)
+                            .padding(56 * 0.06)
+                            .overlay(Circle().strokeBorder(Color.secondary.opacity(0.35), lineWidth: 1))
+                    }
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func item(_ label: String, @ViewBuilder face: () -> some View) -> some View {
+        VStack(spacing: 6) {
+            face()
+            Text(label).font(.system(size: 11.5)).foregroundStyle(.secondary).lineLimit(1)
+        }
+        .frame(width: 70)
     }
 }
 

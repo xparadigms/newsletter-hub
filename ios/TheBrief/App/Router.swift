@@ -4,10 +4,12 @@ import Observation
 enum Route: Hashable {
     case section(SectionKey)
     case post(Post)
+    /// Every newsletter, as a list — reached from the top of Explore.
+    case allSections
 }
 
 enum AppTab: Hashable {
-    case today, feed, sections, search, profile
+    case today, feed, podcasts, search, profile
 }
 
 @MainActor
@@ -15,7 +17,7 @@ enum AppTab: Hashable {
 final class Router {
     var tab: AppTab = .today
     var today: [Route] = []
-    var sections: [Route] = []
+    var podcasts: [Route] = []
     var search: [Route] = []
     var profile: [Route] = []
     var feed: [Route] = []
@@ -57,7 +59,7 @@ final class Router {
     private var currentPath: [Route] {
         switch tab {
         case .today: return today
-        case .sections: return sections
+        case .podcasts: return podcasts
         case .search: return search
         case .profile: return profile
         case .feed: return feed
@@ -67,7 +69,7 @@ final class Router {
     private func popCurrent() {
         switch tab {
         case .today: today.removeLast()
-        case .sections: sections.removeLast()
+        case .podcasts: podcasts.removeLast()
         case .search: search.removeLast()
         case .profile: profile.removeLast()
         case .feed: feed.removeLast()
@@ -79,7 +81,7 @@ final class Router {
         if next == tab {
             switch next {
             case .today: today.removeAll()
-            case .sections: sections.removeAll()
+            case .podcasts: podcasts.removeAll()
             case .search: search.removeAll()
             case .profile: profile.removeAll()
             case .feed: feed.removeAll()
@@ -98,6 +100,7 @@ final class Router {
         // thebrief://explore and thebrief://profile[/saved|read|timeline]
         if parts[0] == "explore" { tab = .search; return }
         if parts[0] == "feed" { tab = .feed; return }
+        if parts[0] == "podcasts" { tab = .podcasts; podcasts = []; return }
         // thebrief://mode/japan or thebrief://mode/china
         if parts[0] == "mode", parts.count > 1, let mode = AppMode(rawValue: parts[1]) {
             UserDefaults.standard.set(mode.rawValue, forKey: SettingsKey.mode)
@@ -111,8 +114,11 @@ final class Router {
         }
         guard parts.count >= 2, let key = SectionKey(rawValue: parts[1]) else { return }
         if parts[0] == "section" {
-            tab = .sections
-            sections = [.section(key)]
+            // Every newsletter's profile lives under Explore now; Podcast Hub
+            // is its own tab.
+            if key == .podcasts { tab = .podcasts; podcasts = []; return }
+            tab = .search
+            search = [.section(key)]
             return
         }
         guard parts.count >= 3 else { return }
@@ -120,6 +126,9 @@ final class Router {
             ?? Post(id: parts[2], section: key, title: "", series: nil, date: nil, summary: nil)
         switch parts[0] {
         case "story": story = post
+        case "post" where key == .podcasts:
+            tab = .podcasts
+            podcasts = [.post(post)]
         case "post":
             tab = .today
             today = [.post(post)]
@@ -130,7 +139,7 @@ final class Router {
     func push(_ route: Route) {
         switch tab {
         case .today: today.append(route)
-        case .sections: sections.append(route)
+        case .podcasts: podcasts.append(route)
         case .search: search.append(route)
         case .profile: profile.append(route)
         case .feed: feed.append(route)

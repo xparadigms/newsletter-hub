@@ -16,6 +16,8 @@ export const WORKFLOWS: Record<SectionKey, string> = {
   china: "china-daily.yml",
   mandarin: "mandarin-daily.yml",
   stocks: "stocks-daily.yml",
+  // Every six hours on its own schedule; a dispatch checks for new episodes now.
+  podcasts: "podcasts.yml",
 };
 
 // Every workflow's run-name ends with this when the cron started it, which is
