@@ -48,11 +48,11 @@ struct RootView: View {
             .tabItem { Label("Feed", systemImage: "newspaper") }
             .tag(AppTab.feed)
 
-            NavigationStack(path: $router.sections) {
-                SectionsView().routes()
+            NavigationStack(path: $router.podcasts) {
+                PodcastsView().routes()
             }
-            .tabItem { Label("Sections", systemImage: "square.grid.2x2") }
-            .tag(AppTab.sections)
+            .tabItem { Label("Podcasts", systemImage: "headphones") }
+            .tag(AppTab.podcasts)
 
             NavigationStack(path: $router.search) {
                 SearchView().routes()
@@ -106,6 +106,7 @@ extension View {
             switch route {
             case let .section(key): SectionView(section: Sections.get(key))
             case let .post(post): ArticleView(post: post)
+            case .allSections: SectionsView()
             }
         }
     }

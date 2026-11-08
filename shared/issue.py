@@ -40,7 +40,7 @@ def parse_title(raw: str) -> tuple[str, str | None, int | None]:
 MIN_PLAIN_TEXT = 700
 
 SECTIONS = frozenset(
-    {"startup", "fintech", "japan", "watch", "china", "mandarin", "business", "stocks"}
+    {"startup", "fintech", "japan", "watch", "china", "mandarin", "business", "stocks", "podcasts"}
 )
 
 

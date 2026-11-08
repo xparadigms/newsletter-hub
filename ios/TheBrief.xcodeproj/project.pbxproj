@@ -27,6 +27,7 @@
 		7DCA05A317BE77DD563DB5E6 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7B85ECAA754C8A268AFA797; };
 		17420DBF440CF24A865686F7 /* FeedView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 218216EDDE38176ED7F1EEFC; };
 		C235D410F8B73EE8F3F38CE0 /* GenerateControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CEC76505B558D0538732EFA; };
+		114B83F5A349C9D61368A12A /* PodcastsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 089FD35143A0A2463C03E504; };
 		ABE1417BB74D4E68F2A3F342 /* ProfileView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B561FB12C02BFF36CFDA37; };
 		9317087135D3FBDB78FFECF7 /* RubyText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93AF21B1EBD9B4BD12720EA3; };
 		55A1499E5069D5020A64BEF2 /* SectionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E4F38FB8FE91EFC981AF313; };
@@ -58,6 +59,7 @@
 		F7B85ECAA754C8A268AFA797 /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
 		218216EDDE38176ED7F1EEFC /* FeedView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedView.swift; sourceTree = "<group>"; };
 		9CEC76505B558D0538732EFA /* GenerateControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateControls.swift; sourceTree = "<group>"; };
+		089FD35143A0A2463C03E504 /* PodcastsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PodcastsView.swift; sourceTree = "<group>"; };
 		A1B561FB12C02BFF36CFDA37 /* ProfileView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileView.swift; sourceTree = "<group>"; };
 		93AF21B1EBD9B4BD12720EA3 /* RubyText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RubyText.swift; sourceTree = "<group>"; };
 		6E4F38FB8FE91EFC981AF313 /* SectionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SectionsView.swift; sourceTree = "<group>"; };
@@ -118,6 +120,7 @@
 				F7B85ECAA754C8A268AFA797 /* Components.swift */,
 				218216EDDE38176ED7F1EEFC /* FeedView.swift */,
 				9CEC76505B558D0538732EFA /* GenerateControls.swift */,
+				089FD35143A0A2463C03E504 /* PodcastsView.swift */,
 				A1B561FB12C02BFF36CFDA37 /* ProfileView.swift */,
 				93AF21B1EBD9B4BD12720EA3 /* RubyText.swift */,
 				6E4F38FB8FE91EFC981AF313 /* SectionsView.swift */,
@@ -204,6 +207,7 @@
 				7DCA05A317BE77DD563DB5E6 /* Components.swift in Sources */,
 				17420DBF440CF24A865686F7 /* FeedView.swift in Sources */,
 				C235D410F8B73EE8F3F38CE0 /* GenerateControls.swift in Sources */,
+				114B83F5A349C9D61368A12A /* PodcastsView.swift in Sources */,
 				ABE1417BB74D4E68F2A3F342 /* ProfileView.swift in Sources */,
 				9317087135D3FBDB78FFECF7 /* RubyText.swift in Sources */,
 				55A1499E5069D5020A64BEF2 /* SectionsView.swift in Sources */,

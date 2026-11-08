@@ -17,6 +17,7 @@
 [data-section="china"] { --tint: 235 56 51; }
 [data-section="mandarin"] { --tint: 250 148 41; }
 [data-section="stocks"] { --tint: 31 184 117; }
+[data-section="podcasts"] { --tint: 168 85 247; }
 
 :root {
   --card-dark: #131315;
@@ -1384,4 +1385,46 @@ html[data-furigana="on"] .story-bar .furigana-toggle,
 .home,
 .newsfeed {
   padding-bottom: 72px;
+}
+
+/* ---------- Explore: the newsletters row ---------- */
+
+.explore-sections {
+  display: flex;
+  gap: 14px;
+  margin: 0 -16px 12px;
+  padding: 2px 16px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.explore-sections::-webkit-scrollbar {
+  display: none;
+}
+
+.explore-sections__item {
+  flex-shrink: 0;
+  width: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.explore-sections__item:active {
+  opacity: 0.6;
+}
+
+.explore-sections__all {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  color: var(--text-primary);
 }

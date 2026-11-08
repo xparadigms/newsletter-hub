@@ -6,7 +6,8 @@ export type SectionKey =
   | "china"
   | "mandarin"
   | "business"
-  | "stocks";
+  | "stocks"
+  | "podcasts";
 
 // Compile-time proof that a hand-maintained list covers every section. Several
 // of them are ordinary arrays that would happily compile with one missing —
@@ -33,6 +34,9 @@ export interface Section {
   // Left out of the tab bar and the footer while a section is paused. Its
   // index, its issues, search and the sitemap all keep working.
   hideInNav?: boolean;
+  // Has its own tab (Podcasts), so it stays out of Home's mix and filters,
+  // which would otherwise be a dozen episodes a day drowning the rest.
+  hub?: boolean;
 }
 
 /** An issue's cover (shared/covers.py): its source's preview image, or a

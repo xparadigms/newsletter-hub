@@ -44,6 +44,7 @@ FALLBACK_QUERY = {
     "fintech": ["credit card payment", "digital payment", "bank building"],
     "business": ["office building", "city skyline night", "modern architecture"],
     "startup": ["laptop desk", "circuit board", "server room"],
+    "podcasts": ["studio microphone", "headphones", "radio studio"],
 }
 
 STOPWORDS = set("""a an the and or of for to in on at by with from as is are was were be been its it this that

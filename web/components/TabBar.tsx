@@ -4,8 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-// The app's four tabs, as in the iOS app. The sections themselves live one
-// level down, under Sections — eight of them never fitted a phone-width bar.
+// The app's five tabs, as in the iOS app. The newsletters themselves live one
+// level down, in a row at the top of Explore — nine never fitted a
+// phone-width bar.
 const ICONS: Record<string, React.ReactNode> = {
   home: <path d="M3.5 10.5 12 4l8.5 6.5V20a1 1 0 0 1-1 1H4.5a1 1 0 0 1-1-1z" />,
   feed: (
@@ -14,12 +15,10 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M9 9.5h6M9 13h6M9 16.5h3" fill="none" />
     </>
   ),
-  sections: (
+  podcasts: (
     <>
-      <rect x="4" y="4" width="7" height="7" rx="1.5" />
-      <rect x="13" y="4" width="7" height="7" rx="1.5" />
-      <rect x="4" y="13" width="7" height="7" rx="1.5" />
-      <rect x="13" y="13" width="7" height="7" rx="1.5" />
+      <path d="M4 17v-4a8 8 0 0 1 16 0v4" fill="none" />
+      <path d="M4 15.5h2.5a1 1 0 0 1 1 1V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM20 15.5h-2.5a1 1 0 0 0-1 1V20a1 1 0 0 0 1 1H19a1 1 0 0 0 1-1z" />
     </>
   ),
   search: (
@@ -57,7 +56,7 @@ function TabIcon({ name, active }: { name: string; active: boolean }) {
 const TABS = [
   { key: "home", href: "/", label: "Home" },
   { key: "feed", href: "/feed", label: "Feed" },
-  { key: "sections", href: "/sections", label: "Sections" },
+  { key: "podcasts", href: "/podcasts", label: "Podcasts" },
   { key: "search", href: "/search", label: "Explore" },
   { key: "profile", href: "/profile", label: "Profile" },
 ];
@@ -102,9 +101,16 @@ export default function TabBar() {
 
   const isActive = (key: string) => {
     if (key === "home") return pathname === "/";
-    // Sections owns everything below it: a section's list and its issues.
-    if (key === "sections")
-      return pathname === "/sections" || pathname.startsWith("/section/") || pathname.startsWith("/post/");
+    // Podcasts owns its episodes; Explore owns every other newsletter's
+    // profile and issues, since that is where they are reached from.
+    if (key === "podcasts")
+      return pathname === "/podcasts" || pathname.startsWith("/section/podcasts") || pathname.startsWith("/post/podcasts/");
+    if (key === "search")
+      return (
+        pathname === "/search" ||
+        pathname === "/sections" ||
+        ((pathname.startsWith("/section/") || pathname.startsWith("/post/")) && !pathname.includes("/podcasts"))
+      );
     return pathname === `/${key}`;
   };
 
