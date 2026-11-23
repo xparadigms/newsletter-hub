@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// Home: every issue as a row in the Feed tab's style — source and date,
-/// headline, a line of summary, the cover beside it — for the current mode's
-/// newsletters, with a row of filters just above the tab bar where the thumb
+/// Home: the current mode's newsletters day by day — a row naming each day,
+/// then that day's issues in newsletter order and part order, each in the
+/// Feed tab's style (source and date, headline, a line of summary, the cover)
+/// — with a row of filters just above the tab bar where the thumb
 /// already is. Tap the title to switch between Japan and China.
 @MainActor
 struct TodayView: View {
@@ -14,7 +15,7 @@ struct TodayView: View {
     private var mode: AppMode { AppMode(rawValue: modeRaw) ?? .japan }
 
     var body: some View {
-        let feed = store.feed(60, sections: filter.map { [$0] } ?? mode.sections)
+        let days = store.days(60, sections: filter.map { [$0] } ?? mode.sections)
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: 0) {
@@ -22,12 +23,17 @@ struct TodayView: View {
                     if let error = store.error {
                         ErrorBanner(message: error).padding(.horizontal, 16).padding(.vertical, 10)
                     }
-                    if feed.isEmpty && store.isLoading {
+                    if days.isEmpty && store.isLoading {
                         ProgressView().padding(.top, 60)
                     }
-                    ForEach(feed) { post in
-                        HomeRow(post: post)
-                        Divider().padding(.leading, 16)
+                    // A row per day, then that day's issues in newsletter
+                    // order, part 1 before part 2.
+                    ForEach(days, id: \.date) { day in
+                        DayHeader(date: day.date, count: day.posts.count)
+                        ForEach(day.posts) { post in
+                            HomeRow(post: post)
+                            if post.id != day.posts.last?.id { Divider().padding(.leading, 16) }
+                        }
                     }
                 }
             }
@@ -66,6 +72,29 @@ struct TodayView: View {
             ToolbarItem(placement: .topBarTrailing) { SettingsMenu() }
         }
         .refreshable { await store.refresh() }
+    }
+}
+
+/// The row that opens each day on Home.
+struct DayHeader: View {
+    let date: String
+    let count: Int
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(Format.dayTitle(date))
+                .font(.system(size: 20, weight: .bold))
+            Spacer()
+            Text(count == 1 ? "1 issue" : "\(count) issues")
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 22)
+        .padding(.bottom, 6)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(uiColor: .systemBackground))
+        .accessibilityAddTraits(.isHeader)
     }
 }
 

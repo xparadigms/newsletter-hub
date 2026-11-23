@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """China Daily — politics, tech, and what China is talking about → Supabase.
 
-Scrapes Chinese-language and China-desk news, writes four stories in
+Scrapes Chinese-language and China-desk news, writes three stories in
 Simplified Chinese — two short lines each, with one Korean read-through —
 segments each sentence into words with pinyin, and stores each story as its own
 article (shared/split.py), sized to be read on a single story card.
@@ -228,7 +228,7 @@ bullet characters, no horizontal rules.
 Line 1 must be:
 MAIN_TITLE: <English title of the single most important story, 8 words or fewer>
 
-Then exactly FOUR stories. Each story is exactly:
+Then exactly THREE stories. Each story is exactly:
 
 ### <headline in Korean>
 <Chinese sentence>
@@ -237,7 +237,7 @@ Then exactly FOUR stories. Each story is exactly:
 
 Rules that matter:
 
-- Exactly four stories: not three, not five. Each is published as its own \
+- Exactly three stories: not two, not four. Each is published as its own \
 article and read on a single card, so a story is its headline, at most two \
 Chinese lines and one Korean line, and nothing else.
 - The ### headline is written in KOREAN and is NOT numbered. Do not write "1.", \
@@ -260,10 +260,10 @@ the Chinese lines, never write "번역:", never add a note on vocabulary or \
 grammar, and never leave a story without its Korean.
 - Do not repeat a story. Do not invent facts, numbers or dates that are not in \
 the items below.
-- Technology and industry leads: two of the four stories must be technology — \
+- Technology and industry leads: two of the three stories must be technology — \
 AI, semiconductors, electric vehicles, platforms, telecoms, startups, and the \
-companies behind them. Of the other two, one is politics and policy and one is \
-society and what ordinary people in China are talking about.
+companies behind them. The third is politics and policy, or society and what \
+ordinary people in China are talking about.
 
 --- NEWS ITEMS ---
 {news_items}

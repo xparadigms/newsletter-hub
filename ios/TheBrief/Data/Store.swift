@@ -104,6 +104,32 @@ final class Store {
         return Array(out.prefix(limit))
     }
 
+    /// Home: the newest days first, each day's issues in newsletter order
+    /// (Sections.all) and, within a newsletter, by part — 1/3, 2/3, 3/3.
+    func days(_ limit: Int, sections: [SectionKey]) -> [(date: String, posts: [Post])] {
+        let rank = Dictionary(uniqueKeysWithValues: Sections.all.enumerated().map { ($1.key, $0) })
+        var byDate: [String: [Post]] = [:]
+        for key in sections {
+            for post in posts[key] ?? [] { byDate[post.date ?? "", default: []].append(post) }
+        }
+        var out: [(date: String, posts: [Post])] = []
+        var count = 0
+        for date in byDate.keys.sorted(by: >) where count < limit {
+            // Lists come newest first, which for a split issue is part 1 first;
+            // the part number decides when the series carries one.
+            let day = byDate[date]!.enumerated().sorted { a, b in
+                let ra = rank[a.element.section] ?? 99, rb = rank[b.element.section] ?? 99
+                if ra != rb { return ra < rb }
+                let pa = a.element.part ?? Int.max, pb = b.element.part ?? Int.max
+                if pa != pb { return pa < pb }
+                return a.offset < b.offset
+            }.map(\.element)
+            out.append((date, day))
+            count += day.count
+        }
+        return out
+    }
+
     /// The same launch's random order, for anything else that wants it.
     func shuffled<T>(_ items: [T], salt: UInt64) -> [T] {
         var rng = SeededGenerator(seed: shuffleSeed ^ salt)

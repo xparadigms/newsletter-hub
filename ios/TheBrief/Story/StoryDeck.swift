@@ -147,7 +147,7 @@ enum StoryDeck {
         }
         let body = blocks.filter { !$0.block.isDivider }
         if body.isEmpty { return [] }
-        if heading.contains("基本情報") || body.allSatisfy({ $0.lang == nil }) { return [card(body)] }
+        if heading.contains("基本情報") || heading.contains("直近30日") || body.allSatisfy({ $0.lang == nil }) { return [card(body)] }
 
         var pairs: [SentencePair] = []
         var rest: [AnnotatedBlock] = []

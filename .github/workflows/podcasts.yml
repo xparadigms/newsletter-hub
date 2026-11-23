@@ -1,12 +1,13 @@
 name: Podcast Hub
 
-# Every six hours: each new episode of the shows in podcasts-newsletter/main.py
+# Once a day: each new episode of the shows in podcasts-newsletter/main.py
 # becomes its own article. A run with nothing new writes nothing, so the
 # schedule running late or twice costs nothing.
 
 on:
   schedule:
-    - cron: "40 */6 * * *"
+    # Once a day, 06:40 KST: the three newest episodes, one per show.
+    - cron: "40 21 * * *"
   workflow_dispatch:
     inputs:
       show:
@@ -16,7 +17,7 @@ on:
       max_episodes:
         description: "At most this many episodes this run"
         type: string
-        default: "4"
+        default: "3"
       lookback_days:
         description: "Episodes from the last this many days"
         type: string
@@ -64,7 +65,7 @@ jobs:
           REVALIDATE_SECRET: ${{ secrets.REVALIDATE_SECRET }}
           TIMEZONE: Asia/Seoul
           SHOW: ${{ inputs.show || '' }}
-          MAX_EPISODES: ${{ inputs.max_episodes || '4' }}
+          MAX_EPISODES: ${{ inputs.max_episodes || '3' }}
           LOOKBACK_DAYS: ${{ inputs.lookback_days || '4' }}
           REWRITE: ${{ inputs.rewrite && 'true' || '' }}
         run: |
