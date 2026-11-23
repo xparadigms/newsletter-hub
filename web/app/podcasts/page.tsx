@@ -38,7 +38,7 @@ export default async function PodcastsPage({ searchParams }: { searchParams: Pro
       <div className="home podcasts">
         <PullToRefresh />
         {shown.length === 0 && (
-          <p className="feed__empty">The first episodes arrive within six hours — every new one becomes an article here.</p>
+          <p className="feed__empty">Three new episodes become articles here every morning.</p>
         )}
         <ul className="newsfeed__list">
           {shown.map((p) => (

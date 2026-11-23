@@ -398,17 +398,17 @@ line out if there is none]
 figures above are an example of the form only. Every Japanese bullet keeps its \
 です so it reads as Japanese; a bare label like 「終値：$137.10」 does not.]
 WHAT:
-[Japanese: the specific events of the last 30 days with dates and figures. \
-FIVE sentences and 370 characters at most, in paragraphs of at most TWO \
-sentences each, each paragraph followed by its Korean translation under \
-📝 한국어 번역:]
+[Japanese: the single most important event of the last 30 days, with its \
+date and figures. ONE paragraph of TWO sentences and 150 characters at most, \
+followed by its Korean translation under 📝 한국어 번역: — it is read on one \
+story card.]
 INDUSTRY:
-[Japanese: how the sector works and where this company sits in it. FOUR \
-sentences and 390 characters at most, in paragraphs of at most TWO sentences \
+[Japanese: how the sector works and where this company sits in it. THREE \
+sentences and 280 characters at most, in paragraphs of at most TWO sentences \
 each, each followed by its Korean translation.]
 WHY:
 [Japanese: implications for markets, policy, the wider economy, and where \
-relevant for Korea, Japan and Asia. FIVE sentences and 370 characters at \
+relevant for Korea, Japan and Asia. THREE sentences and 270 characters at \
 most, in paragraphs of at most TWO sentences each, each followed by its \
 Korean translation.]
 SOURCES:
@@ -416,7 +416,7 @@ SOURCES:
 🔗 [one to three lines]
 
 LENGTH: the caps above are hard limits; count before you finish. WHAT, \
-INDUSTRY and WHY together come to about 1,000 to 1,130 Japanese characters. \
+INDUSTRY and WHY together come to about 620 to 700 Japanese characters. \
 Cut background before cutting figures. The TITLE is English, in Title Case, \
 with no hyphens or dashes.
 
@@ -469,7 +469,8 @@ def write_edition(
 # 460 characters for these four parts. The model reads budgets in the prompt as
 # suggestions, so they are measured and sent back instead.
 # BASIC is bullets, one figure per line, so its "sentences" are lines.
-LIMITS = {"BASIC": (8, 260), "WHAT": (5, 370), "INDUSTRY": (4, 390), "WHY": (5, 370)}
+# Cut by about 30% again on 2026-11-23, with WHAT down to one story card.
+LIMITS = {"BASIC": (8, 260), "WHAT": (2, 150), "INDUSTRY": (3, 280), "WHY": (3, 270)}
 # And per paragraph, for the prose parts: each Japanese paragraph is one line,
 # and a paragraph with its Korean is what a story card shows, so a third
 # sentence is what overflows one. BASIC is bullets and has no paragraphs.

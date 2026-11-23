@@ -167,7 +167,7 @@ reader who runs a company and reads Japanese at roughly N3-N2.
 Never name his company or write about his industry specifically. The insights \
 are general business thinking, useful to anyone running or building something.
 
-Each issue explains four pieces of business thinking from named global \
+Each issue explains three pieces of business thinking from named global \
 operators: founders, investors, VCs, executives. Jeff Bezos, Marc Andreessen, \
 Garry Tan, Sam Altman, Brian Chesky, Sarah Guo — whoever actually said \
 something worth repeating this week.
@@ -176,7 +176,7 @@ WHAT AN INSIGHT IS: a way of deciding, judging or building that transfers. \
 "Amazon's revenue grew 12%" is news, not an insight. "Bezos decides by asking \
 which choice he would regret least at 80" is an insight — it names a mechanism \
 someone else can use. If a story gives you only a number or an announcement, \
-skip it. Four real insights beat six summaries.
+skip it. Three real insights beat six summaries.
 
 ATTRIBUTION IS NOT OPTIONAL. Every insight names the person, their role, and \
 where they said it. Never attribute an idea to someone the source does not \
@@ -226,7 +226,6 @@ under this title):
 INSIGHT_TITLE_1: [title]
 INSIGHT_TITLE_2: [title]
 INSIGHT_TITLE_3: [title]
-INSIGHT_TITLE_4: [title]
 
 HEADER:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -236,7 +235,7 @@ BUSINESS INSIGHT — Issue #{issue_number}
 今日の3つの視点: [at most 2 Japanese sentences previewing the three insights]
 [the same preview in Korean, starting with 오늘의 세 가지 관점:]
 
-Then FOUR insights, each from a DIFFERENT person. Format each exactly:
+Then THREE insights, each from a DIFFERENT person. Format each exactly:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━
 SECTION {{N}} · 今日のインサイト{{N}} (INSIGHT {{N}})
@@ -255,7 +254,7 @@ produced it. 2 sentences, never 3, 150-175 Japanese characters. Count them.]
 📝 한국어 번역:
 [full Korean translation, sentence for sentence]
 
-[After the 出典 line, and ONLY for the three insights taken from the material \
+[After the 出典 line, and ONLY for the two insights taken from the material \
 below, add a line: 🔗 <the URL of the item you used, copied exactly>. The \
 classic has no link — it is not in the material. Copy the URL character for \
 character; a link that was not in the material is removed before publishing.]
@@ -268,21 +267,21 @@ two.]
 📝 한국어 번역:
 [full Korean translation, sentence for sentence]
 
-THREE of the four come from the material below, and ONE OF THOSE THREE must be \
+TWO of the three come from the material below, and ONE OF THOSE TWO must be \
 about finance — fintech, payments, banking, capital markets, investing or \
 financial infrastructure. It still has to be an insight rather than an \
 announcement: how someone in finance decides, prices, underwrites or builds \
 distribution, not that a company raised a round.
 
-The FOURTH is a CLASSIC: an \
+The THIRD is a CLASSIC: an \
 idea from the past that is not in today's material at all — Bezos on \
 minimising regret, Buffett on the circle of competence, Grove on strategic \
 inflection points, Christensen on disruption, Drucker on decisions. Use only \
 ideas that are genuinely well documented and attributed correctly; if you are \
 not certain someone said it, choose a different one. Put it anywhere among the \
-four, and mark its 出典 with the original book, talk or letter and its year.
+three, and mark its 出典 with the original book, talk or letter and its year.
 
-After the four, close the issue:
+After the three, close the issue:
 
 CLOSING:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━

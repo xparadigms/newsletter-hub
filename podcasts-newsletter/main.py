@@ -50,7 +50,10 @@ MAX_TOKENS = 12000
 LOOKBACK_DAYS = int(os.environ.get("LOOKBACK_DAYS", "4"))
 # Per run. Each episode costs a search session and two model calls, and a run
 # every few hours catches up within the day.
-MAX_EPISODES = int(os.environ.get("MAX_EPISODES", "4"))
+MAX_EPISODES = int(os.environ.get("MAX_EPISODES", "3"))
+# Like every newsletter: at most three articles a day, counted by when they
+# were published (KST), so a manual run after the morning's adds nothing.
+PER_DAY = 3
 # Rewrite episodes already published (same run_key, so the same URL) instead
 # of skipping them — for a change of format. The workflow sends no
 # notifications for a rewrite.
@@ -186,6 +189,19 @@ def _already_written(eps: list[dict[str, Any]]) -> set[str]:
     )
     resp.raise_for_status()
     return {r["run_key"] for r in resp.json()}
+
+
+def _published_today() -> int:
+    if not store.configured():
+        return 0
+    base, key = store._config()
+    start = datetime.now(KST).replace(hour=0, minute=0, second=0, microsecond=0)
+    resp = http.request_with_retry(
+        "GET", f"{base}/rest/v1/{store.TABLE}", label="Supabase", headers=store._headers(key),
+        params={"select": "run_key", "section": f"eq.{SECTION}", "published_at": f"gte.{start.isoformat()}"},
+    )
+    resp.raise_for_status()
+    return len(resp.json())
 
 
 def pick(eps: list[dict[str, Any]], done: set[str], limit: int) -> list[dict[str, Any]]:
@@ -411,7 +427,11 @@ def run() -> None:
     if REWRITE:
         written = _already_written(eps)
         eps = [e for e in eps if _run_key(e) in written]
-    chosen = pick(eps, done, MAX_EPISODES)
+    limit = MAX_EPISODES if REWRITE else min(MAX_EPISODES, PER_DAY - _published_today())
+    if limit <= 0:
+        print(f"  Already {PER_DAY} episodes today.")
+        return
+    chosen = pick(eps, done, limit)
     if not chosen:
         print("  Nothing new to write.")
         return

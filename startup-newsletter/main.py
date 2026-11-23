@@ -154,8 +154,8 @@ partnerships, acquisitions), produce:
 challenging the status quo, what aspect of the industry it is disrupting, \
 and why it matters
 
-Cover the major stories only. Leave minor stories out entirely: no list of \
-other headlines, no one-line roundup at the end.
+Cover the THREE most important stories only — never more than three. Leave \
+the rest out entirely: no list of other headlines, no one-line roundup at the end.
 
 PARAGRAPHS: no paragraph may exceed 2 sentences. Each paragraph becomes one \
 story card, with its Japanese and Korean beside it. If a section needs more \

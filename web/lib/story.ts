@@ -158,8 +158,8 @@ function stockCards(
   });
   const body = blocks.filter((a) => a.block.type !== "divider");
   if (!body.length) return [];
-  // Basic info, and the source links, are one card however long.
-  if (heading.includes("基本情報") || body.every((a) => a.lang === null)) {
+  // Basic info, the last 30 days, and the source links are one card each.
+  if (heading.includes("基本情報") || heading.includes("直近30日") || body.every((a) => a.lang === null)) {
     return [card(body)];
   }
 

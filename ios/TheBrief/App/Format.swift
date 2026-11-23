@@ -41,6 +41,24 @@ enum Format {
         return month.string(from: d)
     }
 
+    private static let dayHeader = formatter("EEEEMMMMd")
+
+    /// "Today", "Yesterday", or "Saturday, November 21" — Home's date rows.
+    /// Issue dates are calendar days, so they are compared with the phone's
+    /// own calendar day rather than as instants.
+    static func dayTitle(_ s: String?) -> String {
+        guard let s, let d = date(s) else { return "Undated" }
+        let local = DateFormatter()
+        local.locale = Locale(identifier: "en_US_POSIX")
+        local.dateFormat = "yyyy-MM-dd"
+        let now = Date()
+        if s == local.string(from: now) { return "Today" }
+        if let y = Calendar.current.date(byAdding: .day, value: -1, to: now), s == local.string(from: y) {
+            return "Yesterday"
+        }
+        return dayHeader.string(from: d)
+    }
+
     static func today() -> String {
         let f = DateFormatter()
         f.locale = Locale(identifier: "en_US")

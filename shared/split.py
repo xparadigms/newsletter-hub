@@ -76,6 +76,9 @@ def split_parts(
 # wrote no ### stories, and this floor only catches a story left empty.
 PART_MIN_CHARS = {"china": 40}
 
+# Articles per newsletter per day (publish).
+MAX_ARTICLES = 3
+
 
 def _min_chars(section: str) -> int:
     return PART_MIN_CHARS.get(section, issue_row.MIN_PLAIN_TEXT)
@@ -144,6 +147,12 @@ def publish(
     read to avoid repeating a story (sources.already_covered), and store.
     recent_issues returns every part of the recent issues together.
     """
+    # At most three articles a newsletter a day. The prompts ask for three;
+    # this holds if a model writes more. A closing that would have been a
+    # fourth article joins the third instead.
+    stories = [s for s in stories if s[1]][:MAX_ARTICLES]
+    if closing and len(stories) >= MAX_ARTICLES:
+        closing = (None, closing[1])
     merged = merge_parts(section, stories, closing)
 
     if not merged:

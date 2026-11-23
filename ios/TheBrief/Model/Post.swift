@@ -25,6 +25,12 @@ struct Post: Identifiable, Hashable, Codable {
     var cover: Cover? = nil
 
     var routeID: String { "\(section.rawValue)/\(id)" }
+
+    /// Which article of a split issue this is: 2 for "Startup News #170 · 2/3".
+    var part: Int? {
+        guard let series, let match = series.firstMatch(of: /(\d+)\s*\/\s*\d+\s*$/) else { return nil }
+        return Int(match.1)
+    }
 }
 
 struct PostDetail: Codable {
